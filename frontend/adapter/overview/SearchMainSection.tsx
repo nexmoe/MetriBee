@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { DateTime } from "luxon";
 import { useExtracted } from "../extracted";
 import { MainSection } from "../../rybbit/src/app/[site]/main/components/MainSection/MainSection";
@@ -75,6 +75,10 @@ function SearchChart({ metric, currentQuery, previousQuery, bucket }: {
   </div>;
 }
 
+function SearchStatTiles({ tiles }: { tiles: ReactNode }) {
+  return <section id="google-search-summary" aria-label="Google Search Console" className="contents">{tiles}</section>;
+}
+
 function ConnectedSearchMainSection() {
   const t = useExtracted(), timezone = useTimezone(), comparing = useComparisonEnabled();
   const { selectedStat, bucket: rawBucket, setBucket, site, time, filters } = useStore();
@@ -92,27 +96,24 @@ function ConnectedSearchMainSection() {
     else if (!selected) ga4Bucket.current = rawBucket;
     wasSearch.current = !!selected;
   }, [selected, rawBucket, setBucket]);
-  const tiles = <section id="google-search-summary" aria-label={t("Google Search Console")} className="border-t border-neutral-100 dark:border-neutral-800">
-    <div className="grid grid-cols-2 lg:grid-cols-4">
-      {METRICS.map(metric => <Stat key={metric} id={`gsc_${metric}`} title={t(LABELS[metric])}
-        value={data?.[metric] ?? null} previous={previous?.[metric] ?? undefined} isLoading={current.isPending}
-        valueFormatter={value => format(metric, value)} reverseColor={metric === "position"}
-        comparisonDelta={metric === "ctr" ? pointDelta(data?.ctr == null ? null : data.ctr * 100, previous?.ctr == null ? null : previous.ctr * 100)
-          : metric === "position" ? null : percentDelta(data?.[metric], previous?.[metric])}
-        sparklineData={rows.flatMap(row => row[metric] == null ? [] : [{ time: `${row.date} 00:00:00`, value: metric === "ctr" ? row.ctr! * 100 : row[metric]! }])}
-        flash={{ resetKey: JSON.stringify([site, time, filters, bucket, timezone]), ready: data != null, fetching: current.isFetching, empty: !data?.impressions }} />)}
-    </div>
-    <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-2 text-xs text-neutral-500">
-      <span>{t("Search Console · Pacific time · delayed data")}</span>
+  const tiles = <>
+    {METRICS.map(metric => <Stat key={metric} id={`gsc_${metric}`} title={t(LABELS[metric])}
+      value={data?.[metric] ?? null} previous={previous?.[metric] ?? undefined} isLoading={current.isPending}
+      valueFormatter={value => format(metric, value)} reverseColor={metric === "position"}
+      comparisonDelta={metric === "ctr" ? pointDelta(data?.ctr == null ? null : data.ctr * 100, previous?.ctr == null ? null : previous.ctr * 100)
+        : metric === "position" ? null : percentDelta(data?.[metric], previous?.[metric])}
+      sparklineData={rows.flatMap(row => row[metric] == null ? [] : [{ time: `${row.date} 00:00:00`, value: metric === "ctr" ? row.ctr! * 100 : row[metric]! }])}
+      flash={{ resetKey: JSON.stringify([site, time, filters, bucket, timezone]), ready: data != null, fetching: current.isFetching, empty: !data?.impressions }} />)}
+    {(current.error || current.data?.range?.clipped) && <div className="col-span-full flex flex-wrap items-center justify-end gap-2 px-3 pb-2 text-xs text-neutral-500">
       {current.error && <span role="status">{t("Google Search unavailable")} <button className="underline" onClick={() => current.refetch()}>{t("Try Again")}</button></span>}
       {current.data?.range?.clipped && <span>{t("Dates are limited to Search Console’s available history.")}</span>}
-    </div>
-  </section>;
+    </div>}
+  </>;
   const controls = <Select value={bucket} onValueChange={value => setBucket(value as Bucket)}>
     <SelectTrigger size="sm" className="w-[90px]" aria-label={t("Search chart interval")}><SelectValue /></SelectTrigger>
     <SelectContent size="sm">{(["day", "week", "month", "year"] as Bucket[]).map(value => <SelectItem key={value} size="sm" value={value}>{t(({ day: "Day", week: "Week", month: "Month", year: "Year" })[value])}</SelectItem>)}</SelectContent>
   </Select>;
-  return <MainSection additionalStats={tiles} chartOverride={selected ? { label: `${t(LABELS[selected])} · Google Search`,
+  return <MainSection additionalStats={<SearchStatTiles tiles={tiles} />} chartOverride={selected ? { label: `${t(LABELS[selected])} · Google Search`,
     content: <SearchChart metric={selected} currentQuery={trend} previousQuery={previousTrend} bucket={bucket} />, controls,
     fetching: trend.isFetching || (comparing && previousTrend.isFetching) } : undefined} />;
 }

@@ -16,7 +16,7 @@ async function workspaceView(req, res, next) {
     const entry = manifest['index.html'];
     const { properties } = req.metricWidget ? { properties: [] } : req.sharedProperty ? { properties: [req.sharedProperty] }
       : req.path.endsWith('/setup') ? { properties: [] } : await require('./apiController').ensureProperties();
-    res.render('workspace', { layout: false, title: 'GA4 Dashboard', setup: req.path.endsWith('/setup'),
+    res.render('workspace', { layout: false, title: 'MetriBee', setup: req.path.endsWith('/setup'),
       bootstrap: { properties, catalog: getAnalyticsCatalog(), demo: demo.enabled(),
         ...(req.sharedProperty ? { sharedSiteId: String(req.sharedProperty.id) } : {}),
         ...(req.metricWidget ? { metricWidget: req.metricWidget } : {}) },

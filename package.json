@@ -1,7 +1,7 @@
 {
-  "name": "ga4-dashboard",
+  "name": "metribee",
   "version": "2.1.0",
-  "description": "GA4 Dashboard: real-time Google Analytics 4 dashboard featuring 3D globe visualization, traffic spike detection, visitor insights, and an embedded MCP server.",
+  "description": "MetriBee: real-time Google Analytics 4 dashboard featuring 3D globe visualization, traffic spike detection, visitor insights, and an embedded MCP server.",
   "main": "app.js",
   "scripts": {
     "dev": "nodemon",
@@ -14,20 +14,23 @@
     "setup:check": "node scripts/setup-check.js",
     "oauth:login": "node scripts/oauth-login.js",
     "snapshot:sessions": "node scripts/snapshot-sessions.js",
-    "build:ui": "pnpm --filter @ga4-dashboard/ui build",
-    "dev:ui": "pnpm --filter @ga4-dashboard/ui dev",
-    "typecheck:ui": "pnpm --filter @ga4-dashboard/ui typecheck"
+    "build:ui": "pnpm --filter @metribee/ui build",
+    "dev:ui": "pnpm --filter @metribee/ui dev",
+    "typecheck:ui": "pnpm --filter @metribee/ui typecheck"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TheTechBasket/GA4_report.git"
+    "url": "https://github.com/nexmoe/MetriBee.git"
   },
   "bugs": {
-    "url": "https://github.com/TheTechBasket/GA4_report/issues"
+    "url": "https://github.com/nexmoe/MetriBee/issues"
   },
-  "homepage": "https://github.com/TheTechBasket/GA4_report#readme",
-  "author": "Amit Yadav",
-  "license": "MIT",
+  "homepage": "https://github.com/nexmoe/MetriBee#readme",
+  "author": "nexmoe",
+  "contributors": [
+    "Amit Yadav (original GA4-Dashboard-MCP)"
+  ],
+  "license": "AGPL-3.0-only",
   "packageManager": "pnpm@11.25.0",
   "dependencies": {
     "@google-analytics/admin": "^9.2.0",

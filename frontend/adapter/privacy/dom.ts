@@ -7,7 +7,7 @@ export function maskDocument(document: Document, terms: string[]) {
   const marked = new Set<Element>();
   const titles = new Map<Element, string>();
   let originalTitle: string | undefined;
-  const hiddenTitle = "GA4 Dashboard";
+  const hiddenTitle = "MetriBee";
   const scan = (element: Element) => {
     if (element.closest("script,style,noscript,template,[data-privacy-ignore]")) return;
     const title = element.getAttribute("title");

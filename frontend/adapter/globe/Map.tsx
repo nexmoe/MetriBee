@@ -4,7 +4,7 @@ import * as d3 from "d3";
 import { sun } from "./solar";
 import { Avatar } from "./Avatar";
 import { groupMarkers, type Cluster, type Point } from "./cluster";
-// Map renderer adapted from GA4 Dashboard's globe.js. Controls and panels use Rybbit.
+// Map renderer adapted from MetriBee's globe.js. Controls and panels use Rybbit.
 // All country borders use the repository's approved India POV data.
 const DROP = new Set([
   "boundary",

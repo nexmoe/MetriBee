@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────────────────────
-   GA4 Dashboard: main.js
+   MetriBee: main.js
    Loaded on every page. Home (live) rendering only runs when #liveHome exists.
    Handles: live cards, spike banner, quota bars, auto-refresh, cache refresh,
             privacy blur, keyboard shortcuts, toast notifications.

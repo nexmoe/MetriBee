@@ -197,7 +197,7 @@ async function retentionView(req, res, next) {
     const { properties } = await require('./apiController').ensureProperties();
     res.render('retention', {
       properties,
-      head: { title: 'GA4 Dashboard · Retention', description: 'User retention by first-visit cohort' },
+      head: { title: 'MetriBee · Retention', description: 'User retention by first-visit cohort' },
     });
   } catch (err) { next(err); }
 }

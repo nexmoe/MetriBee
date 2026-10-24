@@ -224,7 +224,7 @@ This system is **flat by default**. There is no resting shadow vocabulary; depth
 - **Don't** tint surfaces or backgrounds with emerald, or paint chrome in the periwinkle data hue.
 
 
-## GA4 Dashboard integration
+## MetriBee integration
 
 Search Console belongs in the existing Analytics page, country and device tables. Expose search metrics in the native column-header menu and alongside GA4 columns in the same expanded table; keywords use the existing Sources card. Main places search clicks, impressions, CTR and average position in the top native metric card, with selected-state tiles and sparklines that switch the existing main chart. Pages retains the four native StatBand summary cells alongside its integrated table.
 

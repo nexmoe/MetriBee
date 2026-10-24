@@ -152,7 +152,7 @@ function createEventsHandlers(deps = {}) {
     overview: api('overview'), activity: api('activity'),
     view: async (req, res) => {
       const { properties } = await loadProperties();
-      res.render('events', { properties, head: { title: 'GA4 Dashboard · Events', description: 'Event trends and activity from Google Analytics 4' } });
+      res.render('events', { properties, head: { title: 'MetriBee · Events', description: 'Event trends and activity from Google Analytics 4' } });
     },
   };
 }

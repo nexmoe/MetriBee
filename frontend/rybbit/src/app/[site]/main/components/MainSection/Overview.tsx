@@ -11,7 +11,7 @@ import { cn, formatSecondsAsMinutesAndSeconds } from "@/lib/utils";
 import NumberFlow from "@number-flow/react";
 import { AlertCircle, ChevronDown, ChevronUp, RefreshCcw } from "lucide-react";
 import { useExtracted } from "next-intl";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { useGetOverview } from "../../../../../api/analytics/hooks/useGetOverview";
 import { useGetOverviewBucketed } from "../../../../../api/analytics/hooks/useGetOverviewBucketed";
 import { StatType, useComparisonEnabled, useStore, useTimezone } from "../../../../../lib/store";
@@ -157,7 +157,7 @@ export const Stat = ({
   );
 };
 
-export function Overview() {
+export function Overview({ additionalStats }: { additionalStats?: ReactNode } = {}) {
   const { site, time, filters, bucket } = useStore();
   const timeZone = useTimezone();
   const t = useExtracted();
@@ -211,7 +211,7 @@ export function Overview() {
   const currentSessionDuration = overviewData?.session_duration ?? 0;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-0 items-center">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-0 items-center">
       <Stat
         title={t("Unique Users")}
         id="users"
@@ -241,14 +241,6 @@ export function Overview() {
         id="pageviews"
         value={currentPageviews}
         previous={overviewDataPrevious?.pageviews}
-        isLoading={isLoading}
-        flash={flash}
-      />
-      <Stat
-        title={t("Active Users")}
-        id="active_users"
-        value={overviewData?.active_users ?? 0}
-        previous={overviewDataPrevious?.active_users}
         isLoading={isLoading}
         flash={flash}
       />
@@ -292,14 +284,7 @@ export function Overview() {
           : value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
         flash={flash}
       />
-      <Stat
-        title={t("Key Events")}
-        id="key_events"
-        value={overviewData?.key_events ?? 0}
-        previous={overviewDataPrevious?.key_events}
-        isLoading={isLoading}
-        flash={flash}
-      />
+      {additionalStats}
     </div>
   );
 }

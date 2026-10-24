@@ -52,7 +52,7 @@ Roadmap the UI must make room for now (all confirmed):
 
 ## Brand Commitments
 
-Author: Amit Yadav (TheTechBasket), MIT licensed. Logo at `public/logo.png`. The owner ruled out themed or quirky visual worlds for the rewrite (2026-09-21): the dashboard must look like a familiar, polished, mainstream product that most users like at first glance and that feels smooth (60fps motion, no layout shift, fast). References to sit beside: Linear, Vercel dashboard, Plausible/PostHog, Stripe dashboard. Shipped system: self-hosted Inter Variable, sharp 2-3px radii, borderless cards, dithered chart fills. DESIGN.md is rewritten at finish (in progress) to record this system in full.
+Maintained by nexmoe, AGPL-3.0 licensed; started as a fork of Amit Yadav's MIT-licensed GA4-Dashboard-MCP. Logo at `public/metribee/mark.svg` (follows the theme, like the Rybbit frog); the bee-yellow wordmark is `public/metribee/bee.svg`. The owner ruled out themed or quirky visual worlds for the rewrite (2026-09-21): the dashboard must look like a familiar, polished, mainstream product that most users like at first glance and that feels smooth (60fps motion, no layout shift, fast). References to sit beside: Linear, Vercel dashboard, Plausible/PostHog, Stripe dashboard. Shipped system: self-hosted Inter Variable, sharp 2-3px radii, borderless cards, dithered chart fills. DESIGN.md is rewritten at finish (in progress) to record this system in full.
 
 ## Evidence on Hand
 

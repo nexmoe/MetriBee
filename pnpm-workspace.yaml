@@ -1,9 +1,14 @@
 packages:
   - frontend
 allowBuilds:
-  esbuild: set this to true or false
+  "@parcel/watcher": true
+  "@swc/core": true
+  esbuild: true
   protobufjs: true
 onlyBuiltDependencies:
+  - "@parcel/watcher"
+  - "@swc/core"
+  - esbuild
   - protobufjs
 overrides:
   brace-expansion@<1.1.21: 1.1.21

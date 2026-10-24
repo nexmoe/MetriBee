@@ -1,4 +1,4 @@
-# GA4 Dashboard
+# MetriBee
 
 ## Design
 @DESIGN.md

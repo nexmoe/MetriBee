@@ -11,6 +11,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- The project as a whole is now declared AGPL-3.0-only, matching the Rybbit code it includes. The original GA4-Dashboard-MCP MIT license moves to `LICENSES/`, and a root `NOTICE` lists both sources. The Docker image and `/ui-source.tar.gz` now include `LICENSE`, `NOTICE` and `LICENSES/`.
+
 ### Added
 
 - Analytics merges Google Search Console metrics into the existing page, country and device tables, with keywords in the Sources card. Expanded tables combine GA4 and GSC columns with search, sorting and CSV export; summaries, comparisons and daily reports remain available through MCP. Automatic domain matching, read-only caches and explicit source/date/privacy limits apply.
@@ -133,7 +137,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Report stats use GA4 totals. Failed time zone lookups are retried.
 - Inter Variable is self-hosted (`public/fonts`). The app makes no Google Fonts requests.
 - TypeScript controllers compile at build time (`pnpm build`), so the Docker image has no TypeScript tooling.
-- The app is named GA4 Dashboard (interim name).
+- The app is named MetriBee (interim name).
 
 ### Fixed
 

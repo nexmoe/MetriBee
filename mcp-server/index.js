@@ -25,7 +25,7 @@ const INSTRUCTIONS = `GA4 quota is shared and small. Spend it carefully.
 
 Limits per property, per pool (core, realtime and funnel are separate pools):
 - 200,000 tokens per day, reset at midnight Pacific.
-- 40,000 tokens per hour (rolling), and 14,000 per hour for the whole GCP project. The GA4 dashboard uses the same project budget.
+- 40,000 tokens per hour (rolling), and 14,000 per hour for the whole GCP project. MetriBee uses the same project budget.
 - 10 concurrent requests, 10 server errors (500/503) per project per hour, 120 potentially thresholded requests per hour.
 - Cost grows with rows, dimensions, metrics, filters, date range length and high-cardinality dimensions. GA4 360 properties get 10x.
 

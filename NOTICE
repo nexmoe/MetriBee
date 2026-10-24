@@ -1,0 +1,28 @@
+MetriBee
+Copyright (c) 2026 nexmoe
+https://github.com/nexmoe/MetriBee
+
+MetriBee is licensed under the GNU Affero General Public License v3.0 only
+(AGPL-3.0-only). The full text is in LICENSE.
+
+This work includes code from the following projects:
+
+GA4-Dashboard-MCP
+  Copyright (c) 2026 Amit Yadav
+  https://github.com/TheTechBasket/GA4-Dashboard-MCP
+  MIT License, see LICENSES/MIT-GA4-Dashboard-MCP.txt.
+  MetriBee started as a fork of it. The original GA4 backend, quota handling,
+  caching and MCP server code remain available under the MIT License.
+
+Rybbit
+  https://github.com/rybbit-io/rybbit
+  GNU Affero General Public License v3.0, see frontend/third-party/RYBBIT-LICENSE.md.
+  The UI in frontend/rybbit/ and parts of controllers/ (rybbitFavicon,
+  publicHttpFetch, rybbitWidget) are copied from Rybbit and modified.
+  Source hashes, modifications and preserved notices are recorded in
+  frontend/third-party/NOTICE.md, frontend/rybbit/upstream.json and
+  frontend/rybbit/adaptations.json.
+
+Corresponding source: every running instance serves the complete source of
+the version it runs at /ui-source.tar.gz (linked from the Connection page).
+It is also available at https://github.com/nexmoe/MetriBee.

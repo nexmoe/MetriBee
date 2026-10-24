@@ -33,7 +33,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const live = useQuery({ queryKey: ['live'], queryFn: ({ signal }) => api<{ data: { propertyId: string; activeUsers: number }[] }>('/api/realtime-all', signal), staleTime: 60000, refetchInterval: 60000, retry: false });
   const liveCount = live.data?.data.find(p => String(p.propertyId) === propertyId)?.activeUsers;
   const link = (path: string) => `${path}?${new URLSearchParams({ prop: propertyId, range: effectiveRange })}`;
-  useEffect(() => { document.title = `${title} · ${property?.site || 'GA4 Dashboard'}`; }, [title, property?.site]);
+  useEffect(() => { document.title = `${title} · ${property?.site || 'MetriBee'}`; }, [title, property?.site]);
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark'); document.documentElement.dataset.theme = theme;
     try { localStorage.setItem('pb_theme', theme); } catch { /* Storage can be disabled. */ }
@@ -57,7 +57,7 @@ export function Shell({ children }: { children: ReactNode }) {
   </Sidebar.Root>;
   return <div className="min-h-dvh bg-background text-foreground">
     <aside className="fixed inset-y-0 left-0 z-40 flex w-12 flex-col items-center border-r border-neutral-150 bg-neutral-50 py-3 dark:border-neutral-850 dark:bg-neutral-900" aria-label="Application">
-      <a href="/" aria-label="GA4 Dashboard home" className="mb-5 text-neutral-950 dark:text-white"><BarChart3 className="h-6 w-6"/></a>
+      <a href="/" aria-label="MetriBee home" className="mb-5 grid h-8 w-8 place-items-center overflow-hidden rounded-md"><img src="/logo.png" alt="" className="h-8 w-8 object-cover"/></a>
       <Tooltip><TooltipTrigger asChild><a href="/sites" aria-label="All properties" className="rounded p-2 text-neutral-500 hover:bg-neutral-150 dark:hover:bg-neutral-800"><AppWindow className="h-4 w-4"/></a></TooltipTrigger><TooltipContent side="right">All properties</TooltipContent></Tooltip>
       <Tooltip><TooltipTrigger asChild><a href="/setup" aria-label="Setup" className="rounded p-2 text-neutral-500 hover:bg-neutral-150 dark:hover:bg-neutral-800"><BookOpen className="h-4 w-4"/></a></TooltipTrigger><TooltipContent side="right">Connection & setup</TooltipContent></Tooltip>
       <div className="mt-auto"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="smIcon" aria-label="Appearance and settings"><Settings className="h-4 w-4"/></Button></DropdownMenuTrigger><DropdownMenuContent side="right" align="end"><DropdownMenuItem onSelect={() => setTheme('light')}><Sun className="mr-2 h-4 w-4"/>Light theme{theme === 'light' && <Check className="ml-auto h-3 w-3"/>}</DropdownMenuItem><DropdownMenuItem onSelect={() => setTheme('dark')}><Moon className="mr-2 h-4 w-4"/>Dark theme{theme === 'dark' && <Check className="ml-auto h-3 w-3"/>}</DropdownMenuItem><DropdownMenuSeparator/><DropdownMenuItem asChild><a href="https://github.com/nexmoe/MetriBee"><Code2 className="mr-2 h-4 w-4"/>UI source & licenses</a></DropdownMenuItem></DropdownMenuContent></DropdownMenu></div>

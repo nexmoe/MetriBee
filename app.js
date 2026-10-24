@@ -112,7 +112,7 @@ let bootWarmPending = false;
 setup.onCredentialsChange(() => { if (bootState?.waiting && isConfigured()) startBoot(); });
 const SETUP_DOC = require('./lib/setupDoc').loadSetupDoc();
 const { version: APP_VERSION } = require('./package.json');
-const DOCKER_IMAGE = 'ghcr.io/thetechbasket/ga4-dashboard:latest';
+const DOCKER_IMAGE = 'ghcr.io/nexmoe/metribee:latest';
 // Screenshot per manual step (public/img/setup/*.webp), by step index; redacted placeholder values only
 const STEP_SHOTS = { 0: ['s1-project', 'New Project form'], 1: ['s2-enable-api', 'Google Analytics Data API page with the Enable button'], 2: ['s3-service-account', 'Create service account form'], 3: ['s4-keys', 'Keys tab with the Add key menu open'], 6: ['s7-viewer', 'GA4 Add roles panel with Viewer selected'] };
 
@@ -143,7 +143,7 @@ app.get('/api/setup/instructions', (req, res) => {
 	const mcpCommand = "claude mcp add ga4 --transport http --scope project '" + mcpUrl.replace(/'/g, "'\\''") + "'";
 	const mcpPrompt = SETUP_DOC.mcp.replace('claude mcp add ga4 --transport http --scope project <MCP URL>', mcpCommand).split('<MCP URL>').join(mcpUrl);
 	res.json({
-		head: { title: 'GA4 Dashboard · Setup', description: 'Connect Google Analytics and use it with AI', image: '', url: '' },
+		head: { title: 'MetriBee · Setup', description: 'Connect Google Analytics and use it with AI', image: '', url: '' },
 		prompt: SETUP_DOC.prompt,
 		manual: SETUP_DOC.manual.map((m, i) => ({
 			html: docker ? m.split('pnpm setup:check').join('docker compose up -d, then docker compose exec dashboard node scripts/setup-check.js') : m,
@@ -204,7 +204,7 @@ const host = process.env.HOST || '127.0.0.1';
 const httpServer = app.listen(port, host, () => {
 	const dev = process.env.NODE_ENV === 'development';
 	log.banner({
-		name: 'GA4 Dashboard',
+		name: 'MetriBee',
 		version: APP_VERSION,
 		url: `http://localhost:${port}`,
 		mode: app.locals.demo ? { label: 'demo', style: 'yellow' } : dev ? { label: 'development', style: 'magenta' } : { label: 'production', style: 'green' },

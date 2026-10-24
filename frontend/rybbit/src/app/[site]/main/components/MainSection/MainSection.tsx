@@ -126,8 +126,7 @@ export function MainSection({ additionalStats, chartOverride }: {
     <>
       <Card>
         <CardContent className="p-0 w-full">
-          <Overview />
-          {additionalStats}
+          <Overview additionalStats={additionalStats} />
         </CardContent>
         {(isOverviewFetching || isOverviewFetchingPrevious) && <CardLoader />}
       </Card>

@@ -6,18 +6,69 @@ Start the app with `pnpm start` and open it. Until the credentials are configure
 
 The `/setup` page reads the marked blocks below from this file. Edit the text between the markers, not the markers.
 
-## With an AI agent
+## Install
+
+### Docker (recommended)
+
+Images for `linux/amd64` and `linux/arm64` are published to `ghcr.io/nexmoe/metribee` on every push to `main` (`latest`) and every release tag (`X.Y.Z`).
+
+Try demo mode first. It needs no Google account and shows generated data for 8 fictional sites:
+
+```bash
+docker run --rm -e DEMO=1 -p 127.0.0.1:5483:5483 ghcr.io/nexmoe/metribee:latest
+```
+
+For real data, clone the repo for its `docker-compose.yml` and `.env.example`, fill `.env` (see [Google Analytics credentials](#google-analytics-credentials)), then start it:
+
+```bash
+git clone https://github.com/nexmoe/MetriBee.git
+cd MetriBee
+cp .env.example .env
+docker compose pull
+docker compose up -d
+docker compose exec dashboard node scripts/setup-check.js
+```
+
+The app listens on the localhost port in the `ports` line of `docker-compose.yml`. Funnels, widgets and caches are kept in `./.data` and `./.cache`. The container reads `.env` only at start, so run `docker compose up -d` again after you change it.
+
+Without compose:
+
+```bash
+docker run -d --name metribee --env-file .env -e HOST=0.0.0.0 -v metribee-data:/app/.data \
+  -p 127.0.0.1:5483:5483 ghcr.io/nexmoe/metribee:latest
+```
+
+The image has no credentials in it. It reads them from env. The same container serves MCP at `/mcp`. Update with `docker compose pull && docker compose up -d`.
+
+### From source
+
+Needs Node.js 22+ and [`pnpm`](https://pnpm.io/). One install at the root covers the dashboard and the MCP server.
+
+```bash
+git clone https://github.com/nexmoe/MetriBee.git
+cd MetriBee
+pnpm install
+pnpm build:ui
+cp .env.example .env
+pnpm start
+```
+
+Open http://localhost:5483. It opens `/setup` until the Google credentials below are in `.env`. Run `pnpm demo` instead of `pnpm start` for demo mode.
+
+## Google Analytics credentials
+
+### With an AI agent
 
 Paste this prompt into Claude Code, Codex, Gemini CLI or any agent that can run commands in the project folder.
 
 <!-- prompt:start -->
 ```text
-Set up Google Analytics access for the GA4 Dashboard app in this folder.
+Set up Google Analytics access for the MetriBee app in this folder.
 
 1. Check that gcloud is installed and logged in (gcloud auth list). If not, stop and ask me to run: gcloud auth login
 2. Create a new Google Cloud project named ga4-dash-<6 random chars>. No billing is needed.
 3. Enable analyticsdata.googleapis.com and analyticsadmin.googleapis.com.
-4. Create a service account "ga4-dashboard" and a JSON key for it in a temp folder outside this repo.
+4. Create a service account "metribee" and a JSON key for it in a temp folder outside this repo.
 5. Copy .env.example to .env if .env is missing. Set GA4_CLIENT_EMAIL and GA4_PRIVATE_KEY from the key (private key in double quotes, newlines as \n). Keep every other line.
 6. Run: pnpm setup:check. When it says "key accepted", delete the JSON key file.
 7. Show me the client email and tell me to add it as Viewer in GA4 Admin, Account access management. Wait until I say done, then run pnpm setup:check again.
@@ -34,12 +85,12 @@ If you cannot run shell commands or a browser, give me these steps one at a time
 ```
 <!-- prompt:end -->
 
-## By hand
+### By hand
 
 <!-- manual:start -->
 1. **Create a project.** Open [New Project](https://console.cloud.google.com/projectcreate), give it a name (for example ga4-dash) and click Create. No billing needed.
 2. **Turn on the APIs.** Open [Google Analytics Data API](https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com) and click Enable. Do the same for [Google Analytics Admin API](https://console.cloud.google.com/apis/library/analyticsadmin.googleapis.com).
-3. **Create a service account.** Open [Create service account](https://console.cloud.google.com/iam-admin/serviceaccounts/create), name it ga4-dashboard and click Create and close. Skip the optional steps.
+3. **Create a service account.** Open [Create service account](https://console.cloud.google.com/iam-admin/serviceaccounts/create), name it metribee and click Create and close. Skip the optional steps.
 4. **Download a key.** Open the new account, Keys tab: Add key, Create new key, JSON, Create. A file downloads.
 5. **Fill .env.** Copy `client_email` and `private_key` from that file into `.env` as `GA4_CLIENT_EMAIL` and `GA4_PRIVATE_KEY`. Keep the private key in double quotes with its `\n`.
 6. **Check the key.** Run `pnpm setup:check`. When it passes, delete the downloaded file.
@@ -71,7 +122,7 @@ The setup page provides a copyable URL, project-scoped `.mcp.json` and Claude Co
 
 <!-- mcp:start -->
 ```text
-Add the GA4 Dashboard MCP server to my AI tool.
+Add the MetriBee MCP server to my AI tool.
 
 Transport: Streamable HTTP (http).
 Server URL: <MCP URL>
@@ -86,6 +137,52 @@ Then list the tools, run get_setup_status and get_capabilities, and use list_pro
 <!-- mcp:end -->
 
 For an MCP-only process, run `pnpm mcp` and use `http://127.0.0.1:5484/mcp` instead. `MCP_HOST` and `MCP_PORT` configure only that process. Both entry points share Google authentication, caches and quota guards. For a reverse proxy, add its hostname to `MCP_ALLOWED_HOSTS`; allow browser origins with `MCP_ALLOWED_ORIGINS`. Both lists accept comma-separated hostnames without ports. Set `MCP_PUBLIC_URL` to the externally reachable `/mcp` URL for the setup prompt. Keep the app behind your existing private access proxy.
+
+## Hosting publicly
+
+The app has no login. Anyone who can reach it sees your GA4 data. Run it on localhost, or put it behind Cloudflare Access or Tailscale before you expose it. With Docker, publish port 5483 on localhost only (`-p 127.0.0.1:5483:5483`) and let the proxy or tunnel reach it there. Both options below reach the app on `127.0.0.1:5483` and open no public port on your server.
+
+**Cloudflare Tunnel plus Access.** Needs a domain on Cloudflare.
+
+```bash
+cloudflared tunnel login
+cloudflared tunnel create metribee
+cloudflared tunnel route dns metribee ga4.example.com
+```
+
+`~/.cloudflared/config.yml` (use the tunnel UUID that `create` printed):
+
+```yaml
+tunnel: <Tunnel-UUID>
+credentials-file: /home/<user>/.cloudflared/<Tunnel-UUID>.json
+ingress:
+  - hostname: ga4.example.com
+    service: http://127.0.0.1:5483
+  - service: http_status:404
+```
+
+Test with `cloudflared tunnel run metribee`, then run it as a service:
+
+```bash
+sudo cloudflared --config /home/<user>/.cloudflared/config.yml service install
+sudo systemctl start cloudflared
+```
+
+Then add a login in front. In Zero Trust, add the One-time PIN identity provider (Integrations, Identity providers). Then add a self-hosted application for `ga4.example.com` (Access controls, Applications) with an Allow policy for your email addresses. Visitors get a code by email before they see the dashboard.
+
+Docs: [create a tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/local-management/create-local-tunnel/), [config file](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/local-management/configuration-file/), [run as a Linux service](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/local-management/as-a-service/linux/), [self-hosted Access app](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/self-hosted-public-app/), [One-time PIN](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/).
+
+**Tailscale.** Only devices on your tailnet can open it.
+
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+sudo tailscale serve --bg 5483
+```
+
+It serves at `https://<machine>.<tailnet>.ts.net` (HTTPS certificates must be on for your tailnet) and stays on after reboot. `tailscale serve reset` turns it off. Do not use Funnel for this app: Funnel makes the URL public, and the app has no login.
+
+Docs: [install on Linux](https://tailscale.com/kb/1031/install-linux), [Tailscale Serve](https://tailscale.com/kb/1312/serve), [`tailscale serve` reference](https://tailscale.com/kb/1242/tailscale-serve).
 
 ## Google Search Console
 

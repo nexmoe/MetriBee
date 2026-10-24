@@ -78,7 +78,7 @@ exports.sitesView = async (req, res) => {
         res.set("Cache-Control", "no-store").render("sites", {
             hasSnapshot: !!data.snapshot,
             sitesData: data,
-            head: { title: "GA4 Dashboard · Sites", description: "Every GA4 property, last 14 days", image: "", url: "" },
+            head: { title: "MetriBee · Sites", description: "Every GA4 property, last 14 days", image: "", url: "" },
         });
     } catch (err) {
         console.error("[sites] View error:", err.message);

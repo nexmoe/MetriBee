@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# GA4 Dashboard. Credentials come from env (GA4_CLIENT_EMAIL, GA4_PRIVATE_KEY), never a file.
+# MetriBee. Credentials come from env (GA4_CLIENT_EMAIL, GA4_PRIVATE_KEY), never a file.
 
 FROM node:22-alpine AS pnpm
 ENV PNPM_HOME=/pnpm
@@ -21,7 +21,8 @@ FROM pnpm AS ui
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 COPY frontend frontend
 COPY scripts scripts
-COPY app.js LICENSE README.md SETUP.md DESIGN.md tsconfig.json ./
+COPY app.js LICENSE NOTICE README.md SETUP.md DESIGN.md tsconfig.json ./
+COPY LICENSES LICENSES
 COPY controllers controllers
 COPY lib lib
 COPY mcp-server/index.js mcp-server/index.js
@@ -33,7 +34,7 @@ RUN pnpm build:ui
 
 FROM pnpm AS deps
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm --filter ga4-dashboard install --frozen-lockfile --prod --package-import-method copy \
+    pnpm --filter metribee install --frozen-lockfile --prod --package-import-method copy \
  && find node_modules -type f \( -name '*.d.ts' -o -name '*.d.cts' -o -name '*.d.mts' -o -name '*.map' \) -delete
 
 FROM node:22-alpine
@@ -42,7 +43,8 @@ WORKDIR /app
 ENV NODE_ENV=production PORT=5483 HOST=0.0.0.0 IN_DOCKER=1
 COPY --from=deps /app/node_modules ./node_modules
 # Runtime files only: no docs, screenshots, tests or dev config.
-COPY package.json app.js SETUP.md ./
+COPY package.json app.js SETUP.md LICENSE NOTICE ./
+COPY LICENSES LICENSES
 COPY lib lib
 COPY scripts/setup-check.js scripts/
 COPY routes routes

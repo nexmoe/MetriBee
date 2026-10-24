@@ -745,6 +745,35 @@ function dataClient() {
         },
         async runRealtimeReport(req) { await wait(); return [runRealtimeReport(req)]; },
         async runReport(req) { await wait(); return [runReport(req)]; },
+        async runFunnelReport(req) { await wait(); return [runFunnelReport(req)]; },
+    };
+}
+
+/** Closed funnel: each step keeps a stable, name-seeded share of the previous step's users */
+function runFunnelReport({ property, dateRanges = [], funnel = {} }) {
+    const id = String(property || "").split("/").pop();
+    const p = PROP_BY_ID.get(id);
+    if (!p) throw Object.assign(new Error("Demo: unknown property"), { code: 5 });
+    const range = dateRanges[0] || {};
+    const steps = funnel.steps || [];
+    const days = Math.max(1, Math.round((Date.parse(range.endDate) - Date.parse(range.startDate)) / DAY_MS) + 1 || 30);
+    let users = Math.round(p.daily * days * 0.42 * (0.9 + 0.2 * unit(`${id}:funnel:${steps[0]?.name}`)));
+    const rows = steps.map((step, index) => {
+        if (index > 0) users = Math.round(users * (0.32 + 0.4 * unit(`${id}:funnel:${index}:${step.name}`)));
+        return { name: `${index + 1}. ${step.name}`, users };
+    });
+    const v = (x) => ({ value: String(x) });
+    return {
+        funnelTable: {
+            dimensionHeaders: [{ name: "funnelStepName" }],
+            metricHeaders: ["activeUsers", "funnelStepCompletionRate", "funnelStepAbandonments", "funnelStepAbandonmentRate"].map((name) => ({ name })),
+            rows: rows.map((row, i) => {
+                const next = rows[i + 1]?.users ?? row.users;
+                const rate = row.users ? next / row.users : 0;
+                return { dimensionValues: [v(row.name)], metricValues: [v(row.users), v(rate), v(row.users - next), v(1 - rate)] };
+            }),
+            metadata: { samplingMetadatas: [] },
+        },
     };
 }
 

@@ -167,7 +167,7 @@ function createPagesReportHandler(deps = {}) {
 async function pagesView(req, res) {
   try {
     const { properties } = await require('./apiController').ensureProperties();
-    res.render('pages', { properties, head: { title: 'GA4 Dashboard · Pages', description: 'Page traffic, landing pages and period comparisons' } });
+    res.render('pages', { properties, head: { title: 'MetriBee · Pages', description: 'Page traffic, landing pages and period comparisons' } });
   } catch (err) { res.status(500).send('Could not load properties.'); }
 }
 

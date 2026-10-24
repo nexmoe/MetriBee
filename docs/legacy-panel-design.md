@@ -1,5 +1,5 @@
 ---
-name: GA4 Dashboard
+name: MetriBee
 description: A self-hosted GA4 command center; a quiet instrument panel, not a themed world.
 colors:
   bg: "light-dark(#f3f3f6, #0b0b0e)"
@@ -102,7 +102,7 @@ components:
     padding: "0 10px"
 ---
 
-# Design System: GA4 Dashboard
+# Design System: MetriBee
 
 ## Overview
 

@@ -133,7 +133,7 @@ async function journeysView(req, res) {
   res.locals.nav = { ...res.locals.nav, title: 'Journeys', analytics: true, journeys: true };
   res.render('journeys', {
     properties,
-    head: { title: 'GA4 Dashboard · Journeys', description: 'Explore page-to-page journeys from Google Analytics 4' },
+    head: { title: 'MetriBee · Journeys', description: 'Explore page-to-page journeys from Google Analytics 4' },
   });
 }
 

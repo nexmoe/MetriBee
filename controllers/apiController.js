@@ -501,7 +501,7 @@ exports.allrealtime = async (req, res) => {
             accessibleCount: accessible.length,
             errorCount: errors.length,
             head: {
-                title: "GA4 Dashboard · Live Monitor",
+                title: "MetriBee · Live Monitor",
                 description: "Real-time Analytics Dashboard",
                 image: "",
                 url: "",
@@ -969,7 +969,7 @@ exports.globeData = async (req, res) => {
 exports.globeView = (req, res) => {
     res.render("globe", {
         head: {
-            title: "GA4 Dashboard · Globe",
+            title: "MetriBee · Globe",
             description: "3D real-time active user globe",
             image: "",
             url: "",
@@ -989,7 +989,7 @@ exports.analyticsView = async (req, res) => {
             properties,
             analyticsCatalog: getAnalyticsCatalog(),
             head: {
-                title: "GA4 Dashboard · Analytics",
+                title: "MetriBee · Analytics",
                 description: "In-depth analytics dashboard",
                 image: "",
                 url: "",
