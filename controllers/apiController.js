@@ -175,6 +175,8 @@ async function getAnalyticsProperties() {
                 url: null,
                 domain: null,
                 currencyCode: p.currencyCode || null,
+                timeZone: p.timeZone || null,
+                createTime: p.createTime || null,
             }));
 
         allProperties = [...allProperties, ...formatted];
@@ -249,10 +251,11 @@ exports.refreshPropertiesCache = async function refreshPropertiesCache() {
 
 let propertiesInFlight = null;
 let propertiesRetryAfter = 0;
+let propertiesRevalidateUntil = 0;
 
 /**
  * Properties list for any page or API: the cache file, fetched from GA4 Admin when missing.
- * Stale metadata is refreshed by default; force always refetches.
+ * Stale metadata is returned immediately and refreshed in the background; force waits for a refresh.
  * A failed fetch falls back to the stale cache. One fetch at a time, shared by concurrent callers.
  * Returns { properties, source: "cached" | "fetched" | "stale" | "none" }.
  */
@@ -266,17 +269,18 @@ exports.ensureProperties = async function ensureProperties({ refreshStale = true
         return { properties: cache?.properties ?? [], source: missing ? "none" : "stale" };
     }
     if (!propertiesInFlight) {
-        propertiesInFlight = exports.refreshPropertiesCache().finally(() => { propertiesInFlight = null; });
+        propertiesRevalidateUntil = Date.now() + 60_000;
+        propertiesInFlight = exports.refreshPropertiesCache().then(properties => {
+            propertiesRetryAfter = 0;
+            return { properties, source: "fetched" };
+        }).catch(err => {
+            propertiesRetryAfter = Date.now() + 60_000;
+            console.error("[cache] Properties refresh failed" + (missing ? "" : ", using stale cache") + ":", err.message);
+            return { properties: cache?.properties ?? [], source: missing ? "none" : "stale" };
+        }).finally(() => { propertiesInFlight = null; });
     }
-    try {
-        const properties = await propertiesInFlight;
-        propertiesRetryAfter = 0;
-        return { properties, source: "fetched" };
-    } catch (err) {
-        propertiesRetryAfter = Date.now() + 60_000;
-        console.error("[cache] Properties refresh failed" + (missing ? "" : ", using stale cache") + ":", err.message);
-        return { properties: cache?.properties ?? [], source: missing ? "none" : "stale" };
-    }
+    if (!force && !missing) return { properties: cache.properties, source: "stale", revalidateUntil: propertiesRevalidateUntil };
+    return propertiesInFlight;
 };
 
 const loadProperties = async () => (await exports.ensureProperties()).properties;

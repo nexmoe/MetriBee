@@ -44,9 +44,10 @@ function safeFilename(key) {
 }
 
 /**
- * Read a value with its original save time. Returns null if missing or expired.
+ * Read a value with its original save time. Stale reads are explicit and bounded
+ * by the cleanup retention; ordinary reads still treat expired files as misses.
  */
-async function cacheGetEntry(namespace, key) {
+async function cacheGetEntry(namespace, key, { allowStale = false } = {}) {
   try {
     const dir = path.join(CACHE_ROOT, namespace);
     const file = path.join(dir, safeFilename(key));
@@ -54,11 +55,12 @@ async function cacheGetEntry(namespace, key) {
     const age = Date.now() - stat.mtimeMs;
     const ttl = TTL_DEFAULTS[namespace] || 60 * 60 * 1000;
 
-    if (age > ttl) {
-      // Expired — delete it
+    if (age > MAX_AGE_DAYS * 24 * 60 * 60 * 1000) {
       await fsp.unlink(file).catch(() => {});
       return null;
     }
+    // Keep the last successful response so a dashboard can revalidate it without blocking.
+    if (age > ttl && !allowStale) return null;
 
     const raw = await fsp.readFile(file, "utf8");
     const parsed = JSON.parse(raw);
@@ -66,9 +68,9 @@ async function cacheGetEntry(namespace, key) {
     // Check for both envelope keys to avoid stripping a payload that
     // happens to have a truthy `data` field
     if (parsed && typeof parsed === "object" && "cachedAt" in parsed && "data" in parsed) {
-      return { data: parsed.data, cachedAt: parsed.cachedAt };
+      return { data: parsed.data, cachedAt: parsed.cachedAt, ...(age > ttl ? { stale: true } : {}) };
     }
-    return { data: parsed, cachedAt: stat.mtime.toISOString() };
+    return { data: parsed, cachedAt: stat.mtime.toISOString(), ...(age > ttl ? { stale: true } : {}) };
   } catch {
     return null; // miss or error
   }

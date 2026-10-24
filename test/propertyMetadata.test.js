@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const Module = require("node:module");
 
-function fixture({ age = 10 * 60_000, fail = false } = {}) {
+function fixture({ age = 10 * 60_000, fail = false, waitForAdmin, empty = false } = {}) {
   const filename = path.resolve(__dirname, "../controllers/apiController.js");
   const local = Module.createRequire(filename);
   let disk = {
@@ -18,9 +18,11 @@ function fixture({ age = 10 * 60_000, fail = false } = {}) {
     lastUpdated: new Date(Date.now() - age).toISOString(),
   };
   let calls = 0;
+  if (empty) disk.properties = [];
   const admin = {
     listAccounts: async () => {
       calls++;
+      if (waitForAdmin) await waitForAdmin;
       if (fail) throw new Error("Admin unavailable");
       return [[{ name: "accounts/10", displayName: "Renamed account" }]];
     },
@@ -64,8 +66,48 @@ function fixture({ age = 10 * 60_000, fail = false } = {}) {
 }
 
 describe("property metadata synchronization", () => {
+  it("still waits for real metadata on a cold start or an explicit manual sync", async () => {
+    for (const empty of [false, true]) {
+      let release, result;
+      const waitForAdmin = new Promise(resolve => { release = resolve; });
+      const f = fixture({ empty, waitForAdmin });
+      const request = f.api.ensureProperties(empty ? {} : { force: true }).then(value => { result = value; });
+      try {
+        await new Promise(setImmediate);
+        expect(result).to.equal(undefined);
+      } finally { release(); await request; }
+      expect(result.source).to.equal("fetched");
+      expect(result.properties[0].site).to.equal("Renamed property");
+    }
+  });
+  it("serves cached metadata immediately while a slow Admin refresh is in flight", async () => {
+    let release;
+    const waitForAdmin = new Promise(resolve => { release = resolve; });
+    const f = fixture({ waitForAdmin });
+    let result;
+    const request = f.api.ensureProperties().then(value => { result = value; });
+    try {
+      await new Promise(setImmediate);
+      expect(result?.source).to.equal("stale");
+      expect(result.revalidateUntil).to.be.greaterThan(Date.now());
+      expect(result.properties[0].site).to.equal("Old name");
+      const concurrent = await f.api.ensureProperties();
+      expect(concurrent.source).to.equal("stale");
+      expect(f.calls()).to.equal(1);
+    } finally {
+      release();
+      await request;
+    }
+    await new Promise(setImmediate);
+    expect((await f.api.ensureProperties()).properties[0].site).to.equal("Renamed property");
+    expect(f.calls()).to.equal(1);
+  });
   it("refreshes renamed properties automatically when normal page/API callers read an expired cache", async () => {
     const f = fixture();
+    const cached = await f.api.ensureProperties();
+    expect(cached.source).to.equal("stale");
+    expect(cached.properties[0].site).to.equal("Old name");
+    await new Promise(setImmediate);
     const result = await f.api.ensureProperties();
     expect(result.properties[0]).to.include({
       site: "Renamed property",
@@ -84,14 +126,17 @@ describe("property metadata synchronization", () => {
     ]);
     expect(
       results.every(
-        (result) => result.properties[0].site === "Renamed property"
+        (result) => result.properties[0].site === "Old name"
       )
     ).to.equal(true);
+    await new Promise(setImmediate);
+    expect((await stale.api.ensureProperties()).properties[0].site).to.equal("Renamed property");
     expect(stale.calls()).to.equal(1);
   });
   it("keeps the last known names on failure and backs off automatic refresh retries", async () => {
     const f = fixture({ fail: true });
     expect((await f.api.ensureProperties()).source).to.equal("stale");
+    await new Promise(setImmediate);
     expect((await f.api.ensureProperties()).properties[0].site).to.equal(
       "Old name"
     );

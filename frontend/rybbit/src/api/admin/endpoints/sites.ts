@@ -46,6 +46,7 @@ export type SiteResponse = {
 };
 
 export type GetSitesFromOrgResponse = {
+  metadataRevalidateUntil?: number;
   organization: {
     id: string;
     name: string;

@@ -233,6 +233,18 @@ describe('analytics change and spike summaries', () => {
   });
 });
 describe("Rybbit GA4 data adapter", () => {
+  it("signals a background metadata refresh so Home can update names as soon as it finishes", async () => {
+    const until = Date.now() + 60_000;
+    const h = handler({ properties: async () => ({
+      properties: [{ id: "123", site: "Cached name", timeZone: "Asia/Shanghai" }], revalidateUntil: until,
+    }), admin: () => { throw new Error("Do not fetch known property metadata again"); } });
+    const sites = await invoke(h, "/organizations/ga4/sites");
+    expect(sites.body.metadataRevalidateUntil).to.equal(until);
+    expect(sites.body.sites[0].name).to.equal("Cached name");
+    const site = await invoke(h, "/sites/123");
+    expect(site.status).to.equal(200);
+    expect(site.body.timeZone).to.equal("Asia/Shanghai");
+  });
   it("preserves fetch times and mixed cache use through homepage card batches", async () => {
     let reads = 0;
     const h = handler({ readEntry: async () => ++reads === 1 ? { data: reports([row([], [7, 20, 5])]), cachedAt: "2026-10-22T09:40:00Z" } : null });

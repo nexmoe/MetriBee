@@ -3,11 +3,24 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
 export type ReportStatus = {
   fetchedAt: string | null;
   cacheStatus: "fresh" | "cached" | "mixed";
+  revalidating?: boolean;
+  revalidateUntil?: number;
 };
 
 type ReportObservations = Record<string, ReportStatus>;
 const statusKey = (queryKey: QueryKey) => ["ga4-report-status", queryKey] as const;
 const initialized = new WeakSet<QueryClient>();
+const revalidating = (status: ReportStatus) => status.revalidating && (status.revalidateUntil || 0) > Date.now();
+
+// Recheck a stale server response without issuing more GA4 calls. The server
+// deduplicates refreshes; its deadline bounds polling even if Google stalls.
+export function reportRevalidationInterval(client: QueryClient, queryKey: QueryKey, interval?: number) {
+  return (query: { state: { status: string } }) => {
+    const observations = client.getQueryData<ReportObservations>(statusKey(queryKey));
+    return query.state.status !== "error" && observations && Object.values(observations).some(revalidating)
+      ? 2000 : interval ?? false;
+  };
+}
 
 // Keep response metadata beside the query, preserving the native data shapes used by every panel.
 export function recordReportStatus(client: QueryClient, queryKey: QueryKey, status: ReportStatus, page = "single") {
@@ -32,7 +45,7 @@ export function reportStatusSnapshot(client: QueryClient, site: string) {
     const observations = client.getQueryData<ReportObservations>(statusKey(query.queryKey));
     if (!observations) continue;
     statuses.push(...Object.values(observations));
-    updating ||= query.state.fetchStatus === "fetching";
+    updating ||= query.state.fetchStatus === "fetching" || Object.values(observations).some(revalidating);
   }
   if (!statuses.length) return "null";
   const times = statuses.map(status => status.fetchedAt ? Date.parse(status.fetchedAt) : NaN);

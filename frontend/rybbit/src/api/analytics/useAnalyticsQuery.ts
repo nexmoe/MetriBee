@@ -17,7 +17,7 @@ import {
   buildAnalyticsRequest,
   fetchAnalytics,
 } from "./analyticsRequest";
-import { recordReportStatus } from "./reportStatus";
+import { recordReportStatus, reportRevalidationInterval } from "./reportStatus";
 
 type PeriodTime = "current" | "previous";
 
@@ -134,7 +134,7 @@ export function useAnalyticsQuery<TData>(options: AnalyticsQueryOptions<TData>):
     queryFn: () => fetchAnalytics<TData>(site!, request, undefined, status => recordReportStatus(client, queryKey, status)),
     staleTime: options.staleTime ?? 60_000,
     meta: { persist: options.useTime !== false && request.params.past_minutes_start === undefined },
-    refetchInterval: options.refetchInterval,
+    refetchInterval: reportRevalidationInterval(client, queryKey, options.refetchInterval),
     placeholderData:
       (options.placeholder ?? true)
         ? (previousData, previousQuery) =>
@@ -182,7 +182,7 @@ export function useAnalyticsInfiniteQuery<TPage, TCursor = number>(
     getNextPageParam: options.getNextPageParam,
     staleTime: options.staleTime ?? 60_000,
     meta: { persist: options.useTime !== false && request.params.past_minutes_start === undefined },
-    refetchInterval: options.refetchInterval,
+    refetchInterval: reportRevalidationInterval(client, queryKey, options.refetchInterval),
     refetchOnWindowFocus: options.refetchOnWindowFocus,
     enabled: (options.enabled ?? true) && hasScope && hasPeriod,
   });

@@ -355,6 +355,7 @@ function createDashboardService(deps = {}) {
 			});
 			const funnels = createFunnels({ properties: scopedProperties, now, client: () => alpha, store });
 			const gateway = createRybbitHandler({
+				backgroundRefresh: false,
 				properties: scopedProperties,
 				read: observedRead,
 				write,

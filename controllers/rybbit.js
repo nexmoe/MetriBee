@@ -83,6 +83,10 @@ function combineReportStatus(observations) {
   return {
     fetchedAt: times.every(Number.isFinite) ? new Date(Math.min(...times)).toISOString() : null,
     cacheStatus: cacheStates.size === 1 ? observations[0].cacheStatus : 'mixed',
+    ...(observations.some(status => status.revalidating) ? {
+      revalidating: true,
+      revalidateUntil: Math.max(...observations.map(status => status.revalidateUntil || 0)),
+    } : {}),
   };
 }
 const regionNames = require('../public/subdivision-names.generated.json');
@@ -103,7 +107,7 @@ function createRybbitHandler(deps = {}) {
   const favicon = deps.favicon || require('./favicons').favicon;
   // One handler owns the shared in-flight funnel map across HTTP requests.
   let funnels = deps.funnels;
-  const pending = new Map(), waiting = [];
+  const pending = new Map(), retryAfter = new Map(), waiting = [];
   let active = 0;
   async function limited(task) {
     if (active >= 3) await new Promise(resolve => waiting.push(resolve));
@@ -112,24 +116,45 @@ function createRybbitHandler(deps = {}) {
   }
   async function cached(key, task, namespace = 'report', observe) {
     key = 'rybbit-v1:' + createHash('sha256').update(key).digest('hex');
-    if (!pending.has(key)) {
-      const promise = (async () => {
-        const hit = await readEntry(namespace, key);
-        if (hit) return { value: hit.data, status: { fetchedAt: hit.cachedAt, cacheStatus: 'cached' } };
-        const value = await task();
-        const fetchedAt = now().toISOString();
-        await write(namespace, key, value, { cachedAt: fetchedAt });
-        return { value, status: { fetchedAt, cacheStatus: 'fresh' } };
-      })().finally(() => pending.delete(key));
-      pending.set(key, promise);
+    // MCP must await its budgeted calls; realtime reports keep their existing short TTLs.
+    const background = namespace === 'report' && deps.backgroundRefresh !== false;
+    const cacheKey = `${namespace}:${key}`;
+    const hit = await readEntry(namespace, key, { allowStale: background });
+    const refresh = (detached = false) => {
+      if (!pending.has(cacheKey)) {
+        const started = now().getTime();
+        const promise = (async () => {
+          const value = await task();
+          const fetchedAt = now().toISOString();
+          await write(namespace, key, value, { cachedAt: fetchedAt });
+          retryAfter.delete(cacheKey);
+          return { value, status: { fetchedAt, cacheStatus: 'fresh' } };
+        })().finally(() => pending.delete(cacheKey));
+        pending.set(cacheKey, { promise, until: started + 60_000 });
+        if (detached) promise.catch(() => {
+          retryAfter.set(cacheKey, now().getTime() + 60_000);
+          for (const [key, until] of retryAfter) if (until <= now().getTime()) retryAfter.delete(key);
+        });
+      }
+      return pending.get(cacheKey);
+    };
+    let result;
+    if (hit && (!hit.stale || background)) {
+      const updating = hit.stale && now().getTime() >= (retryAfter.get(cacheKey) || 0) ? refresh(true) : null;
+      result = { value: hit.data, status: { fetchedAt: hit.cachedAt, cacheStatus: 'cached',
+        ...(updating ? { revalidating: true, revalidateUntil: updating.until } : {}),
+      } };
+    } else {
+      result = await refresh().promise;
     }
-    const result = await pending.get(key);
     observe?.(result.status);
     return result.value;
   }
   function siteInfo(property) { return { id: null, siteId: Number(property.id), name: property.site || property.domain || property.id, domain: property.domain || '', accountId: property.accountId || null, accountName: property.accountName || null, type: 'web', organizationId: 'ga4', public: false, isOwner: false, role: 'viewer', permissions: ['funnels:write'], blockBots: false, saltUserIds: false, sessionReplay: false, trackErrors: false, webVitals: false, requiresPlan: false, createdAt: '2020-01-01T00:00:00Z', updatedAt: now().toISOString() }; }
 
-  const metadataFor = property => cached(`property-time-zone:${property.id}`, async () => {
+  const metadataFor = property => property.timeZone
+    ? Promise.resolve({ timeZone: property.timeZone, createTime: property.createTime })
+    : cached(`property-time-zone:${property.id}`, async () => {
     const existing = await read('retention-meta', String(property.id));
     if (existing?.timeZone) return existing;
     const [data] = await (deps.admin || require('./ga4Service').getGA4AdminClient)().getProperty({ name: `properties/${property.id}` });
@@ -164,7 +189,8 @@ function createRybbitHandler(deps = {}) {
       const path = req.path.replace(/^\/api\/rybbit/, '');
       // Favicons belong to source domains too, independently of GA4 properties.
       if (path === '/favicon' && req.method === 'GET') return await favicon(req, res);
-      let { properties: all } = await properties();
+      const metadata = await properties();
+      let all = metadata.properties;
       const sharedKey = req.headers?.['x-private-key'];
       const sharedSite = req.headers?.['x-private-site'];
       const shared = !!(sharedKey || sharedSite);
@@ -222,7 +248,9 @@ function createRybbitHandler(deps = {}) {
         }
         return res.json({ data: Object.fromEntries(results), reportStatus: combineReportStatus(observations) });
       }
-      if (/^\/organizations\/[^/]+\/sites$/.test(path)) return res.json({ sites: all.map(property => ({ ...siteInfo(property), ...(shared ? { permissions: [] } : {}) })), organization: { id: 'ga4', name: 'Google Analytics 4' }, permissions: [], role: 'viewer', subscription: null });
+      if (/^\/organizations\/[^/]+\/sites$/.test(path)) return res.json({ sites: all.map(property => ({ ...siteInfo(property), ...(shared ? { permissions: [] } : {}) })), organization: { id: 'ga4', name: 'Google Analytics 4' }, permissions: [], role: 'viewer', subscription: null,
+        ...(!shared && metadata.revalidateUntil ? { metadataRevalidateUntil: metadata.revalidateUntil } : {}),
+      });
       if (/^\/organizations\/[^/]+\/teams$/.test(path)) return res.json({ teams: [] });
       if (path === '/user/organizations') return res.json([{ id: 'ga4', name: 'Google Analytics 4', permissions: [], role: 'viewer', assignableRoles: [] }]);
       const match = path.match(/^\/sites\/(\d+)(?:\/(.*))?$/);

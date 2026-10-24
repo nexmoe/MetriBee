@@ -51,6 +51,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Entering Home or a property report no longer waits for the five-minute GA4 property metadata refresh. Historical report caches remain available during background revalidation, with shared requests, failure backoff and bounded refresh polling.
+
 - Sidebar and logo imports consistently resolve to the shared MetriBee components across workspace pages.
 
 - Subdomains without a favicon automatically use their main domain's icon, sharing cached results while respecting public and private suffix boundaries.

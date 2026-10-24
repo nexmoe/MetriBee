@@ -7,7 +7,7 @@ const { QueryClient, QueryObserver } = require("../frontend/node_modules/@tansta
 const file = path.resolve(__dirname, "../frontend/rybbit/src/api/analytics/reportStatus.ts");
 const compiled = new Module(file, module);
 compiled._compile(ts.transpileModule(fs.readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, file);
-const { recordReportStatus, reportStatusSnapshot } = compiled.exports;
+const { recordReportStatus, reportStatusSnapshot, reportRevalidationInterval } = compiled.exports;
 
 describe("visible report freshness", () => {
   let client, subscriptions;
@@ -44,5 +44,26 @@ describe("visible report freshness", () => {
     observe(["site-cards", "organization:ga4", "site-cards", {}], { fetchedAt: "2026-10-22T09:00:00Z", cacheStatus: "cached" });
     observe(key("123", "2026-10-01"), { fetchedAt: "2026-10-22T08:00:00Z", cacheStatus: "fresh" });
     expect(JSON.parse(reportStatusSnapshot(client, "organization:ga4"))).to.include({ fetchedAt: "2026-10-22T09:00:00.000Z", cacheStatus: "cached" });
+  });
+
+  it("polls only while a server background refresh is pending, then resumes the normal interval", () => {
+    const queryKey = key("123", "2026-10-01");
+    const success = { state: { status: "success" } };
+    const interval = reportRevalidationInterval(client, queryKey);
+    observe(queryKey, { fetchedAt: "2026-10-22T09:00:00Z", cacheStatus: "cached", revalidating: true, revalidateUntil: Date.now() + 60_000 });
+    expect(interval(success)).to.equal(2000);
+    expect(JSON.parse(reportStatusSnapshot(client, "123")).updating).to.equal(true);
+    recordReportStatus(client, queryKey, { fetchedAt: "2026-10-22T10:00:00Z", cacheStatus: "fresh" });
+    expect(interval(success)).to.equal(false);
+    expect(reportRevalidationInterval(client, queryKey, 10_000)(success)).to.equal(10_000);
+  });
+
+  it("bounds background refresh polling and stops it after a failed HTTP request", () => {
+    const queryKey = key("123", "2026-10-01");
+    const interval = reportRevalidationInterval(client, queryKey);
+    observe(queryKey, { fetchedAt: "2026-10-22T09:00:00Z", cacheStatus: "cached", revalidating: true, revalidateUntil: Date.now() - 1 });
+    expect(interval({ state: { status: "success" } })).to.equal(false);
+    recordReportStatus(client, queryKey, { fetchedAt: "2026-10-22T09:00:00Z", cacheStatus: "cached", revalidating: true, revalidateUntil: Date.now() + 60_000 });
+    expect(interval({ state: { status: "error" } })).to.equal(false);
   });
 });

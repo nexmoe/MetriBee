@@ -3,7 +3,7 @@ import { useStore } from "../../rybbit/src/lib/store";
 import { LITE_DASHBOARD } from "../../rybbit/src/lib/const";
 import { buildAnalyticsRequest, fetchAnalytics } from "../../rybbit/src/api/analytics/analyticsRequest";
 import { useAnalyticsContext } from "../../rybbit/src/api/analytics/useAnalyticsQuery";
-import { recordReportStatus } from "../../rybbit/src/api/analytics/reportStatus";
+import { recordReportStatus, reportRevalidationInterval } from "../../rybbit/src/api/analytics/reportStatus";
 import type { SiteCardsResponse } from "../../rybbit/src/api/analytics/endpoints/siteCards";
 import { homeCardQueries, mergeCardMetrics } from "./cardMetrics";
 
@@ -31,6 +31,7 @@ export function useHomeCardMetrics(organizationId: string, siteIds: number[], en
       if (!data[id] || data[id].error) throw new Error(data[id]?.error || "Report unavailable");
       return data;
     }).map(query => ({ ...query,
+      refetchInterval: reportRevalidationInterval(client, query.queryKey),
       meta: { persist: request.params.past_minutes_start === undefined },
       enabled: enabled && !!organizationId && hasPeriod,
     })),

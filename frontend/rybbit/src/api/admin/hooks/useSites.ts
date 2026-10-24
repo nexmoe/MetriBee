@@ -27,7 +27,9 @@ export function useGetSitesFromOrg(
     },
     staleTime: 60000, // 1 minute
     enabled: !!organizationId && options?.enabled !== false,
-    refetchInterval: options?.refetchInterval,
+    refetchInterval: query => !query.state.error && (query.state.data?.metadataRevalidateUntil || 0) > Date.now()
+      ? 2000
+      : typeof options?.refetchInterval === "function" ? options.refetchInterval(query) : options?.refetchInterval,
   });
 }
 
