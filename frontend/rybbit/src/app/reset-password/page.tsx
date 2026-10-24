@@ -1,0 +1,219 @@
+"use client";
+
+import { AuthButton } from "@/components/auth/AuthButton";
+import { AuthError } from "@/components/auth/AuthError";
+import { AuthInput } from "@/components/auth/AuthInput";
+import { Turnstile } from "@/components/auth/Turnstile";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useExtracted } from "next-intl";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { RybbitLogo } from "../../components/RybbitLogo";
+import { useSetPageTitle } from "../../hooks/useSetPageTitle";
+import { authClient } from "../../lib/auth";
+import { IS_CLOUD } from "../../lib/const";
+
+export default function ResetPasswordPage() {
+  useSetPageTitle("Reset Password");
+  const t = useExtracted();
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
+  const router = useRouter();
+
+  const handleRequestOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    // Validate Turnstile token if in cloud mode and production
+    if (IS_CLOUD && process.env.NODE_ENV === "production" && !turnstileToken) {
+      setError(t("Please complete the captcha verification"));
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await authClient.emailOtp.sendVerificationOtp(
+        {
+          email,
+          type: "forget-password",
+        },
+        {
+          onRequest: context => {
+            if (IS_CLOUD && process.env.NODE_ENV === "production" && turnstileToken) {
+              context.headers.set("x-captcha-response", turnstileToken);
+            }
+          },
+        }
+      );
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setOtpSent(true);
+      }
+    } catch (error) {
+      setError(String(error));
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // Simple validation for password length
+      if (newPassword.length < 8) {
+        setError(t("Password must be at least 8 characters long"));
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error } = await authClient.emailOtp.resetPassword({
+        email,
+        otp,
+        password: newPassword,
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setResetSuccess(true);
+        setTimeout(() => {
+          router.push("/login");
+        }, 3000);
+      }
+    } catch (error) {
+      setError(String(error));
+    }
+
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="flex justify-center items-center h-dvh w-full p-4">
+      <Card className="w-full max-w-sm p-1">
+        <CardHeader>
+          <RybbitLogo width={32} height={32} />
+          <CardTitle className="text-2xl flex justify-center">
+            {resetSuccess ? t("Password Reset Successful") : otpSent ? t("Enter OTP Code") : t("Reset Password")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {resetSuccess ? (
+            <div className="flex flex-col items-center space-y-6 py-4">
+              <div className="h-20 w-20 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center border-2 border-green-500 text-green-500">
+                <span className="text-3xl font-bold">✓</span>
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-medium text-green-500">{t("Success!")}</h3>
+                <p className="text-muted-foreground">{t("Your password has been reset successfully.")}</p>
+              </div>
+              <div className="w-full rounded-md bg-neutral-100 dark:bg-neutral-800/30 p-3 mt-4">
+                <div className="flex justify-center">
+                  <p className="text-sm text-muted-foreground">{t("Redirecting to login page...")}</p>
+                </div>
+              </div>
+            </div>
+          ) : otpSent ? (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t("We've sent a verification code to {email}. Please enter the code below along with your new password.", { email })}
+              </p>
+
+              <AuthInput
+                id="otp"
+                label={t("Verification Code")}
+                type="text"
+                placeholder="000000"
+                required
+                value={otp}
+                onChange={e => setOtp(e.target.value)}
+              />
+
+              <AuthInput
+                id="new-password"
+                label={t("New Password")}
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                required
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+              />
+
+              <AuthButton isLoading={isLoading} loadingText={t("Resetting password...")}>
+                {t("Reset Password")}
+              </AuthButton>
+
+              <AuthError error={error} title={t("Error Resetting Password")} />
+
+              <div className="text-center text-sm">
+                <button
+                  type="button"
+                  onClick={() => setOtpSent(false)}
+                  className="text-xs text-muted-foreground hover:text-primary"
+                >
+                  {t("Use a different email")}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleRequestOTP} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t("Enter your email address and we'll send you a verification code to reset your password.")}
+              </p>
+
+              <AuthInput
+                id="email"
+                label={t("Email")}
+                type="email"
+                autoComplete="email"
+                placeholder="example@email.com"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+
+              {IS_CLOUD && process.env.NODE_ENV === "production" && (
+                <Turnstile
+                  onSuccess={token => setTurnstileToken(token)}
+                  onError={() => setTurnstileToken("")}
+                  onExpire={() => setTurnstileToken("")}
+                  className="flex justify-center"
+                />
+              )}
+
+              <AuthButton
+                isLoading={isLoading}
+                loadingText={t("Sending code...")}
+                disabled={IS_CLOUD && process.env.NODE_ENV === "production" ? !turnstileToken || isLoading : isLoading}
+              >
+                {t("Send Verification Code")}
+              </AuthButton>
+
+              <AuthError error={error} title={t("Error Sending Code")} />
+
+              <div className="text-center text-sm">
+                {t("Remember your password?")}{" "}
+                <Link href="/login" className="underline">
+                  {t("Sign in")}
+                </Link>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -1,0 +1,30 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Does it also happen in demo mode (`pnpm demo`)?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version and setup
+      description: App version, Node.js version, local or Docker.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Remove any credentials, property IDs or private URLs first.

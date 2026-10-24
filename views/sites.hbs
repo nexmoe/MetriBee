@@ -1,0 +1,110 @@
+<style>
+  .st { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .st-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; }
+  .st-top .l { min-width: 0; }
+  .st-sub { margin: 4px 0 0; font-size: .8125rem; color: var(--text-3); }
+  .st-sub b { color: var(--text); font-weight: 600; }
+  .st-fresh { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: .75rem; color: var(--text-3); }
+  .st .seg button { padding: 0 12px; }
+
+  .st .card-h { border-bottom: 1px solid var(--border); }
+  .st .card-h .n { color: var(--text-3); font-size: .8125rem; }
+  .st-scroll { overflow-x: auto; }
+
+  .st-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .st-name a { color: var(--text); font-weight: 500; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .st-name a:hover { text-decoration: underline; }
+  .st-fav { width: 16px; height: 16px; flex: none; border-radius: var(--r); object-fit: contain; }
+  .st-id { color: var(--text-3); font-size: .75rem; }
+  .st-up { color: var(--good); }
+  .st-dn { color: var(--bad); }
+  .st-flat { color: var(--text-2); }
+
+  .st-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 24px; vertical-align: middle; }
+  .st-bars i { width: 5px; background: var(--c1); opacity: .85; border-radius: 1px 1px 0 0; }
+  .st-bars i.prev { background: var(--border-2); opacity: 1; }
+  .st-bars i.zero { background: var(--bad); opacity: 1; }
+
+  /* Table */
+  .st-tbl { width: 100%; border-collapse: collapse; font-size: .8125rem; }
+  .st-tbl th, .st-tbl td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; vertical-align: middle; }
+  .st-tbl th { font-size: .75rem; font-weight: 500; color: var(--text-3); }
+  .st-tbl th:first-child, .st-tbl td:first-child { text-align: left; }
+  .st-tbl td:first-child { max-width: 320px; }
+  .st-tbl th button { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+  .st-sort { width: 12px; height: 12px; margin-left: 2px; vertical-align: -2px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .st-tbl th button:hover, .st-tbl th[aria-sort] button { color: var(--text); }
+  .st-tbl tbody tr:hover td { background: var(--surface-2); }
+  .st-tbl tr.muted td, .st-row.muted { color: var(--text-3); }
+  .st-toggle { display: block; padding: 12px 16px; border: 0; background: none; color: var(--accent-fg); font: 500 .8125rem var(--font); cursor: pointer; }
+  .st-toggle:hover { text-decoration: underline; }
+
+  /* Needs a look */
+  .st-row { display: grid; grid-template-columns: minmax(180px, 1.4fr) 110px 80px 140px minmax(0, 1.6fr); gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .st-look.earn .st-row { grid-template-columns: minmax(180px, 1.4fr) 110px 80px 140px 120px minmax(0, 1.6fr); }
+  .st-row:last-child { border-bottom: 0; }
+  .st-row .r { text-align: right; white-space: nowrap; }
+  .st-row .why { color: var(--text-2); font-size: .8125rem; }
+
+  /* Heatmap */
+  .st-hm { display: grid; grid-template-columns: minmax(160px, 220px) repeat(14, minmax(30px, 1fr)) 80px 70px; font-size: .75rem; min-width: 760px; }
+  .st-hm.earn { grid-template-columns: minmax(160px, 220px) repeat(14, minmax(30px, 1fr)) 80px 70px 90px; min-width: 850px; }
+  .st-hm > div { height: 28px; display: flex; align-items: center; padding: 0 6px; border-bottom: 1px solid var(--border); min-width: 0; }
+  .st-hm .h { color: var(--text-3); font-weight: 500; justify-content: center; }
+  .st-hm .h.l { justify-content: flex-start; }
+  .st-hm .c { justify-content: center; padding: 0; margin: 1px; height: 26px; border-radius: var(--r); border-bottom: 0; }
+  .st-hm .c.z { background: var(--bad-soft); color: var(--bad); }
+  .st-hm .r { justify-content: flex-end; }
+  .st-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; color: var(--text-3); font-size: .75rem; padding: 10px 16px; }
+  .st-legend span { display: inline-block; width: 14px; height: 14px; border-radius: var(--r); vertical-align: -3px; margin-right: 4px; }
+  .st-note { margin: 0; font-size: .8125rem; color: var(--text-3); }
+
+  .st-empty { padding: 24px 16px; }
+  .st-empty p { margin: 8px 0 0; color: var(--text-2); font-size: .8125rem; }
+  .st-empty code { font: .92em var(--mono); background: var(--surface-3); padding: 1px 4px; border-radius: var(--r); }
+
+  body.privacy-blur .st [data-privacy] { filter: blur(6px); user-select: none; }
+
+  @media (max-width: 640px) {
+    .st-row, .st-look.earn .st-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 12px; }
+    .st-row .st-bars, .st-row .why, .st-row .earn-c { grid-column: 1 / -1; }
+    .st-row .earn-c { text-align: left; }
+  }
+</style>
+
+<div class="panel st" id="stPage">
+  <div class="st-top">
+    <div class="l">
+      <h1>All sites</h1>
+      <p class="st-sub" id="stSum">{{#unless hasSnapshot}}No snapshot yet.{{/unless}}</p>
+    </div>
+    {{#if hasSnapshot}}
+    <div class="seg seg-inline" role="group" aria-label="View" id="stView">
+      <button type="button" data-view="look" aria-pressed="true">Needs a look</button>
+      <button type="button" data-view="table" aria-pressed="false">Table</button>
+      <button type="button" data-view="heat" aria-pressed="false">Heatmap</button>
+    </div>
+    {{/if}}
+  </div>
+  {{#if hasSnapshot}}
+  <div class="st-fresh num" id="stFresh"></div>
+  <div id="stApp"></div>
+  {{else}}
+  <section class="card st-empty">
+    <h2>No sessions snapshot</h2>
+    {{#if @root.demo}}
+    <p>Demo mode does not read the snapshot files.</p>
+    {{else}}
+    <p>This page reads <code>data/snapshots/latest.json</code>. Run <code>pnpm snapshot:sessions</code> once (it takes about a minute), then reload. A daily timer can keep it fresh.</p>
+    {{/if}}
+  </section>
+  {{/if}}
+</div>
+
+{{#if hasSnapshot}}
+<script>
+  const SITES_DATA = {{{ json_stringify sitesData }}};
+</script>
+<script src="/js/siteStatus.js"></script>
+<script src="/js/sites.js"></script>
+{{/if}}

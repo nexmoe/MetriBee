@@ -1,0 +1,41 @@
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" type="image/png" href="/logo.png" />
+		{{!-- Theme before first paint: light unless the user picked dark (navbar settings menu) --}}
+		<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('pb_theme')==='dark'?'dark':'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+
+		{{!-- Inter Variable, self-hosted (public/fonts, OFL) --}}
+		<link rel="preload" href="/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />
+
+		<link rel="stylesheet" href="/css/main.css" />
+		<link rel="stylesheet" href="/css/panel.css" />
+		{{#if nav.analytics}}<link rel="stylesheet" href="/css/analytics.css" />{{/if}}
+		{{#if nav.journeys}}<link rel="stylesheet" href="/css/journeys.css" />{{/if}}
+		{{#if nav.pages}}<link rel="stylesheet" href="/css/pages.css" />{{/if}}
+		{{#if nav.retention}}<link rel="stylesheet" href="/css/retention.css" />{{/if}}
+		{{#if nav.events}}<link rel="stylesheet" href="/css/events.css" />{{/if}}
+
+		{{!-- Meta Tags added with context --}}
+		 {{>metatags head}}
+
+	</head>
+
+
+  	<body
+		class="bg-gray-100 flex flex-col min-h-screen{{#if nav.analytics}} analytics-shell{{/if}}" >
+    		 {{> navbar }}
+			{{> debugResponsive}}
+
+		<main
+			class="container mx-auto p-5 mb-auto app-content">
+			{{{body}}}
+		</main>
+
+
+		<script src="/js/main.js"></script>
+	</body>
+
+
+</html>

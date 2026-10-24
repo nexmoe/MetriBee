@@ -1,0 +1,55 @@
+<div class="panel an-workspace" id="jyPage">
+  {{> analyticsSidebar }}
+
+  <div class="an jy">
+    <div class="an-toolbar">
+      <div class="jy-title"><h1>Journeys</h1><span class="badge">Page transitions</span></div>
+      <div class="an-status">
+        <span class="cap faint" id="jyDateRange"></span>
+        <label class="jy-control jy-date"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"/></svg><select id="jyRange" aria-label="Date range"><option value="today">Today</option><option value="7d">Last 7 days</option><option value="28d">Last 28 days</option><option value="30d" selected>Last 30 days</option></select></label>
+        <button type="button" class="btn btn-ghost btn-icon" id="jyRefresh" aria-label="Refresh journeys"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button>
+        <button type="button" class="btn btn-ghost" id="jyExport" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>Export CSV</button>
+      </div>
+    </div>
+
+    <section class="card jy-metrics" id="jyMetrics" aria-label="Journey overview" aria-busy="true">
+      <div class="jy-metric"><span>Internal page views</span><b class="num">—</b><small>Loading transitions</small></div>
+      <div class="jy-metric"><span>Views per session</span><b class="num">—</b><small>Across the property</small></div>
+      <div class="jy-metric"><span>Top referring page</span><b>—</b><small>Within this site</small></div>
+      <div class="jy-metric"><span>Top destination page</span><b>—</b><small>Within this site</small></div>
+    </section>
+
+    <div class="jy-options">
+      <label class="jy-control"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v12a4 4 0 0 0 4 4h8M2 7l4-4 4 4m4 8 4 4-4 4M18 3v8"/></svg><span>Compare</span><select id="jyCompare" aria-label="Comparison period"><option value="previous">Previous period</option><option value="none">No comparison</option></select></label>
+      <label class="jy-control"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h6v6H3zm12 8h6v6h-6zM9 8h8v5M6 11v8h9"/></svg><span>Group pages</span><select id="jyGroup" aria-label="Group pages"><option value="exact">Exact path</option><option value="folder">First folder</option></select></label>
+      <span class="cap faint" id="jyFresh" role="status">Loading</span>
+    </div>
+
+    <section class="card jy-paths" aria-labelledby="jyChartTitle" id="jyPaths" aria-busy="true">
+      <div class="card-h jy-chart-header">
+        <div><h2 id="jyChartTitle">Page-to-page journeys</h2><p class="cap faint" id="jyCoverage">The most common transitions within your site</p></div>
+        <div class="jy-chart-tools">
+          <label class="jy-control"><span>From</span><select id="jyFrom" aria-label="From page"><option value="">Any page</option></select></label>
+          <label class="jy-control"><span>To</span><select id="jyTo" aria-label="To page"><option value="">Any page</option></select></label>
+          <span class="jy-control jy-steps" title="GA4 Data API provides two-page transitions. Full session sequences require a BigQuery event export.">Steps <b class="num">2</b></span>
+          <label class="jy-control"><span>Show</span><select id="jyLimit" aria-label="Number of paths"><option value="5">Top 5 paths</option><option value="10">Top 10 paths</option><option value="15" selected>Top 15 paths</option><option value="25">Top 25 paths</option></select></label>
+        </div>
+      </div>
+      <div class="jy-selection" id="jySelection" hidden><span id="jyPinnedLabel"></span><button type="button" class="btn btn-ghost" id="jyUnpin">Clear selection</button></div>
+      <div class="jy-chart-scroll" id="jyChartScroll"><div class="jy-chart" id="jyChart"><div class="jy-empty" role="status">Loading page transitions…</div></div></div>
+      <div class="jy-chart-footer"><span><i aria-hidden="true"></i>Internal page views</span><span>Click a flow to pin it · Click a page to filter</span></div>
+    </section>
+
+    <p class="jy-quality cap" id="jyQuality" role="status" hidden></p>
+
+    <section class="card jy-table" aria-labelledby="jyTableTitle">
+      <div class="card-h"><div><h2 id="jyTableTitle">Top paths</h2><p class="cap faint">Observed referring page → current page</p></div><label class="jy-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="jySearch" type="search" aria-label="Filter paths by page" placeholder="Contains page, e.g. /docs/**" autocomplete="off"/></label></div>
+      <div class="scroll"><table class="tbl"><thead><tr><th scope="col">#</th><th scope="col">Path</th><th scope="col" class="num">Views</th><th scope="col" class="num" id="jyChangeHead">Change</th><th scope="col" class="num">Share</th><th scope="col"><span class="jy-sr-only">Select path</span></th></tr></thead><tbody id="jyRows"><tr><td colspan="6" class="faint">Loading paths…</td></tr></tbody></table></div>
+      <div class="jy-table-footer cap faint" id="jyTableMeta"></div>
+    </section>
+
+    <details class="jy-method"><summary>About this data · two-page transitions</summary><div><p>These journeys use the referring URL reported on each page view. Counts are page views, so one person or session can appear more than once. Only referrers on the same hostname (including its www variant) are included. Query strings and fragments are removed; same-page transitions are retained.</p><p>A referrer can be missing, outdated or affected by your tracking setup, especially on single-page apps. These pairs do not establish a session start, session end or a continuous multi-step path. Multi-page sessions, exit rates and complete paths require ordered raw events from a GA4 BigQuery export.</p><p><a href="https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema" target="_blank" rel="noopener noreferrer">GA4 dimensions and metrics ↗</a> · <a href="https://support.google.com/analytics/answer/7029846" target="_blank" rel="noopener noreferrer">BigQuery export schema ↗</a></p></div></details>
+  </div>
+</div>
+<script>const JOURNEY_PROPERTIES = {{{ json_stringify properties }}};</script>
+<script src="/js/journeys.js"></script>

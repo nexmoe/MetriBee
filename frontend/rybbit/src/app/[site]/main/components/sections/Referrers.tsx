@@ -1,0 +1,138 @@
+"use client";
+import { useExtracted } from "next-intl";
+import { ChannelIcon } from "../../../../../components/Channel";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../../../../components/ui/dropdown-menu";
+import { TabsUnderline } from "../../../../../components/interior/tabs-indicator";
+import { cn } from "../../../../../lib/utils";
+import {
+  StandardSectionTabs,
+  type StandardSectionTab,
+} from "../../../components/shared/StandardSection/StandardSectionTabs";
+
+type Tab = "channels" | "utm_source" | "utm_medium" | "utm_campaign" | "utm_term" | "utm_content";
+
+export function Referrers({ sourceTab, additionalTabs = [] }: { sourceTab?: StandardSectionTab<string>; additionalTabs?: StandardSectionTab<string>[] } = {}) {
+  const t = useExtracted();
+
+  const tabs: StandardSectionTab<Tab>[] = [
+    {
+      value: "channels",
+      label: t("Channels"),
+      section: {
+        filterParameter: "channel",
+        title: t("Channels"),
+        getValue: e => e.value,
+        getKey: e => e.value,
+        getLabel: e => (
+          <div className="flex items-center gap-2">
+            <ChannelIcon channel={e.value} /> {e.value}
+          </div>
+        ),
+      },
+    },
+    {
+      value: "utm_source",
+      label: t("Source"),
+      showInTabs: false,
+      section: {
+        filterParameter: "utm_source",
+        title: t("UTM Source"),
+        getKey: e => e.value,
+        getLabel: e => e.value,
+        getValue: e => e.value,
+      },
+    },
+    {
+      value: "utm_medium",
+      label: t("Medium"),
+      showInTabs: false,
+      section: {
+        filterParameter: "utm_medium",
+        title: t("UTM Medium"),
+        getKey: e => e.value,
+        getLabel: e => e.value,
+        getValue: e => e.value,
+      },
+    },
+    {
+      value: "utm_campaign",
+      label: t("Campaign"),
+      showInTabs: false,
+      section: {
+        filterParameter: "utm_campaign",
+        title: t("UTM Campaign"),
+        getKey: e => e.value,
+        getLabel: e => e.value,
+        getValue: e => e.value,
+      },
+    },
+    {
+      value: "utm_term",
+      label: t("Term"),
+      showInTabs: false,
+      section: {
+        filterParameter: "utm_term",
+        title: t("UTM Term"),
+        getKey: e => e.value,
+        getLabel: e => e.value,
+        getValue: e => e.value,
+      },
+    },
+    {
+      value: "utm_content",
+      label: t("Content"),
+      showInTabs: false,
+      section: {
+        filterParameter: "utm_content",
+        title: t("UTM Content"),
+        getKey: e => e.value,
+        getLabel: e => e.value,
+        getValue: e => e.value,
+      },
+    },
+  ];
+
+  const renderUtmMenu = (value: string, setValue: (value: string) => void) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild unstyled>
+        <div
+          className={cn(
+            "relative inline-flex items-center justify-center whitespace-nowrap border-b-2 border-transparent py-1 text-sm font-medium transition-colors cursor-pointer",
+            value.startsWith("utm_")
+              ? "text-neutral-950 dark:text-neutral-50"
+              : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200"
+          )}
+        >
+          {value === "utm_source" && t("Source")}
+          {value === "utm_medium" && t("Medium")}
+          {value === "utm_campaign" && t("Campaign")}
+          {value === "utm_term" && t("Term")}
+          {value === "utm_content" && t("Content")}
+          {!value.startsWith("utm_") && t("UTM")}
+          {/* The tab strip's sliding underline lands here while a UTM view is active. */}
+          {value.startsWith("utm_") && <TabsUnderline />}
+        </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="z-[10000]">
+        <DropdownMenuItem onClick={() => setValue("utm_source")}>{t("Source")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setValue("utm_medium")}>{t("Medium")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setValue("utm_campaign")}>{t("Campaign")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setValue("utm_term")}>{t("Term")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setValue("utm_content")}>{t("Content")}</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  return (
+    <StandardSectionTabs
+      defaultValue={sourceTab?.value || "channels"}
+      tabs={[...(sourceTab ? [sourceTab] : []), ...tabs, ...additionalTabs]}
+      renderTabsListEnd={({ value, setValue }) => renderUtmMenu(value, setValue)}
+    />
+  );
+}

@@ -1,0 +1,57 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "rybbit/src/*"
+      ],
+      "@rybbit/shared": [
+        "rybbit/shared/index.ts"
+      ],
+      "next/navigation": [
+        "adapter/navigation.tsx"
+      ],
+      "next/link": [
+        "adapter/link.tsx"
+      ],
+      "next/image": [
+        "adapter/image.tsx"
+      ],
+      "next/dynamic": [
+        "adapter/dynamic.tsx"
+      ],
+      "next/font/google": [
+        "adapter/font.ts"
+      ],
+      "@rybbit/shared/dist/filters": [
+        "rybbit/shared/filters.ts"
+      ]
+    },
+    "types": [
+      "vite/client"
+    ]
+  },
+  "include": [
+    "adapter",
+    "vite.config.ts",
+    "rybbit/src/types/*.d.ts",
+    "rybbit/src/lib/rybbit.d.ts"
+  ]
+}

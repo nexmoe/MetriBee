@@ -1,0 +1,14 @@
+services:
+  dashboard:
+    build: .
+    image: ghcr.io/thetechbasket/ga4-dashboard:latest
+    env_file: .env
+    ports:
+      # Localhost only. The app has no login: put a reverse proxy or tunnel in front of it.
+      - "127.0.0.1:5483:5483"
+    volumes:
+      - data:/app/.data
+    restart: unless-stopped
+
+volumes:
+  data:

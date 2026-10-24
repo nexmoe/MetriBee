@@ -1,0 +1,54 @@
+<div class="panel an-workspace" id="evPage">
+  {{> analyticsSidebar }}
+
+  <div class="an ev">
+    <div class="ev-toolbar">
+      <div class="ev-title"><h1>Events</h1><span class="cap faint" id="evDateRange"></span></div>
+      <div class="ev-actions">
+        <span class="badge num" id="evFresh" role="status">Loading</span>
+        <button class="btn btn-ghost" id="evExport" type="button" disabled><svg class="nb-i" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 21h14"/></svg>Export CSV</button>
+        <label class="ev-sr" for="evRange">Date range</label>
+        <select id="evRange" class="ev-select"><option value="today">Today</option><option value="7d">Last 7 days</option><option value="28d">Last 28 days</option><option value="30d" selected>Last 30 days</option><option value="90d">Last 90 days</option></select>
+        <div class="ev-step"><button class="btn btn-icon" id="evPrev" type="button" aria-label="Previous date period">‹</button><button class="btn btn-icon" id="evNext" type="button" aria-label="Next date period" disabled>›</button></div>
+        <button class="btn btn-ghost btn-icon" id="evRefresh" type="button" aria-label="Refresh events"><svg class="nb-i" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button>
+      </div>
+    </div>
+    <div class="ev-error" id="evError" role="alert" hidden></div>
+    <div class="ev-stats card" id="evStats" aria-label="Event summary" aria-busy="true"></div>
+
+    <div class="ev-controls">
+      <label class="btn ev-compare"><input id="evCompare" type="checkbox" checked>Compare <span class="faint">Previous period</span></label>
+      <label class="ev-control">Breakdown <select id="evBreakdown" class="ev-select"><option value="type">Event type</option><option value="name">Event name (top 6)</option></select></label>
+      <label class="ev-control ev-bucket"><span class="ev-sr">Chart interval</span><select class="ev-select" id="evBucket"><option value="day">Day</option><option value="week">Week</option></select></label>
+    </div>
+
+    <section class="card ev-chart-card" aria-labelledby="evChartTitle">
+      <div class="ev-plot">
+        <div class="ev-section-title"><h2 id="evChartTitle">Events by type</h2><span class="cap faint" id="evChartPeriod"></span></div>
+        <div class="chart ev-chart" id="evChart" aria-busy="true"><p class="empty">Loading event trends…</p></div>
+        <div class="ev-chart-tip" id="evChartTip" hidden></div>
+      </div>
+      <div class="ev-legend-wrap"><div class="ev-legend-head cap faint"><span id="evLegendLabel">Type</span><span>Events</span><span>Change</span></div><div id="evLegend"></div><p class="cap faint ev-legend-note">Select a series to show or hide it.</p></div>
+    </section>
+
+    <section class="card ev-names" aria-labelledby="evNamesTitle">
+      <div class="ev-table-toolbar"><h2 id="evNamesTitle">Event names</h2><div class="seg seg-inline ev-tabs" id="evTabs" role="group" aria-label="Event category"></div><label class="ev-search"><svg class="nb-i" aria-hidden="true"><use href="#nb-search"/></svg><input type="search" id="evSearch" placeholder="Search event names" aria-label="Search event names"></label></div>
+      <div class="ev-scroll"><table class="tbl ev-table"><thead><tr>
+        <th><button type="button" data-sort="name">Event</button></th><th class="n"><button type="button" data-sort="events">Events ↓</button></th><th class="n"><button type="button" data-sort="users">Users</button></th><th class="n">Per user</th><th class="ev-trend-th">Trend</th><th class="n"><button type="button" data-sort="change">Change</button></th><th class="n">Latest reported day</th>
+      </tr></thead><tbody id="evNamesBody"><tr><td colspan="7" class="empty">Loading event names…</td></tr></tbody></table></div>
+      <div class="ev-table-footer cap faint"><span id="evNamesCount"></span><span>Users are deduplicated per event. Select an event for its activity.</span></div>
+    </section>
+
+    <section class="card ev-activity" id="evActivity" aria-labelledby="evActivityTitle">
+      <div class="ev-table-toolbar"><div class="ev-activity-title"><h2 id="evActivityTitle">Event activity</h2><span class="badge">Hourly aggregates</span><button class="btn btn-sm" id="evClearEvent" type="button" hidden>Clear event filter ×</button></div><label class="ev-search"><svg class="nb-i" aria-hidden="true"><use href="#nb-search"/></svg><input type="search" id="evActivitySearch" placeholder="Search event, page or device" aria-label="Search event activity"></label></div>
+      <p class="cap faint ev-activity-note">Newest reported hour first. Each row groups events by hour, name, page and device in the property’s time zone. GA4 processing can delay recent data.</p>
+      <div class="ev-activity-types" id="evActivityTypes" role="group" aria-label="Activity category"></div>
+      <div class="ev-scroll"><table class="tbl ev-table ev-activity-table"><thead><tr><th>Hour</th><th>Event</th><th>Page</th><th>Device</th><th class="n">Events</th><th class="n">Users</th></tr></thead><tbody id="evActivityBody"><tr><td colspan="6" class="empty">Activity loads when you scroll here.</td></tr></tbody></table></div>
+      <div class="ev-table-footer cap faint"><span id="evActivityCount"></span><span id="evActivityFresh"></span></div>
+    </section>
+
+    <div class="ev-data-note cap faint"><svg class="nb-i" aria-hidden="true"><use href="#nb-report"/></svg><p>GA4 Data API provides aggregate reports. Individual event timestamps, user identities and raw event parameters require <a href="https://developers.google.com/analytics/bigquery/basic-queries" target="_blank" rel="noopener noreferrer">BigQuery export</a>. Custom event parameters must be registered as custom dimensions to appear in Data API reports.<span id="evDataQuality"></span></p></div>
+  </div>
+</div>
+<script>const EVENT_PROPERTIES = {{{json_stringify properties}}};</script>
+<script src="/js/events.js"></script>

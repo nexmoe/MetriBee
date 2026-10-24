@@ -1,0 +1,22 @@
+/* Inter Variable is self-hosted: @font-face in panel.css, preload in layouts/main.hbs */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* https://dev.to/thomasvanholder/add-a-custom-tailwind-css-fonts-to-your-website-1nn6 */
+/*
+Inter font set in sans in tailwind config is default
+ Poppins font set in serif in tailwind config is need to be applied to all headings */
+
+@layer base {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-heading;
+    }
+
+}

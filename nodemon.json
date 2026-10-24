@@ -1,0 +1,10 @@
+{
+  "watch": ["app.js", "controllers", "routes"],
+  "ext": "js,ts,json,hbs",
+  "ignore": ["node_modules/**", ".cache/**", "dist/**"],
+  "exec": "node app.js",
+  "delay": 500,
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

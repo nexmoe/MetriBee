@@ -1,0 +1,39 @@
+<div class="panel an-workspace" id="rtPage">
+  {{> analyticsSidebar }}
+  <div class="an rt">
+    <div class="rt-toolbar">
+      <div class="rt-title"><h1>Retention</h1><span class="cap faint">Turn first visits into return visits.</span></div>
+      <div class="rt-tools">
+        <span class="badge" id="rtFresh" role="status">Loading</span>
+        <button type="button" class="btn btn-ghost btn-icon" id="rtRefresh" aria-label="Refresh retention"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button>
+        <label class="rt-select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><select id="rtRange" aria-label="Date range"><option value="7d">Last 7 days</option><option value="30d" selected>Last 30 days</option><option value="90d">Last 90 days</option></select></label>
+        <div class="rt-arrows"><button class="btn btn-icon" type="button" id="rtPrev" aria-label="Previous date range">‹</button><button class="btn btn-icon" type="button" id="rtNext" aria-label="Next date range" disabled>›</button></div>
+      </div>
+    </div>
+    <div class="rt-range-line cap faint num" id="rtDates"></div>
+    <section class="card rt-metrics" id="rtMetrics" aria-label="Retention overview" aria-busy="true">
+      <div class="rt-metric"><span class="rt-metric-label">Period 1 retention</span><strong class="num">—</strong><span class="cap faint">Loading cohorts</span></div>
+      <div class="rt-metric"><span class="rt-metric-label">Period 2 retention</span><strong class="num">—</strong></div>
+      <div class="rt-metric"><span class="rt-metric-label">Period 3 retention</span><strong class="num">—</strong></div>
+      <div class="rt-metric"><span class="rt-metric-label">Avg. cohort size</span><strong class="num">—</strong></div>
+      <div class="rt-metric"><span class="rt-metric-label">Best cohort</span><strong class="num">—</strong></div>
+    </section>
+    <div class="rt-controls">
+      <label class="rt-select"><span class="faint">Compare</span><select id="rtCompare" aria-label="Comparison period"><option value="previous">Previous period</option><option value="none">No comparison</option></select></label>
+      <div class="seg seg-inline" role="group" aria-label="Cohort period" id="rtBucket"><button type="button" data-bucket="day" aria-pressed="false">Daily</button><button type="button" data-bucket="week" aria-pressed="true">Weekly</button></div>
+      <button type="button" class="btn btn-ghost rt-export" id="rtExport" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 17v4h14v-4"/></svg>Export CSV</button>
+    </div>
+    <section class="card rt-report" aria-labelledby="rtReportTitle" id="rtReport" aria-busy="true">
+      <div class="card-h rt-report-head">
+        <div><h2 id="rtReportTitle">Retention by weekly cohort</h2><p class="small faint" id="rtSubtitle">Share of each week's new users who were active again, by weeks since their first visit.</p></div>
+        <div class="rt-display"><div class="rt-scale cap faint num" aria-hidden="true"><span>0%</span><i></i><span id="rtScaleMax">—</span></div><div class="seg seg-inline" role="group" aria-label="Show cells as" id="rtMode"><button type="button" data-mode="percent" aria-label="Percent" aria-pressed="true">%</button><button type="button" data-mode="users" aria-pressed="false">Users</button></div></div>
+      </div>
+      <div id="rtContent"><div class="rt-loading" role="status">Loading first-visit cohorts…</div></div>
+      <div class="rt-foot cap faint" id="rtFoot"><span>New users are grouped by their first visit in GA4.</span><span>Click a cell for details</span></div>
+    </section>
+    <details class="rt-method small faint"><summary>How retention is calculated</summary><p>Each cohort contains users whose first session falls within its date range. Retention is active users in a later day or week divided by all users in that cohort. A return does not require activity in every preceding period.</p><p>GA4 weeks start on Sunday. Dates use the property's time zone. The average curve and comparison use only complete return periods and weight each cohort by its size. Striped cells are still in progress; blank cells have not been observed. Day/week 0 is omitted because it is the acquisition period.</p><p>GA4 identifies a new user by their first session, which differs from Rybbit's 90-day lookback. Historical ranges omit incomplete return weeks to avoid including activity after the selected end date. Recent GA4 data may still be processing.</p><a href="https://developers.google.com/analytics/devguides/reporting/data/v1/advanced#cohort_report_examples" target="_blank" rel="noopener noreferrer">GA4 cohort report documentation ↗</a></details>
+  </div>
+</div>
+<dialog id="rtDetail" class="rt-detail panel" aria-labelledby="rtDetailTitle"><div class="rt-detail-head"><h2 id="rtDetailTitle">Cohort details</h2><button type="button" class="btn btn-ghost btn-icon" id="rtDetailClose" aria-label="Close details">×</button></div><div id="rtDetailBody"></div></dialog>
+<script>const RETENTION_PROPERTIES = {{{ json_stringify properties }}};</script>
+<script src="/js/retention.js" defer></script>

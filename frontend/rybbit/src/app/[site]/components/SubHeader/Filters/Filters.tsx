@@ -1,0 +1,56 @@
+"use client";
+
+import { FilterParameter, Segment } from "@rybbit/shared";
+import { useExtracted } from "next-intl";
+import { useState } from "react";
+import { useGetSegments } from "../../../../../api/analytics/hooks/useSegments";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../../../../components/ui/tooltip";
+import { removeFilter, updateFilter, useStore } from "../../../../../lib/store";
+import { FilterChip } from "./FilterChip";
+import { SegmentChip } from "./SegmentChip";
+import { filterListKeys, partitionFilters } from "./segmentUtils";
+
+export function Filters({ availableFilters }: { availableFilters?: FilterParameter[] }) {
+  const t = useExtracted();
+  const { filters, segmentId, site } = useStore();
+  const { data: segments } = useGetSegments(site, { enabled: segmentId !== null });
+  const [editing, setEditing] = useState<Segment | null>(null);
+
+  const segment = segmentId === null ? undefined : segments?.find(s => s.segmentId === segmentId);
+  const { adHoc, intact } = partitionFilters(filters, segment);
+  const keys = filterListKeys(adHoc);
+
+  return (
+    <div className="flex gap-2 flex-wrap">
+      {segment && <SegmentChip segment={segment} intact={intact} onEdit={setEditing} />}
+      {adHoc.map((filter, position) => {
+        const disabled = availableFilters && !availableFilters.includes(filter.parameter);
+        const index = filters.indexOf(filter);
+        const key = keys[position];
+
+        const pill = (
+          <FilterChip
+            filter={filter}
+            availableFilters={availableFilters}
+            disabled={disabled}
+            onUpdate={next => updateFilter(next, index)}
+            onRemove={() => removeFilter(filter)}
+          />
+        );
+
+        if (disabled) {
+          return (
+            <Tooltip key={key}>
+              <TooltipTrigger asChild>{pill}</TooltipTrigger>
+              <TooltipContent>
+                <p>{t("Filter not active for this page")}</p>
+              </TooltipContent>
+            </Tooltip>
+          );
+        }
+        return <div key={key}>{pill}</div>;
+      })}
+      <></>
+    </div>
+  );
+}

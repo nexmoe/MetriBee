@@ -1,0 +1,71 @@
+<!doctype html>
+{{! First-boot progress page (lib/boot.js bootGate). Polls /api/boot/status and reloads the requested page when the warm step ends. }}
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Starting GA4 Dashboard</title>
+	<link rel="icon" type="image/png" href="/logo.png" />
+	<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('pb_theme')==='dark'?'dark':'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+	<noscript><meta http-equiv="refresh" content="3" /></noscript>
+	<link rel="stylesheet" href="/css/panel.css" />
+	<style>
+		body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--bg); color: var(--text); font: 400 14px/1.5 var(--font); box-sizing: border-box; }
+		.bt { width: 100%; max-width: 440px; }
+		.bt h1 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -.011em; }
+		.bt p { margin: 4px 0 0; }
+		.bt ol { list-style: none; margin: 0; padding: 0; }
+		.bt li { display: grid; grid-template-columns: 16px 88px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .8125rem; color: var(--text-3); transition: color 150ms ease; }
+		.bt li:last-child { border-bottom: 0; }
+		.bt li[data-state="run"], .bt li[data-state="done"] { color: var(--text); }
+		.bt li[data-state="fail"] { color: var(--bad); }
+		.bt .nm { font-weight: 500; text-transform: capitalize; }
+		.bt .msg { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+		.bt .ms { color: var(--text-3); font-variant-numeric: tabular-nums; }
+		.bt .ic { width: 16px; height: 16px; display: grid; place-items: center; }
+		.bt .ic svg { width: 14px; height: 14px; }
+		.bt .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--surface-3); }
+		.bt .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--surface-3); border-top-color: var(--accent); animation: bt-spin 700ms linear infinite; }
+		.bt li[data-state="done"] .ic { color: var(--good); }
+		@keyframes bt-spin { to { transform: rotate(360deg); } }
+		@media (prefers-reduced-motion: reduce) { .bt .spin { animation: none; border-color: var(--accent); } }
+	</style>
+</head>
+<body>
+	<main class="bt card">
+		<div class="card-h"><div><h1>Starting GA4 Dashboard</h1><p class="small muted">First boot loads your properties and live counts. This page opens by itself when ready.</p></div></div>
+		<div class="card-b">
+			<ol id="steps">
+				{{#each steps}}<li data-state="{{state}}"><span class="ic"></span><span class="nm">{{name}}</span><span class="msg">{{msg}}</span><span class="ms"></span></li>{{/each}}
+			</ol>
+		</div>
+	</main>
+	<script>
+	(() => {
+		const ICON = {
+			wait: '<span class="dot"></span>',
+			run: '<span class="spin"></span>',
+			done: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+			fail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+		};
+		const list = document.getElementById('steps');
+		const fmt = (ms) => (ms ? (ms < 1000 ? ms + ' ms' : (ms / 1000).toFixed(1) + ' s') : '');
+		const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+		function draw(steps) {
+			list.innerHTML = steps.map((s) => `<li data-state="${esc(s.state)}"><span class="ic">${ICON[s.state] || ICON.wait}</span><span class="nm">${esc(s.name)}</span><span class="msg">${esc(s.msg)}</span><span class="ms">${s.state === 'done' || s.state === 'fail' ? fmt(s.ms) : ''}</span></li>`).join('');
+		}
+		async function poll() {
+			try {
+				const r = await fetch('/api/boot/status', { cache: 'no-store' });
+				const s = await r.json();
+				draw(s.steps);
+				if (s.ready) return location.reload();
+			} catch (e) { /* server restarting: keep polling */ }
+			setTimeout(poll, 1000);
+		}
+		list.querySelectorAll('li').forEach((li) => { li.querySelector('.ic').innerHTML = ICON[li.dataset.state] || ICON.wait; });
+		poll();
+	})();
+	</script>
+</body>
+</html>

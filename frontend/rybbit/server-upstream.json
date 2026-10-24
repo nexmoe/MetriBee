@@ -1,0 +1,21 @@
+{
+  "repository": "https://github.com/rybbit-io/rybbit",
+  "commit": "9cee0e9007ecb574533a4a2f28623b78f84b18a1",
+  "files": {
+    "server/src/lib/publicHttpFetch.ts": {
+      "target": "controllers/publicHttpFetch.ts",
+      "upstreamSha256": "b8c3d4d54e6d4ae3cd67638436ebec83d811ebaa2e896c66a1149c580efc28d5",
+      "sha256": "13c2268d530b2aabf2c3fc61f84ae3a809ccc84cb21420ae5435187381695475"
+    },
+    "server/src/services/favicon/favicon.ts": {
+      "target": "controllers/rybbitFavicon.ts",
+      "upstreamSha256": "e26f7260306778f29f65202ff97efce0c47ae42e757816226f8d4d50fa5d23b0",
+      "sha256": "3c04947f572dbf16f5798ee5c1e6603b2ecb93153ec5e36110d0745b8fbdea7d"
+    },
+    "client/src/app/widget/[siteId]/route.ts": {
+      "target": "controllers/rybbitWidget.ts",
+      "upstreamSha256": "1fae629ee71ea8f8394300cb9162cf04ae06343b54d3c60d156592d26f6c95aa",
+      "sha256": "9e2f484d36cf54f1e9682df10dca00b9a1baec3701792d758b2cc9da4e9f0651"
+    }
+  }
+}

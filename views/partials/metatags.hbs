@@ -1,0 +1,51 @@
+{{! Icons }}
+
+{{!-- <link
+    rel='apple-touch-icon'
+    sizes='180x180'
+    href='/icons/apple-touch-icon.png'
+/>
+<link
+    rel='icon'
+    type='image/png'
+    sizes='32x32'
+    href='/icons/favicon-32x32.png'
+/>
+<link
+    rel='icon'
+    type='image/png'
+    sizes='16x16'
+    href='/icons/favicon-16x16.png'
+/>
+<link rel='icon' href='/icons/favicon.svg' type='image/svg+xml' />
+<link rel='manifest' href='/icons/site.webmanifest' />
+<link rel='mask-icon' href='/icons/safari-pinned-tab.svg' color='#f43f5e' />
+<link rel='shortcut icon' href='/icons/favicon.ico' /> --}}
+{{! <meta name='msapplication-TileColor' content='#da532c' />
+<meta name='msapplication-config' content='/icons/browserconfig.xml' /> }}
+<meta name='theme-color' content='#ffffff' />
+
+{{! Meta Tags }}
+<title>{{title}}</title>
+<meta name='description' content='{{description}}' />
+{{! // TODO: add some other meta tags if needed and some logic if any important value is not present then what to use }}
+<!--facebook share-->
+<meta property='og:image' content='{{#if image}}{{image}}{{else}}/og.png{{/if}}' />
+<meta property='og:type' content='website' />
+{{#if url}}
+    <meta property='og:url' content='{{url}}' />
+{{/if}}
+
+<meta property='og:title' content='{{title}}' />
+{{! site name }}
+<meta property='og:site_name' content='GA4 Dashboard' />
+<meta property='og:description' content='{{description}}' />
+
+<!--twitter：card share-->
+<meta name='twitter:title' content='{{title}}' />
+<meta name='twitter:description' content='{{description}}' />
+<meta name='twitter:image' content='{{#if image}}{{image}}{{else}}/og.png{{/if}}' />
+<meta name='twitter:card' content='summary_large_image' />
+{{! <meta name="twitter:site" content="@flickr" /> }}
+
+{{! Inject scripts below }}

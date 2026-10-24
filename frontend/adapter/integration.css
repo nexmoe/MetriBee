@@ -1,0 +1,4 @@
+@font-face { font-family: Inter; src: url('/fonts/InterVariable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+body { font-family: Inter, sans-serif; }
+.privacy-blur [data-privacy],
+.privacy-blur [data-privacy-detected] { filter: blur(5px) !important; }

@@ -1,0 +1,23 @@
+{{! Shared analytics navigation. Keep menu entries and range support here. }}
+<aside class="an-sidebar" data-analytics-sidebar aria-label="Analytics navigation">
+  <div class="an-property">
+    <label for="analyticsProperty" class="an-side-label">Property</label>
+    <select id="analyticsProperty">
+      {{#each properties}}<option value="{{id}}">{{site}}{{#if domain}} · {{domain}}{{/if}}</option>{{/each}}
+    </select>
+    <span class="an-property-meta cap faint num" id="analyticsPropertyMeta"></span>
+  </div>
+  <nav class="an-side-nav" aria-label="Analytics pages">
+    <a href="/analytics" data-analytics-route="/analytics" data-supported-ranges="today 7d 28d" data-default-range="28d"{{#if nav.analyticsMain}} aria-current="page"{{/if}}><svg class="nb-i" aria-hidden="true"><use href="#nb-dash"/></svg>Main</a>
+    <a href="/analytics/pages" data-analytics-route="/analytics/pages" data-supported-ranges="today 7d 28d 30d 90d" data-default-range="30d" data-custom-dates="true"{{#if nav.pages}} aria-current="page"{{/if}}><svg class="nb-i" aria-hidden="true"><use href="#nb-report"/></svg>Pages</a>
+    <a href="/events" data-analytics-route="/events" data-supported-ranges="today 7d 28d 30d 90d" data-default-range="30d"{{#if nav.events}} aria-current="page"{{/if}}><svg class="nb-i" aria-hidden="true"><use href="#nb-report"/></svg>Events</a>
+    <a href="/journeys" data-analytics-route="/journeys" data-supported-ranges="today 7d 28d 30d" data-default-range="30d"{{#if nav.journeys}} aria-current="page"{{/if}}><svg class="nb-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v18m0-10h8a5 5 0 0 0 5-5V3m-5 4 5-4 4 4M2 17l3 4 3-4"/></svg>Journeys</a>
+    <a href="/retention" data-analytics-route="/retention" data-supported-ranges="7d 30d 90d" data-default-range="30d"{{#if nav.retention}} aria-current="page"{{/if}}><svg class="nb-i" aria-hidden="true"><use href="#nb-bars"/></svg>Retention</a>
+  </nav>
+  <div class="an-side-footer">
+    <a href="/sites"><svg class="nb-i" aria-hidden="true"><use href="#nb-sites"/></svg>All properties</a>
+    <a href="/globe"><svg class="nb-i" aria-hidden="true"><use href="#nb-globe"/></svg>Live globe</a>
+    <span class="cap faint">Google Analytics 4</span>
+  </div>
+</aside>
+<script src="/js/analyticsSidebar.js"></script>

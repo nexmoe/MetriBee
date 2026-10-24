@@ -1,0 +1,207 @@
+{{! Setup (variant B): agent prompt + live checklist, then "Use with AI" (MCP). Text from SETUP.md, behavior in public/js/setup.js. }}
+<style>
+  .su-head { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
+  .su-head p { margin: 4px 0 0; max-width: 68ch; }
+  .su-demo { position: relative; display: grid; justify-items: end; gap: 8px; }
+  .su-demo-cmd { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; background: var(--surface); border-radius: var(--r-lg); font-size: .8125rem; color: var(--text-2); }
+  .su-demo-cmd[hidden] { display: none; }
+  .su-split { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .su .card-b { display: grid; gap: 12px; }
+  .su .card-b.flush { padding-top: 0; }
+  .su pre { margin: 0; padding: 12px 14px; background: var(--surface-2); border-radius: var(--r); font: 12.5px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); max-height: 340px; overflow: auto; }
+  .su code { font-family: var(--mono); font-size: .8125rem; overflow-wrap: anywhere; }
+  .su-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .su details { border-top: 1px solid var(--border); padding-top: 12px; }
+  .su summary { cursor: pointer; width: fit-content; font-size: .8125rem; font-weight: 500; color: var(--text-2); }
+  .su summary:hover { color: var(--text); }
+  .su ol { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 6px; font-size: .8125rem; color: var(--text-2); }
+  /* Step screenshots: native popover (Esc and outside click close it) */
+  .su ol.su-steps { list-style: none; counter-reset: st; padding: 0; gap: 0; }
+  .su-steps li { counter-increment: st; display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .su-steps li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .su-steps li::before { content: counter(st); grid-row: span 2; width: 18px; height: 18px; margin-top: 1px; border-radius: var(--r); display: grid; place-items: center; font: 600 11px/1 var(--font); background: var(--surface-3); color: var(--text-3); }
+  .su-steps b { display: block; font-weight: 500; color: var(--text); }
+  .su-thumb { width: min(100%, 340px); padding: 0; border: 1px solid var(--border-2); border-radius: var(--r); background: var(--surface-2); overflow: hidden; cursor: zoom-in; }
+  .su-thumb img { display: block; width: 100%; height: auto; transition: transform .16s var(--ease-out); }
+  @media (hover: hover) and (pointer: fine) { .su-thumb:hover img { transform: scale(1.02); } }
+  .su-shot { width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 8px; border: 1px solid var(--border-2); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--pop-shadow); overflow: auto; opacity: 0; transform: scale(.97); transition: opacity .16s var(--ease-out), transform .16s var(--ease-out), overlay .16s allow-discrete, display .16s allow-discrete; }
+  .su-shot:popover-open { opacity: 1; transform: none; }
+  @starting-style { .su-shot:popover-open { opacity: 0; transform: scale(.97); } }
+  .su-shot::backdrop { background: rgba(0, 0, 0, .35); }
+  .su-shot img { display: block; width: 100%; height: auto; border-radius: var(--r); }
+  .su-shot .btn { position: absolute; top: 12px; right: 12px; background: var(--surface); }
+  .su a:not(.btn) { color: var(--accent-fg); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Checklist */
+  .su-checks { list-style: none; margin: 0; padding: 0; display: grid; }
+  .su-checks li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: start; }
+  .su-checks li:first-child { padding-top: 0; }
+  .su-checks li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .su-checks b { font-weight: 500; }
+  .su-sub { color: var(--text-3); font-size: .8125rem; overflow-wrap: anywhere; }
+  .su-act { margin-top: 8px; }
+  .su-act[hidden] { display: none; }
+  .su-dot { width: 18px; height: 18px; margin-top: 1px; border-radius: var(--r); display: grid; place-items: center; font: 600 11px/1 var(--font); background: var(--surface-3); color: var(--text-3); }
+  .su-dot svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  [data-state="ok"] .su-dot { background: var(--good-soft); color: var(--good); }
+  [data-state="now"] .su-dot { background: var(--warn-soft); color: var(--warn); }
+  [data-state="bad"] .su-dot { background: var(--bad-soft); color: var(--bad); }
+
+  /* Result panels inside the progress card */
+  .su-result { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .su-result[hidden] { display: none; }
+  .su-result h3 { display: flex; align-items: center; gap: 8px; }
+
+  .su-ai { margin-top: 40px; scroll-margin-top: 72px; }
+  .su-ai .su-head { margin-bottom: 16px; }
+
+  @media (max-width: 860px) {
+    .su-split { grid-template-columns: minmax(0, 1fr); }
+    .su-demo { justify-items: start; }
+  }
+</style>
+
+<div class="panel su" id="setupPage" data-poll="/api/setup/status">
+  <div class="su-head">
+    <div>
+      <h1>Connect Google Analytics</h1>
+      <p class="muted">Copy the prompt into your AI agent. The Progress checklist follows each step.{{#if @root.demo}} Demo mode is on, so the other pages show generated data until you restart without <code>DEMO=1</code>.{{/if}}</p>
+    </div>
+    <div class="su-demo">
+      <button type="button" class="btn" id="demoBtn" aria-expanded="false" aria-controls="demoCmd">Try demo data</button>
+      <div class="su-demo-cmd" id="demoCmd" hidden>
+        {{#if docker}}
+        <span>Start a second container</span><code>docker run --rm -e DEMO=1 -p 127.0.0.1:5484:5483 {{dockerImage}}</code>
+        <button type="button" class="btn btn-sm" data-copy="docker run --rm -e DEMO=1 -p 127.0.0.1:5484:5483 {{dockerImage}}">Copy</button>
+        {{else}}
+        <span>Stop the app, then run</span><code>pnpm demo</code>
+        <button type="button" class="btn btn-sm" data-copy="pnpm demo">Copy</button>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+
+  <div class="su-split">
+    <section class="card" aria-labelledby="promptH">
+      <div class="card-h"><h2 id="promptH">Prompt for your AI agent</h2></div>
+      <div class="card-b flush">
+        <pre id="setupPrompt">{{prompt}}</pre>
+        <div class="su-row">
+          <button type="button" class="btn btn-primary" data-copy-from="setupPrompt">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+            <span>Copy prompt</span>
+          </button>
+          {{#if docker}}
+          <span class="faint small">Run it in the folder with your <code>.env</code> (a clone of the repo works best). The container reads <code>.env</code> only at start: after each change run <code>docker compose up -d</code> (with plain <code>docker run</code>, remove the container and run it again).</span>
+          {{else}}
+          <span class="faint small">Run it from <code>{{projectDir}}</code></span>
+          {{/if}}
+        </div>
+        <details>
+          <summary>No agent? Do it by hand</summary>
+          <ol class="su-steps">{{#each manual}}<li><div>{{{this.html}}}</div>{{#if this.shot}}
+            <button type="button" class="su-thumb" popovertarget="shot{{@index}}" aria-label="Enlarge screenshot: {{this.alt}}"><img src="/img/setup/{{this.shot}}.webp" alt="{{this.alt}}" loading="lazy"></button>
+            <div popover id="shot{{@index}}" class="su-shot"><img src="/img/setup/{{this.shot}}.webp" alt="{{this.alt}}" loading="lazy"><button type="button" class="btn btn-ghost btn-icon" popovertarget="shot{{@index}}" popovertargetaction="hide" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>{{/if}}</li>{{/each}}</ol>
+        </details>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="progH">
+      <div class="card-h"><h2 id="progH">Progress</h2><span class="faint small num" id="checkedAgo" aria-live="off">Checking</span></div>
+      <div class="card-b flush">
+        <ul class="su-checks" aria-live="polite">
+          <li data-step="env" data-state="wait">
+            <span class="su-dot" aria-hidden="true">1</span>
+            <div><b>.env found</b><div class="su-sub">GA4_CLIENT_EMAIL, GA4_PRIVATE_KEY</div></div>
+            <span class="badge">Waiting</span>
+          </li>
+          <li data-step="key" data-state="wait">
+            <span class="su-dot" aria-hidden="true">2</span>
+            <div><b>Key accepted by Google</b><div class="su-sub">Waiting for step 1</div></div>
+            <span class="badge">Waiting</span>
+          </li>
+          <li data-step="access" data-state="wait">
+            <span class="su-dot" aria-hidden="true">3</span>
+            <div>
+              <b>Give it access in GA4</b><div class="su-sub">Waiting for step 2</div>
+              <div class="su-row su-act" id="accessAct" hidden>
+                <button type="button" class="btn" id="copyEmail">Copy email</button>
+                <a class="btn" href="{{gaAdminUrl}}" target="_blank" rel="noopener">Open GA4 Admin</a>
+              </div>
+            </div>
+            <span class="badge">Waiting</span>
+          </li>
+          <li data-step="props" data-state="wait">
+            <span class="su-dot" aria-hidden="true">4</span>
+            <div><b>Properties visible</b><div class="su-sub">Waiting for step 3</div></div>
+            <span class="badge">Waiting</span>
+          </li>
+        </ul>
+
+        <div class="su-result" id="okBox" hidden>
+          <h3>Connected <span class="badge good">Ready</span></h3>
+          <p class="muted small" id="okText"></p>
+          <div class="su-row">
+            <a class="btn btn-primary" href="/">Open dashboard</a>
+            <button type="button" class="btn" id="recheck">Re-run check</button>
+          </div>
+        </div>
+
+        <div class="su-result" id="errBox" hidden>
+          <h3>Needs a fix <span class="badge warn">Check .env</span></h3>
+          <p class="muted small" id="errHint"></p>
+          <pre id="errLine"></pre>
+          <a id="errLink" class="small" href="#" target="_blank" rel="noopener" hidden>Open the Google Cloud page</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="su-ai" id="ai" aria-labelledby="aiH">
+    <div class="su-head">
+      <div>
+        <h1 id="aiH">Use with AI</h1>
+        <p class="muted">This dashboard serves Streamable HTTP MCP at <code>/mcp</code> and reads the same <code>.env</code>. Connect your AI tool to its HTTP URL using the prompt below.</p>
+      </div>
+    </div>
+    <div class="su-split">
+      <section class="card" aria-labelledby="mcpH">
+        <div class="card-h">
+          <h2 id="mcpH">Prompt for your AI tool</h2>
+          <div class="seg seg-inline" role="group" aria-label="Scope">
+            <button type="button" aria-pressed="true" data-scope="project">This project</button>
+            <button type="button" aria-pressed="false" data-scope="user">All projects</button>
+          </div>
+        </div>
+        <div class="card-b flush">
+          <pre id="mcpPrompt">{{mcpPrompt}}</pre>
+          <div class="su-row">
+            <button type="button" class="btn btn-primary" data-copy-from="mcpPrompt">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+              <span>Copy prompt</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="toolsH">
+        <div class="card-h"><h2 id="toolsH">What your AI gets</h2><span class="faint small num">11 tools</span></div>
+        <div class="card-b flush">
+          <ul class="su-checks">
+            <li data-state="ok"><span class="su-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><b>Reports and realtime</b><div class="su-sub">run_report, run_realtime_report, run_funnel_report</div></div><span></span></li>
+            <li data-state="ok"><span class="su-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><b>Accounts and properties</b><div class="su-sub">get_account_summaries, get_property_details, get_custom_dimensions_and_metrics, list_google_ads_links</div></div><span></span></li>
+            {{#if psi}}
+            <li data-state="ok"><span class="su-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><b>PageSpeed</b><div class="su-sub">run_pagespeed_insights</div></div><span class="badge good">On</span></li>
+            {{else}}
+            <li data-state="wait"><span class="su-dot" aria-hidden="true">&middot;</span><div><b>PageSpeed</b><div class="su-sub">run_pagespeed_insights. Needs PSI_API_KEY in .env (optional)</div></div><span class="badge">Off</span></li>
+            {{/if}}
+            <li data-state="ok"><span class="su-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><b>Indexing requests</b><div class="su-sub">request_indexing. Needs the Web Search Indexing API enabled and the service account as an Owner in Search Console</div></div><span></span></li>
+            <li data-state="ok"><span class="su-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><b>Cache and quota</b><div class="su-sub">get_cache_status, get_rate_limit_status</div></div><span></span></li>
+          </ul>
+          <p class="faint small">Uses the same Google Cloud project and GA4 quota as the dashboard.</p>
+        </div>
+      </section>
+    </div>
+  </section>
+</div>
+<script src="/js/setup.js" defer></script>

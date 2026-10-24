@@ -1,0 +1,40 @@
+# Secrets: credentials come from env at run time, never from the image.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+ga4dataapi-*.json
+*-credentials.json
+service-account*.json
+client_secret*.json
+*.pem
+*.key
+
+# Dependencies and build output
+node_modules
+**/node_modules
+dist
+coverage
+
+# Runtime caches
+.cache
+**/.cache
+.data
+
+# Repo and local tooling
+.git
+.github
+.impeccable
+.playwright-mcp
+.vscode
+.idea
+tasks
+plans
+docs
+ss
+test
+*.log
+Dockerfile
+docker-compose.yml
+.dockerignore

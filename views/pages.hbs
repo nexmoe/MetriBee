@@ -1,0 +1,59 @@
+<div class="panel an-workspace pg-workspace" id="pagesPage">
+  {{> analyticsSidebar }}
+  <div class="an pg-content">
+    <div class="an-toolbar">
+      <div class="pg-heading"><h1>Pages</h1><span class="cap faint num" id="pgDates">Last 30 days</span></div>
+      <div class="an-status">
+        <span class="badge" id="pgFresh" role="status">Loading</span>
+        <button type="button" class="btn btn-ghost btn-icon" id="pgExport" aria-label="Export pages as CSV" title="Export CSV" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 17v4h14v-4"/></svg></button>
+        <label class="pg-select pg-range"><svg class="nb-i" aria-hidden="true"><use href="#nb-sites"/></svg><select id="pgRange" aria-label="Date range"><option value="today">Today</option><option value="7d">Last 7 days</option><option value="28d">Last 28 days</option><option value="30d" selected>Last 30 days</option><option value="90d">Last 90 days</option><option value="custom">Custom range</option></select></label>
+        <button type="button" class="btn btn-icon" id="pgPrev" aria-label="Previous date range" disabled>‹</button>
+        <button type="button" class="btn btn-icon" id="pgNext" aria-label="Next date range" disabled>›</button>
+        <button type="button" class="btn btn-ghost btn-icon" id="pgRefresh" aria-label="Refresh pages" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button>
+      </div>
+    </div>
+    <form class="card pg-custom" id="pgCustom" hidden>
+      <label>From<input type="date" id="pgStart" required aria-label="Start date"></label><label>To<input type="date" id="pgEnd" required aria-label="End date"></label>
+      <button class="btn btn-primary" type="submit">Apply</button><span class="cap faint">Up to 90 days</span>
+    </form>
+    <section class="card pg-summary" id="pgSummary" aria-label="Page traffic summary" aria-busy="true"></section>
+    <div class="pg-controls">
+      <label class="pg-select"><span>Compare</span><select id="pgCompare" aria-label="Compare with"><option value="previous">Previous period</option><option value="none">No comparison</option></select></label>
+      <label class="pg-select"><span>Breakdown</span><select id="pgBreakdown" aria-label="Breakdown"><option value="section">Section</option><option value="page">Page</option></select></label>
+      <div class="seg seg-inline" id="pgMode" role="group" aria-label="Pages to list">
+        <button type="button" data-view="all" aria-pressed="true">All pages</button><button type="button" data-view="entry" aria-pressed="false">Entry pages</button><button type="button" disabled title="Exit pages require a GA4 BigQuery event export">Exit pages ⓘ</button>
+      </div>
+      <label class="pg-search"><svg class="nb-i" aria-hidden="true"><use href="#nb-search"/></svg><input id="pgSearch" type="search" placeholder="Search title or path" aria-label="Search title or path"></label>
+    </div>
+    <p class="pg-notice cap muted" id="pgNotice" hidden></p>
+    <section class="card pg-report" aria-label="Pages report">
+      <div class="pg-table-wrap" id="pgTableWrap" aria-busy="true">
+        <table class="pg-table" id="pgTable"><caption class="pg-sr">Page traffic with previous period comparison and daily trends</caption><thead><tr>
+          <th scope="col" data-column="path"><button type="button" data-sort="path">Page / section</button></th>
+          <th scope="col" data-column="views"><button type="button" data-sort="views">Views</button></th>
+          <th scope="col" data-column="sessions"><button type="button" data-sort="sessions">Sessions</button></th>
+          <th scope="col" data-column="entries"><button type="button" data-sort="entries">Entries</button></th>
+          <th scope="col" data-column="users"><button type="button" data-sort="users">Users</button></th>
+          <th scope="col" data-column="avgEngagement" title="Foreground engagement seconds divided by views"><button type="button" data-sort="avgEngagement">Eng. / view</button></th>
+          <th scope="col" data-column="bounce" title="GA4 non-engaged sessions / sessions"><button type="button" data-sort="bounce">Bounce</button></th>
+          <th scope="col" data-column="change"><button type="button" data-sort="change">Change</button></th>
+          <th scope="col" title="Daily views; daily entry sessions in Entry pages">Trend</th>
+        </tr></thead><tbody id="pgBody"></tbody></table>
+      </div>
+      <div class="pg-table-footer">
+        <span class="cap faint num" id="pgCount" role="status"></span>
+        <div class="pg-expand"><button type="button" class="btn btn-ghost btn-sm" id="pgExpand">Expand all</button><button type="button" class="btn btn-ghost btn-sm" id="pgCollapse">Collapse all</button></div>
+        <div class="pg-pagination"><button type="button" class="btn btn-ghost btn-icon" id="pgFirst" aria-label="First page" disabled>«</button><button type="button" class="btn btn-ghost btn-icon" id="pgBack" aria-label="Previous page" disabled>‹</button><span class="cap num" id="pgPage">1 / 1</span><button type="button" class="btn btn-ghost btn-icon" id="pgForward" aria-label="Next page" disabled>›</button><button type="button" class="btn btn-ghost btn-icon" id="pgLast" aria-label="Last page" disabled>»</button></div>
+      </div>
+    </section>
+    <details class="pg-definitions cap muted"><summary>About these metrics</summary>
+      <p>Engagement per view is GA4 foreground engagement time ÷ pageviews. Bounce is the share of non-engaged sessions. These differ from Rybbit’s time on page and bounce definitions.</p>
+      <p>Entries match GA4 landing paths exactly, including trailing slashes. In Entry pages, views, users, engagement and bounce describe full sessions starting on that landing page. The top 25 directories load separate GA4 reports for distinct sessions and users; while loading or searching, overlapping totals remain blank.</p>
+      <p>Exit pages are unavailable in the GA4 Data API. A BigQuery event export is needed to calculate them. Daily trends cover the top 100 pages and 25 directories. Reports are cached for one hour; refresh is limited to once a minute per report.</p>
+      <a href="https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema" target="_blank" rel="noopener noreferrer">GA4 metric definitions ↗</a>
+    </details>
+  </div>
+</div>
+<script>const PAGE_PROPERTIES = {{{json_stringify properties}}};</script>
+<script src="/js/pages-model.js"></script>
+<script src="/js/pages.js"></script>

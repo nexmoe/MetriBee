@@ -1,0 +1,16 @@
+packages:
+  - frontend
+allowBuilds:
+  esbuild: set this to true or false
+  protobufjs: true
+onlyBuiltDependencies:
+  - protobufjs
+overrides:
+  brace-expansion@<1.1.21: 1.1.21
+  brace-expansion@>=2.0.0 <2.1.7: 2.1.7
+  js-yaml@>=4.0.0 <4.3.2: 4.3.2
+  nanoid@<3.3.18: 3.3.18
+  postcss@<8.5.23: ^8.5.23
+  qs@<6.16.0: 6.16.0
+  postcss-selector-parser@<7.1.6: ^7.1.6
+  yaml@>=2.0.0 <2.8.3: ^2.8.3

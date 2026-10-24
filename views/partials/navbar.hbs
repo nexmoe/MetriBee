@@ -1,0 +1,166 @@
+{{! Navbar: command bar (DESIGN.md tokens from public/css/panel.css). Behavior in public/js/nav.js. }}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="nb-bars" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></symbol>
+  <symbol id="nb-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+  <symbol id="nb-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="nb-setup" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="nb-sites" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9.5h18M3 15h18M9 4v16"/></symbol>
+  <symbol id="nb-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="nb-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="nb-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="nb-plug" viewBox="0 0 24 24"><path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0zM12 18v4"/></symbol>
+  <symbol id="nb-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="nb-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="nb-report" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 16v-3M12 16V8M16 16v-5"/></symbol>
+  <symbol id="nb-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 14H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 3.6V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z"/></symbol>
+</svg>
+
+<header id="appNav" class="nb">
+  <a class="nb-brand" href="/" aria-label="GA4 Dashboard, home">
+    <span class="nb-mark"><svg class="nb-i"><use href="#nb-bars"/></svg></span>
+  </a>
+  {{#if nav.title}}<span class="nb-title">{{nav.title}}</span>{{/if}}
+  {{#if @root.demo}}<span class="badge" title="Generated sample data, not from Google Analytics">Demo data</span>{{/if}}
+
+  <button type="button" class="nb-cmd" id="jumpOpen" aria-haspopup="dialog" aria-controls="jumpDlg" aria-keyshortcuts="Control+K Meta+K" aria-label="Jump to a page, site or report">
+    <svg class="nb-i"><use href="#nb-search"/></svg>
+    <span class="nb-cmd-t">Jump to a page, site or report</span>
+    <kbd class="nb-kbd" id="jumpKbd">Ctrl K</kbd>
+  </button>
+
+  <nav class="nb-icons" aria-label="Pages">
+    <a class="nb-ic{{#if nav.dash}} on{{/if}}" href="/" aria-label="Dashboard"{{#if nav.dash}} aria-current="page"{{/if}}>
+      <svg class="nb-i"><use href="#nb-dash"/></svg><span class="nb-tip" aria-hidden="true">Dashboard</span>
+    </a>
+    <a class="nb-ic{{#if nav.globe}} on{{/if}}" href="/globe" aria-label="Globe"{{#if nav.globe}} aria-current="page"{{/if}}>
+      <svg class="nb-i"><use href="#nb-globe"/></svg><span class="nb-tip" aria-hidden="true">Globe</span>
+    </a>
+    <a class="nb-ic{{#if nav.analytics}} on{{/if}}" href="/analytics" aria-label="Analytics"{{#if nav.analytics}} aria-current="page"{{/if}}>
+      <svg class="nb-i"><use href="#nb-bars"/></svg><span class="nb-tip" aria-hidden="true">Analytics</span>
+    </a>
+    <a class="nb-ic{{#if nav.sites}} on{{/if}}" href="/sites" aria-label="Sites"{{#if nav.sites}} aria-current="page"{{/if}}>
+      <svg class="nb-i"><use href="#nb-sites"/></svg><span class="nb-tip" aria-hidden="true">Sites</span>
+    </a>
+  </nav>
+
+  <div class="nb-set">
+    <button type="button" class="nb-ic nb-gear" id="navSettings" aria-haspopup="menu" aria-expanded="false" aria-controls="navMenu" aria-label="Settings">
+      <svg class="nb-i"><use href="#nb-gear"/></svg><span class="nb-tip nb-tip-r" aria-hidden="true">Settings</span>
+    </button>
+    {{! Settings menu: one .nb-grp per setting. Add a group (label + menuitem/menuitemradio buttons) to add a setting. }}
+    <div class="nb-menu" id="navMenu" role="menu" aria-label="Settings" hidden>
+      <div class="nb-grp" role="group" aria-labelledby="nbThemeL">
+        <div class="nb-gl" id="nbThemeL">Theme</div>
+        <button type="button" class="nb-mi" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-theme="light">
+          <svg class="nb-i"><use href="#nb-sun"/></svg>Light<svg class="nb-i nb-ck"><use href="#nb-check"/></svg>
+        </button>
+        <button type="button" class="nb-mi" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-theme="dark">
+          <svg class="nb-i"><use href="#nb-moon"/></svg>Dark<svg class="nb-i nb-ck"><use href="#nb-check"/></svg>
+        </button>
+      </div>
+      <div class="nb-grp" role="group" aria-labelledby="nbSetupL">
+        <div class="nb-gl" id="nbSetupL">Setup</div>
+        <a class="nb-mi" role="menuitem" tabindex="-1" href="/setup"><svg class="nb-i"><use href="#nb-plug"/></svg>Connection</a>
+        <a class="nb-mi" role="menuitem" tabindex="-1" href="/setup#ai"><svg class="nb-i"><use href="#nb-chat"/></svg>Use with AI</a>
+      </div>
+      <div class="nb-meta num" id="navQuota" role="none" hidden></div>
+    </div>
+  </div>
+</header>
+
+<dialog class="jump" id="jumpDlg" aria-label="Jump to a page, site or report">
+  <div class="jump-in">
+    <svg class="nb-i"><use href="#nb-search"/></svg>
+    <input id="jumpQ" type="text" role="combobox" aria-expanded="true" aria-controls="jumpList" aria-autocomplete="list"
+      placeholder="Jump to a page, site or report" autocomplete="off" spellcheck="false" />
+    <kbd class="nb-kbd">Esc</kbd>
+  </div>
+  <div class="jump-list" id="jumpList" role="listbox" aria-label="Results"></div>
+</dialog>
+
+<style>
+  /* Command bar. Tokens: public/css/panel.css (DESIGN.md). */
+  .nb { position: sticky; top: 0; z-index: 200; box-sizing: border-box; height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; background: var(--surface); border-bottom: 1px solid var(--border); color: var(--text); font: 400 14px/1.5 var(--font); }
+  .nb *, .jump * { box-sizing: border-box; }
+  .nb-i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .nb :focus-visible, .jump :focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 2px; }
+  .nb-brand { display: grid; place-items: center; width: 32px; height: 32px; margin-left: -6px; border-radius: var(--r); flex: none; }
+  .nb-mark { width: 20px; height: 20px; border-radius: var(--r); background: var(--accent); color: #fff; display: grid; place-items: center; }
+  .nb-mark .nb-i { width: 12px; height: 12px; stroke-width: 2.2; }
+  .nb-title { font-weight: 600; font-size: 14px; letter-spacing: -.011em; white-space: nowrap; }
+
+  .nb-cmd { flex: 1; max-width: 420px; min-width: 0; margin: 0 auto; height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--border-2); background: var(--surface-2); border-radius: var(--r); color: var(--text-3); font: 400 13px/1 var(--font); text-align: left; cursor: pointer; transition: background-color .15s; }
+  .nb-cmd:hover { background: var(--surface-3); }
+  .nb-cmd-t { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nb-kbd { font: 500 11px/1.4 var(--mono); padding: 1px 5px; border: 1px solid var(--border-2); border-radius: var(--r); color: var(--text-3); background: var(--surface); white-space: nowrap; }
+
+  .nb-icons { display: flex; gap: 2px; }
+  .nb-ic { position: relative; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: var(--r); background: transparent; color: var(--text-2); text-decoration: none; cursor: pointer; transition: background-color .15s, color .15s; }
+  .nb-ic:hover { background: var(--surface-2); color: var(--text); }
+  .nb-ic.on { background: var(--accent-soft); color: var(--accent-fg); }
+  .nb-gear[aria-expanded="true"] { background: var(--surface-3); color: var(--text); }
+
+  /* Tooltips: dark tip under the icon, opacity and transform only */
+  .nb-tip { position: absolute; top: calc(100% + 6px); left: 50%; padding: 4px 8px; border-radius: var(--r); background: var(--text); color: var(--bg); font: 500 12px/1.3 var(--font); white-space: nowrap; box-shadow: var(--pop-shadow); pointer-events: none; opacity: 0; transform: translate(-50%, -2px); transition: opacity .15s var(--ease-out), transform .15s var(--ease-out); z-index: 2; }
+  .nb-tip-r { left: auto; right: 0; transform: translateY(-2px); }
+  .nb-ic:hover .nb-tip, .nb-ic:focus-visible .nb-tip { opacity: 1; transform: translate(-50%, 0); }
+  .nb-ic:hover .nb-tip-r, .nb-ic:focus-visible .nb-tip-r { transform: none; }
+  .nb-gear[aria-expanded="true"] .nb-tip { opacity: 0; }
+
+  /* Settings menu (floating layer) */
+  .nb-set { position: relative; flex: none; }
+  .nb-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 248px; padding: 4px; background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--r-lg); box-shadow: var(--pop-shadow); z-index: 3; transform-origin: top right; animation: nbIn .16s var(--ease-out); }
+  .nb-menu[hidden] { display: none; }
+  .nb-grp + .nb-grp, .nb-meta { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px; }
+  .nb-gl { padding: 4px 8px 2px; font-size: 12px; font-weight: 500; color: var(--text-3); }
+  .nb-mi { width: 100%; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border: 0; border-radius: var(--r); background: transparent; color: var(--text-2); font: 400 13px/1 var(--font); text-align: left; cursor: pointer; text-decoration: none; box-sizing: border-box; }
+  .nb-mi:hover, .nb-mi:focus-visible { background: var(--surface-2); color: var(--text); outline: none; }
+  .nb-mi[aria-checked="true"] { color: var(--text); }
+  .nb-ck { margin-left: auto; color: var(--accent-fg); visibility: hidden; }
+  .nb-mi[aria-checked="true"] .nb-ck { visibility: visible; }
+  .nb-meta { padding: 6px 8px 4px; font-size: 12px; color: var(--text-3); line-height: 1.4; }
+  .nb-meta[hidden] { display: none; }
+
+  /* Jump palette (<dialog>, floating layer) */
+  .jump { width: min(560px, calc(100vw - 32px)); max-width: 560px; margin: 15vh auto auto; padding: 0; border: 1px solid var(--border-2); border-radius: var(--r-lg); background: var(--surface); color: var(--text); box-shadow: var(--pop-shadow); font: 400 14px/1.5 var(--font); }
+  .jump[open] { animation: nbIn .16s var(--ease-out); }
+  .jump::backdrop { background: rgb(0 0 0 / .32); }
+  .jump-in { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 12px; border-bottom: 1px solid var(--border); color: var(--text-3); }
+  .jump-in input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--text); font: 400 15px/1 var(--font); outline: none; }
+  .jump-in input:focus-visible { outline: none; }
+  .jump-in input::placeholder { color: var(--text-3); }
+  .jump-list { max-height: min(380px, 60vh); overflow-y: auto; padding: 4px; overscroll-behavior: contain; }
+  .jump-gl { padding: 8px 8px 4px; font-size: 12px; font-weight: 500; color: var(--text-3); }
+  .jump-it { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 8px; border-radius: var(--r); color: var(--text-2); font-size: 13px; cursor: pointer; text-decoration: none; }
+  .jump-it[aria-selected="true"] { background: var(--surface-3); color: var(--text); }
+  .jump-it .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jump-it .sub { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+  .jump-fav { width: 16px; height: 16px; flex: none; border-radius: var(--r); object-fit: contain; }
+  .jump-tile { width: 16px; height: 16px; flex: none; border-radius: var(--r); display: grid; place-items: center; background: var(--surface-3); color: var(--text-2); font-size: 10px; font-weight: 600; }
+  .jump-empty { padding: 16px 8px; color: var(--text-3); font-size: 13px; }
+  body.privacy-blur .jump [data-privacy] { filter: blur(6px); user-select: none; }
+
+  @keyframes nbIn { from { opacity: 0; transform: translateY(-4px); } }
+
+  @media (hover: none), (pointer: coarse) {
+    .nb-ic, .nb-brand { width: 44px; height: 44px; }
+    .nb-cmd { height: 44px; }
+    .nb-mi { height: 44px; }
+    .jump-it { height: 44px; }
+    .nb { gap: 4px; padding: 0 12px; }
+  }
+  @media (max-width: 640px) {
+    .nb { gap: 4px; padding: 0 12px; }
+    .nb-title, .nb-cmd-t, .nb .nb-kbd { display: none; }
+    .nb-cmd { flex: none; width: 32px; margin: 0 0 0 auto; padding: 0; justify-content: center; background: transparent; border-color: transparent; color: var(--text-2); }
+    .nb-tip { display: none; }
+    .jump { margin-top: 8vh; }
+  }
+  @media (max-width: 640px) and ((hover: none) or (pointer: coarse)) {
+    .nb-cmd { width: 44px; height: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nb *, .nb-menu, .jump, .jump[open] { transition: none !important; animation: none !important; }
+  }
+</style>
+<script src="/js/nav.js" defer></script>

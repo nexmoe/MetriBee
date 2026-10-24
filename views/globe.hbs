@@ -1,0 +1,294 @@
+<link rel="stylesheet" href="/css/panel.css" />
+<style>
+  /* Map-only tokens (DESIGN.md exception, like the dither fill). Plain values, not light-dark(): the canvas engine reads them with getComputedStyle. */
+  :root { --sea: #e4e5ec; --land: #ffffff; --landline: #d4d4dc; --grat: rgba(24,24,27,.05); --space: #f7f7f9; --halo: rgba(79,70,229,.16); --indline: #a8a8b4; --night: rgba(30,32,64,.28); }
+  :root[data-theme="dark"] { --sea: #0f0f13; --land: #1d1d23; --landline: #33333c; --grat: rgba(255,255,255,.04); --space: #060608; --halo: rgba(129,140,248,.22); --indline: #5a5a66; --night: rgba(0,0,6,.75); }
+  :root[data-map="outdoors"] { --sea: #4a9fd8; --land: #9cd08a; --landline: #6f9f5f; --grat: rgba(30,80,110,.08); --space: #eef4f7; --halo: rgba(70,150,200,.35); --indline: #7d7488; --night: rgba(8,12,32,.45); }
+  :root[data-theme="dark"][data-map="outdoors"] { --sea: #0b3a5e; --land: #24502f; --landline: #3a6d47; --grat: rgba(160,210,240,.05); --space: #04080b; --halo: rgba(90,170,230,.25); --indline: #7d7488; --night: rgba(0,0,6,.75); }
+  /* --night: core color of the night side; drawn as 16 stacked circles whose combined alpha is this alpha, for a smooth dusk ramp */
+
+  /* Vivid looks (MapLibre globe, Outdoors): dark space backdrop and a stronger blue halo in both themes */
+  :root[data-gspace="dark"] { --space: #05070d; --halo: rgba(74,159,216,.55); }
+
+  body { overflow: hidden; }
+  .dash-foot, body > .hidden { display: none !important; }
+  .container.mx-auto.p-5.mb-auto { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+
+  .gstage { position: fixed; inset: 52px 0 0 0; background: var(--space); overflow: clip; touch-action: none; font: 400 14px/1.5 var(--font); color: var(--text); }
+  .gstage * { box-sizing: border-box; }
+  .gstage .num { font-variant-numeric: tabular-nums; }
+  .gstage :focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 2px; }
+  .gmap, .gmap > * { position: absolute; inset: 0; }
+  .gmap canvas { width: 100%; height: 100%; cursor: grab; }
+  .gmap .maplibregl-canvas { outline: none; }
+  .attr { position: absolute; left: 12px; bottom: 8px; z-index: 2; font-size: 10.5px; color: var(--text-3); background: var(--surface); padding: 1px 6px; border-radius: var(--r); }
+  .attr a { color: inherit; }
+  .marks { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .gpop { position: absolute; z-index: 2; background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--r-lg); box-shadow: var(--pop-shadow); }
+
+  /* Summary panel (variant A): header (live count, refresh, chevron), body, footer note */
+  .gsum { top: 12px; left: 12px; width: min(320px, calc(100% - 24px)); display: flex; flex-direction: column; max-height: calc(100% - 24px); overflow: hidden auto; font-size: 13px; }
+  .gsum > *, .pb > * { min-width: 0; }
+  /* Minimal scrollbars on every scrolling box of the page */
+  .gstage * { scrollbar-width: thin; scrollbar-color: var(--border-2) transparent; }
+  .gstage ::-webkit-scrollbar { width: 6px; height: 6px; }
+  .gstage ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+  .gstage ::-webkit-scrollbar-track { background: transparent; }
+  .ph { display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 12px; min-height: 44px; }
+  .pb { border-top: 1px solid var(--border); padding: 12px; display: grid; gap: 12px; }
+  .pf { border-top: 1px solid var(--border); padding: 8px 12px; margin: 0; font-size: 12px; color: var(--text-3); }
+  .tools { display: flex; flex-wrap: wrap; gap: 2px; margin: -4px 0 -4px -4px; }
+  .tools .sep { width: 1px; align-self: stretch; margin: 6px 3px; background: var(--border); }
+  /* Hover label for icon buttons (DESIGN.md rail tooltip: --text ground, --bg text, --pop-shadow) */
+  .gtip { position: absolute; z-index: 5; pointer-events: none; background: var(--text); color: var(--bg); font-size: 12px; font-weight: 500; line-height: 1.3; padding: 4px 8px; border-radius: var(--r); box-shadow: var(--pop-shadow); white-space: nowrap; }
+  .gtip[hidden] { display: none; }
+  .lbl { font-size: 12px; color: var(--text-3); font-weight: 500; }
+  .rows { display: grid; gap: 2px; }
+  .rows:empty { display: none; }
+  .rh { display: flex; justify-content: space-between; gap: 8px; }
+  .rh .key { color: var(--good); }
+  .row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .row .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .v { color: var(--text-2); }
+  .flag { width: 24px; height: 16px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px var(--border-2); display: block; object-fit: cover; background: var(--surface-3); }
+  .ib { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: var(--r); background: transparent; color: var(--text-2); cursor: pointer; padding: 0; transition: background-color .15s, color .15s; }
+  .ib:hover { background: var(--surface-2); color: var(--text); }
+  .ib[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-fg); }
+  .ib svg, .gico svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .ghead { display: flex; align-items: baseline; gap: 6px; flex: 1; min-width: 0; }
+  .ghead b { font-size: 22px; font-weight: 600; letter-spacing: -.02em; line-height: 1; }
+  .ghead .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ghead .key { color: var(--good); }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; align-self: center; flex: none; animation: gpulse 2s ease-out infinite; }
+  @keyframes gpulse { 0% { opacity: 1; } 70% { opacity: .35; } 100% { opacity: 1; } }
+  .chips { display: flex; gap: 4px; }
+  .chip { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px; flex: 0 1 auto; min-width: 0; border: 1px solid var(--border-2); border-radius: var(--r); background: var(--surface); font-size: 12px; color: var(--text); white-space: nowrap; max-width: 100%; cursor: pointer; }
+  .chip:hover { background: var(--surface-2); }
+  .chip:focus-within { outline: 2px solid var(--accent-fg); outline-offset: 2px; }
+  .chip .k { color: var(--text-3); }
+  .chip .k { flex: none; }
+  .chip:not(.set) { flex-shrink: 0; } /* "All" never shrinks; only a chip with a value set may ellipsize */
+  /* Customizable select (Chrome 135+) so options can carry site icons; other browsers show a plain select */
+  .chip select, .chip ::picker(select) { appearance: base-select; }
+  .chip select { min-width: 0; border: 0; background: none; color: inherit; font: inherit; padding: 0; margin: 0; cursor: pointer; field-sizing: content; display: inline-flex; align-items: center; height: 22px; line-height: 22px; max-width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; outline: none; }
+  .chip select::picker-icon { display: none; }
+  .chip select > button { all: unset; display: inline-flex; align-items: center; min-width: 0; white-space: nowrap; }
+  .chip .cv { white-space: nowrap; }
+  .chip ::picker(select) { margin-top: 6px; padding: 4px; min-width: 180px; max-width: 280px; max-height: 320px; border: 1px solid var(--border-2); border-radius: var(--r-lg); background: var(--surface); color: var(--text); box-shadow: var(--pop-shadow); }
+  .chip option { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--r); font-size: 12px; color: var(--text); background: var(--surface); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip option:hover, .chip option:focus-visible { background: var(--surface-2); outline: none; }
+  .chip option:checked { color: var(--accent-fg); font-weight: 500; }
+  .chip option::checkmark { display: none; }
+  .chip option .fav { width: 16px; height: 16px; font-size: 9px; box-shadow: none; }
+  .gsum .row .fav { width: 16px; height: 16px; font-size: 9px; }
+  /* Refresh popover (opened from the strip) */
+  .grf { z-index: 4; width: 260px; padding: 12px; display: grid; gap: 10px; font-size: 12px; color: var(--text-3); }
+  .grf[hidden] { display: none; }
+  .grf-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .grf-h b { color: var(--text); font-size: 13px; font-weight: 600; }
+  .grf .btn { height: 28px; padding: 0 10px; font-size: 12px; }
+  .grf .ivl { display: flex; align-items: center; gap: 8px; }
+  .grf select { height: 28px; flex: 1; border: 1px solid var(--border-2); border-radius: var(--r); background: var(--surface); color: var(--text); font: 500 12px var(--font); padding: 0 4px; }
+  .grf p { margin: 0; line-height: 1.45; }
+  .grf .warn { color: var(--warn); }
+  .grf .lw { border-top: 1px solid var(--border); padding-top: 10px; }
+  .grf .lw + .lw { border-top: 0; padding-top: 0; }
+  .lw { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-2); }
+  .lw input { accent-color: var(--accent); margin: 0; }
+
+  /* Event feed */
+  .gbr { position: absolute; right: 12px; bottom: 12px; z-index: 2; width: min(420px, calc(100% - 24px)); max-height: calc(100% - 24px); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
+  .gbr > * { pointer-events: auto; }
+  .gbr .gfeed { position: static; width: 100%; flex: none; }
+  .gbr .gzoom { flex: none; }
+  .gfeed { max-height: 212px; display: flex; flex-direction: column; }
+
+  /* Zoom control: DESIGN.md .btn (surface, border-2 stroke, 2px radius, 32px), stacked */
+  .gzoom { display: flex; flex-direction: column; }
+  .zb { width: 32px; height: 32px; display: grid; place-items: center; padding: 0; border: 1px solid var(--border-2); border-radius: var(--r); background: var(--surface); color: var(--text); cursor: pointer; transition: background-color .15s, transform .12s var(--ease-out); }
+  .zb:first-child { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .zb:last-child { border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+  .zb:hover { background: var(--surface-2); }
+  .zb:active { transform: scale(.97); }
+  .zb:disabled { opacity: .5; pointer-events: none; }
+  .zb svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; }
+
+  /* Collapsed panel: header only */
+  .gmin svg { transition: transform .15s var(--ease-out); }
+  .gsum[data-min] .gmin svg { transform: rotate(180deg); }
+  .gsum[data-min] > :not(.ph) { display: none; }
+  .gfeed[hidden] { display: none; }
+  .feed-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-3); }
+  .feed-h b { color: var(--text); font-weight: 600; font-size: 13px; }
+  .feed-h button { border: 0; background: none; color: var(--accent-fg); font: 500 12px var(--font); cursor: pointer; padding: 0; }
+  .gfeed ul { list-style: none; margin: 0; padding: 4px 0; overflow: auto; }
+  .gfeed li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 5px 12px; font-size: 12.5px; line-height: 1.4; }
+  .gfeed li.empty { display: block; color: var(--text-3); }
+  .gfeed li .t { color: var(--text-3); font-size: 11px; white-space: nowrap; }
+  .gfeed li em { font-style: normal; color: var(--text-2); }
+  .gfeed li .key { color: var(--good); font-weight: 500; }
+  .gfeed li.new { animation: gin .18s var(--ease-out); }
+  @keyframes gin { from { opacity: 0; transform: translateY(-4px); } }
+  .av { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); overflow: hidden; display: grid; place-items: center; font-size: 10px; font-weight: 600; color: var(--text-2); flex: none; }
+  .av img { width: 100%; height: 100%; display: block; }
+
+  /* Avatar markers: one size (48px) for every marker; a group shows up to 3 overlapping faces (.f), no count badge */
+  .mk { --m: 48px; position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; padding: 0; width: calc(var(--m) + var(--n, 0) * 11px); height: var(--m); border: 0; background: none; transition: transform .15s var(--ease-out); font: 600 12px var(--font); color: var(--text-2); }
+  .mk:hover, .mk.sel { z-index: 999 !important; transform: translate(-50%, -50%) scale(1.15); }
+  .mk .f { position: absolute; top: 0; left: var(--o); width: var(--m); height: var(--m); border-radius: 50%; overflow: hidden; background: var(--surface); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); display: grid; place-items: center; }
+  .mk.sel .f:first-child { border-color: var(--accent); }
+  .mk .f > img:not(.fav) { width: 100%; height: 100%; display: block; }
+  .mk img { -webkit-user-drag: none; user-select: none; pointer-events: none; } /* a native image drag would swallow the map pan */
+  .mk.new { animation: gfade .12s linear; }
+  @keyframes gfade { from { opacity: 0; } }
+  .mk:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 2px; border-radius: 24px; }
+
+  /* Card shell (shared by the city card and the group list) */
+  /* The card opens next to the clicked avatar; globe.js positionCard() places it clear of the panel, feed and zoom */
+  .gcard { z-index: 3; width: 300px; overflow: hidden auto; }
+  .gcard[hidden] { display: none; }
+  .gcard .x { position: absolute; right: 6px; top: 6px; }
+
+  /* Group list card rows */
+  .glist { list-style: none; margin: 0 -4px; padding: 0; max-height: 240px; overflow-y: auto; scrollbar-width: thin; }
+  .glist button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 6px 4px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; border-radius: var(--r); }
+  .glist li + li button { border-top: 1px solid var(--border); border-radius: 0; }
+  .glist button:hover { background: var(--surface-2); }
+  .glist .ct { flex: 1; min-width: 0; }
+  .glist .ct b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .glist .num { color: var(--text-2); }
+
+  /* City card body (variant A, stacked faces): renderCityCard() in globe.js. Swap this block and that function together. */
+  .gcity .ch { display: flex; align-items: center; gap: 8px; padding: 12px 36px 12px 12px; }
+  .gcity .ct { flex: 1; min-width: 0; }
+  .gcity .ct b { display: block; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gcity .ct > span { display: block; font-size: 12px; color: var(--text-3); } /* group list sub line */
+  .gcity .stack { display: flex; align-items: center; }
+  .gcity .stack .fav + .fav { margin-left: -6px; }
+  .gcity .stack .more { margin-left: 4px; font-size: 12px; color: var(--text-3); }
+  .gcity .cb { border-top: 1px solid var(--border); padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .gcity .kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .gcity .kv div { display: grid; }
+  .gcity .kv small { font-size: 12px; color: var(--text-3); }
+  .gcity .kv b { font-weight: 600; }
+  .gcity .tp small { display: block; font-size: 12px; color: var(--text-3); }
+  .gcity .page { font-size: 13px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gcity .tw { max-height: 190px; overflow-y: auto; scrollbar-width: thin; scrollbar-gutter: stable; }
+  .gcity .tbl th:last-child, .gcity .tbl td:last-child { padding-right: 4px; }
+  .gcity .tbl { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+  .gcity .tbl th { font-weight: 500; color: var(--text-3); text-align: right; padding: 4px 0; position: sticky; top: 0; background: var(--surface); width: 52px; }
+  .gcity .tbl th:first-child { width: auto; }
+  .gcity .tbl th:first-child, .gcity .tbl td:first-child { text-align: left; }
+  .gcity .tbl td { padding: 6px 0; border-top: 1px solid var(--border); text-align: right; }
+  .gcity .site { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .gcity .site > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gcity .foot { font-size: 12px; color: var(--text-3); }
+  /* Local time and day or night: header sub line, compact (icon + time) in the stack list */
+  .dn, .gcity .ct > .dn { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-3); white-space: nowrap; }
+  .dn svg { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .dn .dy { color: var(--warn); }
+  .dn .nt { color: var(--accent-fg); }
+  .glist .dn { flex: none; }
+  .gcity .glist { max-height: 168px; margin: 0 -4px; }
+  .gcity .glist button { padding: 4px; gap: 8px; }
+  .gcity .glist .ct b { font-size: 13px; font-weight: 500; }
+
+  /* Site faces: favicon or letter tile */
+  .fav { width: 20px; height: 20px; border-radius: 2px; flex: none; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; background: #fff; object-fit: contain; box-shadow: 0 0 0 2px var(--surface); }
+  .gstage[data-av="sites"] .mk .f { background: #fff; }
+  .mk .fav { width: 62%; height: 62%; border-radius: 2px; box-shadow: none; }
+  .mk .fav.tile { width: 100%; height: 100%; border-radius: 50%; font-size: 12px; }
+
+  .gerr { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-3); font-size: 13px; }
+
+  body.privacy-blur .gstage [data-privacy] { filter: blur(6px); user-select: none; }
+
+  @media (max-width: 860px) {
+    .gsum { width: auto; right: 12px; max-height: 55%; }
+    .gbr { left: 0; right: 0; bottom: 0; width: 100%; max-height: calc(100% - 68px); align-items: flex-start; }
+    .gstage:has(.gcard:not([hidden])) .gzoom { display: none; } /* bottom sheet sits right on the feed */
+    .gzoom { margin-left: 12px; }
+    .gfeed { max-height: 150px; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+    .gbr:has(.gfeed[hidden]) { bottom: 12px; }
+    .gcard { width: auto; border-radius: var(--r-lg) var(--r-lg) 0 0; } /* bottom sheet: globe.js sets left, right and bottom */
+    .gstage:has(.gfeed[hidden]) .gcard { padding-bottom: env(safe-area-inset-bottom); }
+    .attr { left: auto; right: 12px; bottom: auto; top: 66px; } /* under the collapsed panel; the open panel covers it while open */
+  }
+  @media (hover: none), (pointer: coarse) {
+    .ib { width: 40px; height: 40px; }
+    .grf select, .grf .btn { height: 36px; }
+    .zb { width: 44px; height: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gstage *, .gstage *::before, .gstage *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div id="gstage" class="gstage">
+  <div class="gmap" id="gmap" role="img" aria-label="Map of live visitors"></div>
+  <div class="attr" id="gattr" hidden>&copy; <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
+  <div class="marks" id="gmarks"></div>
+
+  <section class="gpop gsum" aria-label="Live summary">
+    <div class="ph">
+      <div class="ghead"><span class="live-dot" aria-hidden="true"></span><b class="num" id="gTotal">0</b><span class="lbl" id="gSub">Loading live visitors</span></div>
+      <button type="button" class="ib gmin" data-t="panel" data-icon="chev" aria-expanded="true" aria-label="Collapse panel"></button>
+    </div>
+    <div class="pb">
+      <div class="tools" role="toolbar" aria-label="Map controls">
+        <button type="button" class="ib" data-t="proj" data-icon="map" aria-pressed="false" aria-label="Switch to 2D map"></button>
+        <button type="button" class="ib" data-t="style" data-icon="leaf" aria-pressed="false" aria-label="Map style: Minimal (switch to Outdoors)"></button>
+        <button type="button" class="ib" data-t="theme" data-icon="sun" aria-label="Light or dark map"></button>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" class="ib" data-t="avatar" data-icon="user" aria-pressed="false" aria-label="Avatars: People (switch to Sites)"></button>
+        <button type="button" class="ib" data-t="feed" data-icon="list" aria-pressed="true" aria-label="Event feed (M)"></button>
+        <button type="button" class="ib" id="privacyBtn" data-icon="eyeoff" aria-pressed="false" aria-label="Hide names and domains (P)"></button>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" class="ib" data-t="rfpop" data-icon="refresh" aria-expanded="false" aria-controls="grf" aria-label="Refresh"></button>
+        <button type="button" class="ib" data-t="full" data-icon="full" aria-label="Fullscreen"></button>
+      </div>
+      <div class="chips" id="gChips"></div>
+      <div class="rows" id="gCountries"></div>
+      <div class="rows" id="gSites"></div>
+    </div>
+    <p class="pf" id="gNote">Avatar = city. Stack = nearby cities, click to open.</p>
+  </section>
+
+  <div class="gpop grf" id="grf" role="dialog" aria-label="Refresh" hidden>
+    <div class="grf-h"><b>Refresh</b><button type="button" class="btn" data-t="refresh">Refresh now</button></div>
+    <div class="ivl">
+      <label for="rfSel">Every</label>
+      <select id="rfSel">
+        <option value="auto">Auto</option>
+        <option value="30">30 s</option>
+        <option value="60">1 min</option>
+        <option value="120">2 min</option>
+        <option value="300">5 min</option>
+      </select>
+    </div>
+    <p class="num" id="rfNext"></p>
+    <p id="rfCap"></p>
+    <label class="lw"><input type="checkbox" id="gNight" /> Day and night shade</label>
+    <label class="lw"><input type="checkbox" id="gLight" /> Lightweight map</label>
+  </div>
+  <div class="gtip" id="gtip" role="tooltip" hidden></div>
+
+  <div class="gpop gcard" id="gcard" role="dialog" aria-label="City details" hidden></div>
+  <div class="gbr">
+    <div class="gzoom" role="group" aria-label="Zoom">
+      <button type="button" class="zb" data-t="zin" data-icon="plus" title="Zoom in" aria-label="Zoom in"></button>
+      <button type="button" class="zb" data-t="zout" data-icon="minus" title="Zoom out" aria-label="Zoom out"></button>
+    </div>
+    <section class="gpop gfeed" id="gfeed" aria-label="Live events">
+      <div class="feed-h" id="gfeedH"><b>Live events</b><span>Press M to hide</span></div>
+      <ul id="gfeedList" aria-live="polite"></ul>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script src="/js/clusterMarks.js"></script>
+<script src="/js/letterTile.js"></script>
+<script src="/js/sun.js"></script>
+<script src="/js/globe.js"></script>

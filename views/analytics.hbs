@@ -1,0 +1,49 @@
+<div class="panel an-workspace" id="anPage">
+  {{> analyticsSidebar }}
+
+  <div class="an">
+    <div class="an-toolbar">
+      <div class="an-period">
+        <div class="seg" role="group" aria-label="Date range" id="anRange">
+          <button type="button" data-range="today" aria-pressed="false">Today</button>
+          <button type="button" data-range="7d" aria-pressed="false">7 days</button>
+          <button type="button" data-range="28d" aria-pressed="true">28 days</button>
+        </div>
+        <span class="cap faint" id="anDateRange"></span>
+      </div>
+      <div class="an-status">
+        <span class="badge" id="anFresh" role="status">Loading</span>
+        <button type="button" class="btn btn-ghost" id="anExport" title="Export all reports (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>Export CSV</button>
+        <a class="btn" id="anGa4" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open in GA4</a>
+        <button type="button" class="btn btn-ghost btn-icon" id="anRefresh" aria-label="Refresh analytics" title="Refresh (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button>
+      </div>
+    </div>
+
+    <section class="card an-overview" id="overview" aria-label="Overview">
+      <div class="an-metrics">
+        <div class="an-sums" id="anSums"></div>
+        <div class="an-live">
+          <span class="an-metric-label"><span class="dot"></span> Live now</span>
+          <b class="an-metric-value num" id="anLive">—</b>
+          <span class="cap faint num" id="anLiveViews">Last 30 minutes</span>
+          <div class="chart" id="anLiveChart"></div>
+        </div>
+      </div>
+      <div class="card-b trend-b chart" id="anTrend"></div>
+    </section>
+
+    <div class="an-report-grid" id="anGrid"></div>
+
+    <section class="card an-changes" id="changes" aria-labelledby="anChangesTitle">
+      <div class="card-h"><h2 id="anChangesTitle">What changed</h2><span class="cap faint">vs <span class="an-prev an-lc">previous 28 days</span></span></div>
+      <div class="card-b"><ul class="chg" id="anChg"></ul></div>
+    </section>
+  </div>
+</div>
+
+<script>
+  const PROPERTIES = {{{ json_stringify properties }}};
+  const CARDS = {{{ json_stringify analyticsCatalog }}};
+</script>
+<script src="/js/analyticsAudience.js"></script>
+<script src="/js/analytics.js"></script>

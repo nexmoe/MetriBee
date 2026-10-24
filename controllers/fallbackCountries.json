@@ -1,0 +1,4283 @@
+[
+  {
+    "cca2": "AI",
+    "name": "Anguilla",
+    "latlng": [
+      18.25,
+      -63.16666666
+    ],
+    "capital": "The Valley",
+    "capitalLatlng": [
+      18.22,
+      -63.05
+    ],
+    "tld": [
+      ".ai"
+    ],
+    "fifa": "AIA"
+  },
+  {
+    "cca2": "GT",
+    "name": "Guatemala",
+    "latlng": [
+      15.5,
+      -90.25
+    ],
+    "capital": "Guatemala City",
+    "capitalLatlng": [
+      14.62,
+      -90.52
+    ],
+    "tld": [
+      ".gt"
+    ],
+    "fifa": "GUA"
+  },
+  {
+    "cca2": "GM",
+    "name": "Gambia",
+    "latlng": [
+      13.46666666,
+      -16.56666666
+    ],
+    "capital": "Banjul",
+    "capitalLatlng": [
+      13.45,
+      -16.57
+    ],
+    "tld": [
+      ".gm"
+    ],
+    "fifa": "GAM"
+  },
+  {
+    "cca2": "MX",
+    "name": "Mexico",
+    "latlng": [
+      23,
+      -102
+    ],
+    "capital": "Mexico City",
+    "capitalLatlng": [
+      19.43,
+      -99.13
+    ],
+    "tld": [
+      ".mx"
+    ],
+    "fifa": "MEX"
+  },
+  {
+    "cca2": "MW",
+    "name": "Malawi",
+    "latlng": [
+      -13.5,
+      34
+    ],
+    "capital": "Lilongwe",
+    "capitalLatlng": [
+      -13.97,
+      33.78
+    ],
+    "tld": [
+      ".mw"
+    ],
+    "fifa": "MWI"
+  },
+  {
+    "cca2": "PN",
+    "name": "Pitcairn Islands",
+    "latlng": [
+      -25.06666666,
+      -130.1
+    ],
+    "capital": "Adamstown",
+    "capitalLatlng": [
+      -25.07,
+      -130.08
+    ],
+    "tld": [
+      ".pn"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "AR",
+    "name": "Argentina",
+    "latlng": [
+      -34,
+      -64
+    ],
+    "capital": "Buenos Aires",
+    "capitalLatlng": [
+      -34.58,
+      -58.67
+    ],
+    "tld": [
+      ".ar"
+    ],
+    "fifa": "ARG"
+  },
+  {
+    "cca2": "GU",
+    "name": "Guam",
+    "latlng": [
+      13.46666666,
+      144.78333333
+    ],
+    "capital": "Hagåtña",
+    "capitalLatlng": [
+      13.48,
+      144.75
+    ],
+    "tld": [
+      ".gu"
+    ],
+    "fifa": "GUM"
+  },
+  {
+    "cca2": "BG",
+    "name": "Bulgaria",
+    "latlng": [
+      43,
+      25
+    ],
+    "capital": "Sofia",
+    "capitalLatlng": [
+      42.68,
+      23.32
+    ],
+    "tld": [
+      ".bg"
+    ],
+    "fifa": "BUL"
+  },
+  {
+    "cca2": "DM",
+    "name": "Dominica",
+    "latlng": [
+      15.41666666,
+      -61.33333333
+    ],
+    "capital": "Roseau",
+    "capitalLatlng": [
+      15.3,
+      -61.4
+    ],
+    "tld": [
+      ".dm"
+    ],
+    "fifa": "DMA"
+  },
+  {
+    "cca2": "GB",
+    "name": "United Kingdom",
+    "latlng": [
+      54,
+      -2
+    ],
+    "capital": "London",
+    "capitalLatlng": [
+      51.5,
+      -0.08
+    ],
+    "tld": [
+      ".uk"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "FM",
+    "name": "Micronesia",
+    "latlng": [
+      6.91666666,
+      158.25
+    ],
+    "capital": "Palikir",
+    "capitalLatlng": [
+      6.92,
+      158.15
+    ],
+    "tld": [
+      ".fm"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "PS",
+    "name": "Palestine",
+    "latlng": [
+      31.9,
+      35.2
+    ],
+    "capital": "Ramallah",
+    "capitalLatlng": [
+      31.9,
+      35.2
+    ],
+    "tld": [
+      ".ps",
+      "فلسطين."
+    ],
+    "fifa": "PLE"
+  },
+  {
+    "cca2": "CW",
+    "name": "Curaçao",
+    "latlng": [
+      12.116667,
+      -68.933333
+    ],
+    "capital": "Willemstad",
+    "capitalLatlng": [
+      12.1,
+      -68.92
+    ],
+    "tld": [
+      ".cw"
+    ],
+    "fifa": "CUW"
+  },
+  {
+    "cca2": "RW",
+    "name": "Rwanda",
+    "latlng": [
+      -2,
+      30
+    ],
+    "capital": "Kigali",
+    "capitalLatlng": [
+      -1.95,
+      30.05
+    ],
+    "tld": [
+      ".rw"
+    ],
+    "fifa": "RWA"
+  },
+  {
+    "cca2": "HK",
+    "name": "Hong Kong",
+    "latlng": [
+      22.267,
+      114.188
+    ],
+    "capital": "City of Victoria",
+    "capitalLatlng": [
+      22.267,
+      114.188
+    ],
+    "tld": [
+      ".hk",
+      ".香港"
+    ],
+    "fifa": "HKG"
+  },
+  {
+    "cca2": "UZ",
+    "name": "Uzbekistan",
+    "latlng": [
+      41,
+      64
+    ],
+    "capital": "Tashkent",
+    "capitalLatlng": [
+      41.32,
+      69.25
+    ],
+    "tld": [
+      ".uz"
+    ],
+    "fifa": "UZB"
+  },
+  {
+    "cca2": "CN",
+    "name": "China",
+    "latlng": [
+      35,
+      105
+    ],
+    "capital": "Beijing",
+    "capitalLatlng": [
+      39.92,
+      116.38
+    ],
+    "tld": [
+      ".cn",
+      ".中国",
+      ".中國",
+      ".公司",
+      ".网络"
+    ],
+    "fifa": "CHN"
+  },
+  {
+    "cca2": "CY",
+    "name": "Cyprus",
+    "latlng": [
+      35,
+      33
+    ],
+    "capital": "Nicosia",
+    "capitalLatlng": [
+      35.17,
+      33.37
+    ],
+    "tld": [
+      ".cy"
+    ],
+    "fifa": "CYP"
+  },
+  {
+    "cca2": "AW",
+    "name": "Aruba",
+    "latlng": [
+      12.5,
+      -69.96666666
+    ],
+    "capital": "Oranjestad",
+    "capitalLatlng": [
+      12.52,
+      -70.03
+    ],
+    "tld": [
+      ".aw"
+    ],
+    "fifa": "ARU"
+  },
+  {
+    "cca2": "RE",
+    "name": "Réunion",
+    "latlng": [
+      -21.15,
+      55.5
+    ],
+    "capital": "Saint-Denis",
+    "capitalLatlng": [
+      -20.88,
+      55.45
+    ],
+    "tld": [
+      ".re"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "KR",
+    "name": "South Korea",
+    "latlng": [
+      37,
+      127.5
+    ],
+    "capital": "Seoul",
+    "capitalLatlng": [
+      37.55,
+      126.98
+    ],
+    "tld": [
+      ".kr",
+      ".한국"
+    ],
+    "fifa": "KOR"
+  },
+  {
+    "cca2": "AQ",
+    "name": "Antarctica",
+    "latlng": [
+      -90,
+      0
+    ],
+    "capital": null,
+    "capitalLatlng": [
+      null,
+      null
+    ],
+    "tld": [
+      ".aq"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "SO",
+    "name": "Somalia",
+    "latlng": [
+      10,
+      49
+    ],
+    "capital": "Mogadishu",
+    "capitalLatlng": [
+      2.07,
+      45.33
+    ],
+    "tld": [
+      ".so"
+    ],
+    "fifa": "SOM"
+  },
+  {
+    "cca2": "LB",
+    "name": "Lebanon",
+    "latlng": [
+      33.83333333,
+      35.83333333
+    ],
+    "capital": "Beirut",
+    "capitalLatlng": [
+      33.87,
+      35.5
+    ],
+    "tld": [
+      ".lb"
+    ],
+    "fifa": "LBN"
+  },
+  {
+    "cca2": "GN",
+    "name": "Guinea",
+    "latlng": [
+      11,
+      -10
+    ],
+    "capital": "Conakry",
+    "capitalLatlng": [
+      9.5,
+      -13.7
+    ],
+    "tld": [
+      ".gn"
+    ],
+    "fifa": "GUI"
+  },
+  {
+    "cca2": "TJ",
+    "name": "Tajikistan",
+    "latlng": [
+      39,
+      71
+    ],
+    "capital": "Dushanbe",
+    "capitalLatlng": [
+      38.55,
+      68.77
+    ],
+    "tld": [
+      ".tj"
+    ],
+    "fifa": "TJK"
+  },
+  {
+    "cca2": "MY",
+    "name": "Malaysia",
+    "latlng": [
+      2.5,
+      112.5
+    ],
+    "capital": "Kuala Lumpur",
+    "capitalLatlng": [
+      3.17,
+      101.7
+    ],
+    "tld": [
+      ".my"
+    ],
+    "fifa": "MAS"
+  },
+  {
+    "cca2": "KP",
+    "name": "North Korea",
+    "latlng": [
+      40,
+      127
+    ],
+    "capital": "Pyongyang",
+    "capitalLatlng": [
+      39.02,
+      125.75
+    ],
+    "tld": [
+      ".kp"
+    ],
+    "fifa": "PRK"
+  },
+  {
+    "cca2": "SL",
+    "name": "Sierra Leone",
+    "latlng": [
+      8.5,
+      -11.5
+    ],
+    "capital": "Freetown",
+    "capitalLatlng": [
+      8.48,
+      -13.23
+    ],
+    "tld": [
+      ".sl"
+    ],
+    "fifa": "SLE"
+  },
+  {
+    "cca2": "BJ",
+    "name": "Benin",
+    "latlng": [
+      9.5,
+      2.25
+    ],
+    "capital": "Porto-Novo",
+    "capitalLatlng": [
+      6.48,
+      2.62
+    ],
+    "tld": [
+      ".bj"
+    ],
+    "fifa": "BEN"
+  },
+  {
+    "cca2": "IT",
+    "name": "Italy",
+    "latlng": [
+      42.83333333,
+      12.83333333
+    ],
+    "capital": "Rome",
+    "capitalLatlng": [
+      41.9,
+      12.48
+    ],
+    "tld": [
+      ".it"
+    ],
+    "fifa": "ITA"
+  },
+  {
+    "cca2": "TT",
+    "name": "Trinidad and Tobago",
+    "latlng": [
+      10.6918,
+      -61.2225
+    ],
+    "capital": "Port of Spain",
+    "capitalLatlng": [
+      10.65,
+      -61.52
+    ],
+    "tld": [
+      ".tt"
+    ],
+    "fifa": "TRI"
+  },
+  {
+    "cca2": "SA",
+    "name": "Saudi Arabia",
+    "latlng": [
+      25,
+      45
+    ],
+    "capital": "Riyadh",
+    "capitalLatlng": [
+      24.65,
+      46.7
+    ],
+    "tld": [
+      ".sa",
+      ".السعودية"
+    ],
+    "fifa": "KSA"
+  },
+  {
+    "cca2": "CR",
+    "name": "Costa Rica",
+    "latlng": [
+      10,
+      -84
+    ],
+    "capital": "San José",
+    "capitalLatlng": [
+      9.93,
+      -84.09
+    ],
+    "tld": [
+      ".cr"
+    ],
+    "fifa": "CRC"
+  },
+  {
+    "cca2": "RS",
+    "name": "Serbia",
+    "latlng": [
+      44,
+      21
+    ],
+    "capital": "Belgrade",
+    "capitalLatlng": [
+      44.83,
+      20.5
+    ],
+    "tld": [
+      ".rs",
+      ".срб"
+    ],
+    "fifa": "SRB"
+  },
+  {
+    "cca2": "TK",
+    "name": "Tokelau",
+    "latlng": [
+      -9,
+      -172
+    ],
+    "capital": "Fakaofo",
+    "capitalLatlng": [
+      -9.38,
+      -171.22
+    ],
+    "tld": [
+      ".tk"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "MN",
+    "name": "Mongolia",
+    "latlng": [
+      46,
+      105
+    ],
+    "capital": "Ulan Bator",
+    "capitalLatlng": [
+      47.92,
+      106.91
+    ],
+    "tld": [
+      ".mn"
+    ],
+    "fifa": "MNG"
+  },
+  {
+    "cca2": "BN",
+    "name": "Brunei",
+    "latlng": [
+      4.5,
+      114.66666666
+    ],
+    "capital": "Bandar Seri Begawan",
+    "capitalLatlng": [
+      4.88,
+      114.93
+    ],
+    "tld": [
+      ".bn"
+    ],
+    "fifa": "BRU"
+  },
+  {
+    "cca2": "HU",
+    "name": "Hungary",
+    "latlng": [
+      47,
+      20
+    ],
+    "capital": "Budapest",
+    "capitalLatlng": [
+      47.5,
+      19.08
+    ],
+    "tld": [
+      ".hu"
+    ],
+    "fifa": "HUN"
+  },
+  {
+    "cca2": "MZ",
+    "name": "Mozambique",
+    "latlng": [
+      -18.25,
+      35
+    ],
+    "capital": "Maputo",
+    "capitalLatlng": [
+      -25.95,
+      32.58
+    ],
+    "tld": [
+      ".mz"
+    ],
+    "fifa": "MOZ"
+  },
+  {
+    "cca2": "KI",
+    "name": "Kiribati",
+    "latlng": [
+      1.41666666,
+      173
+    ],
+    "capital": "South Tarawa",
+    "capitalLatlng": [
+      1.33,
+      172.98
+    ],
+    "tld": [
+      ".ki"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "HT",
+    "name": "Haiti",
+    "latlng": [
+      19,
+      -72.41666666
+    ],
+    "capital": "Port-au-Prince",
+    "capitalLatlng": [
+      18.53,
+      -72.33
+    ],
+    "tld": [
+      ".ht"
+    ],
+    "fifa": "HAI"
+  },
+  {
+    "cca2": "KH",
+    "name": "Cambodia",
+    "latlng": [
+      13,
+      105
+    ],
+    "capital": "Phnom Penh",
+    "capitalLatlng": [
+      11.55,
+      104.92
+    ],
+    "tld": [
+      ".kh"
+    ],
+    "fifa": "CAM"
+  },
+  {
+    "cca2": "EG",
+    "name": "Egypt",
+    "latlng": [
+      27,
+      30
+    ],
+    "capital": "Cairo",
+    "capitalLatlng": [
+      30.05,
+      31.25
+    ],
+    "tld": [
+      ".eg",
+      ".مصر"
+    ],
+    "fifa": "EGY"
+  },
+  {
+    "cca2": "TM",
+    "name": "Turkmenistan",
+    "latlng": [
+      40,
+      60
+    ],
+    "capital": "Ashgabat",
+    "capitalLatlng": [
+      37.95,
+      58.38
+    ],
+    "tld": [
+      ".tm"
+    ],
+    "fifa": "TKM"
+  },
+  {
+    "cca2": "OM",
+    "name": "Oman",
+    "latlng": [
+      21,
+      57
+    ],
+    "capital": "Muscat",
+    "capitalLatlng": [
+      23.62,
+      58.58
+    ],
+    "tld": [
+      ".om"
+    ],
+    "fifa": "OMA"
+  },
+  {
+    "cca2": "JM",
+    "name": "Jamaica",
+    "latlng": [
+      18.25,
+      -77.5
+    ],
+    "capital": "Kingston",
+    "capitalLatlng": [
+      17.99702,
+      -76.79358
+    ],
+    "tld": [
+      ".jm"
+    ],
+    "fifa": "JAM"
+  },
+  {
+    "cca2": "AZ",
+    "name": "Azerbaijan",
+    "latlng": [
+      40.5,
+      47.5
+    ],
+    "capital": "Baku",
+    "capitalLatlng": [
+      40.38,
+      49.87
+    ],
+    "tld": [
+      ".az"
+    ],
+    "fifa": "AZE"
+  },
+  {
+    "cca2": "SK",
+    "name": "Slovakia",
+    "latlng": [
+      48.66666666,
+      19.5
+    ],
+    "capital": "Bratislava",
+    "capitalLatlng": [
+      48.15,
+      17.12
+    ],
+    "tld": [
+      ".sk"
+    ],
+    "fifa": "SVK"
+  },
+  {
+    "cca2": "BY",
+    "name": "Belarus",
+    "latlng": [
+      53,
+      28
+    ],
+    "capital": "Minsk",
+    "capitalLatlng": [
+      53.9,
+      27.57
+    ],
+    "tld": [
+      ".by"
+    ],
+    "fifa": "BLR"
+  },
+  {
+    "cca2": "VN",
+    "name": "Vietnam",
+    "latlng": [
+      16.16666666,
+      107.83333333
+    ],
+    "capital": "Hanoi",
+    "capitalLatlng": [
+      21.03,
+      105.85
+    ],
+    "tld": [
+      ".vn"
+    ],
+    "fifa": "VIE"
+  },
+  {
+    "cca2": "VI",
+    "name": "United States Virgin Islands",
+    "latlng": [
+      18.35,
+      -64.933333
+    ],
+    "capital": "Charlotte Amalie",
+    "capitalLatlng": [
+      18.35,
+      -64.93
+    ],
+    "tld": [
+      ".vi"
+    ],
+    "fifa": "VIR"
+  },
+  {
+    "cca2": "GI",
+    "name": "Gibraltar",
+    "latlng": [
+      36.13333333,
+      -5.35
+    ],
+    "capital": "Gibraltar",
+    "capitalLatlng": [
+      36.13,
+      -5.35
+    ],
+    "tld": [
+      ".gi"
+    ],
+    "fifa": "GIB"
+  },
+  {
+    "cca2": "SX",
+    "name": "Sint Maarten",
+    "latlng": [
+      18.033333,
+      -63.05
+    ],
+    "capital": "Philipsburg",
+    "capitalLatlng": [
+      18.02,
+      -63.03
+    ],
+    "tld": [
+      ".sx"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "AX",
+    "name": "Åland Islands",
+    "latlng": [
+      60.116667,
+      19.9
+    ],
+    "capital": "Mariehamn",
+    "capitalLatlng": [
+      60.12,
+      19.9
+    ],
+    "tld": [
+      ".ax"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "SY",
+    "name": "Syria",
+    "latlng": [
+      35,
+      38
+    ],
+    "capital": "Damascus",
+    "capitalLatlng": [
+      33.5,
+      36.3
+    ],
+    "tld": [
+      ".sy",
+      "سوريا."
+    ],
+    "fifa": "SYR"
+  },
+  {
+    "cca2": "MQ",
+    "name": "Martinique",
+    "latlng": [
+      14.666667,
+      -61
+    ],
+    "capital": "Fort-de-France",
+    "capitalLatlng": [
+      14.6,
+      -61.08
+    ],
+    "tld": [
+      ".mq"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "GL",
+    "name": "Greenland",
+    "latlng": [
+      72,
+      -40
+    ],
+    "capital": "Nuuk",
+    "capitalLatlng": [
+      64.18,
+      -51.75
+    ],
+    "tld": [
+      ".gl"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "HN",
+    "name": "Honduras",
+    "latlng": [
+      15,
+      -86.5
+    ],
+    "capital": "Tegucigalpa",
+    "capitalLatlng": [
+      14.1,
+      -87.22
+    ],
+    "tld": [
+      ".hn"
+    ],
+    "fifa": "HON"
+  },
+  {
+    "cca2": "TN",
+    "name": "Tunisia",
+    "latlng": [
+      34,
+      9
+    ],
+    "capital": "Tunis",
+    "capitalLatlng": [
+      36.8,
+      10.18
+    ],
+    "tld": [
+      ".tn"
+    ],
+    "fifa": "TUN"
+  },
+  {
+    "cca2": "KM",
+    "name": "Comoros",
+    "latlng": [
+      -12.16666666,
+      44.25
+    ],
+    "capital": "Moroni",
+    "capitalLatlng": [
+      -11.7,
+      43.23
+    ],
+    "tld": [
+      ".km"
+    ],
+    "fifa": "COM"
+  },
+  {
+    "cca2": "SI",
+    "name": "Slovenia",
+    "latlng": [
+      46.11666666,
+      14.81666666
+    ],
+    "capital": "Ljubljana",
+    "capitalLatlng": [
+      46.05,
+      14.52
+    ],
+    "tld": [
+      ".si"
+    ],
+    "fifa": "SVN"
+  },
+  {
+    "cca2": "CH",
+    "name": "Switzerland",
+    "latlng": [
+      47,
+      8
+    ],
+    "capital": "Bern",
+    "capitalLatlng": [
+      46.92,
+      7.47
+    ],
+    "tld": [
+      ".ch"
+    ],
+    "fifa": "SUI"
+  },
+  {
+    "cca2": "GG",
+    "name": "Guernsey",
+    "latlng": [
+      49.46666666,
+      -2.58333333
+    ],
+    "capital": "St. Peter Port",
+    "capitalLatlng": [
+      49.45,
+      -2.54
+    ],
+    "tld": [
+      ".gg"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "MM",
+    "name": "Myanmar",
+    "latlng": [
+      22,
+      98
+    ],
+    "capital": "Naypyidaw",
+    "capitalLatlng": [
+      19.76,
+      96.07
+    ],
+    "tld": [
+      ".mm"
+    ],
+    "fifa": "MYA"
+  },
+  {
+    "cca2": "PY",
+    "name": "Paraguay",
+    "latlng": [
+      -23,
+      -58
+    ],
+    "capital": "Asunción",
+    "capitalLatlng": [
+      -25.28,
+      -57.57
+    ],
+    "tld": [
+      ".py"
+    ],
+    "fifa": "PAR"
+  },
+  {
+    "cca2": "BQ",
+    "name": "Caribbean Netherlands",
+    "latlng": [
+      12.18,
+      -68.25
+    ],
+    "capital": "Kralendijk",
+    "capitalLatlng": [
+      12.14,
+      -68.27
+    ],
+    "tld": [
+      ".bq",
+      ".nl"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "BB",
+    "name": "Barbados",
+    "latlng": [
+      13.16666666,
+      -59.53333333
+    ],
+    "capital": "Bridgetown",
+    "capitalLatlng": [
+      13.1,
+      -59.62
+    ],
+    "tld": [
+      ".bb"
+    ],
+    "fifa": "BRB"
+  },
+  {
+    "cca2": "MO",
+    "name": "Macau",
+    "latlng": [
+      22.16666666,
+      113.55
+    ],
+    "capital": null,
+    "capitalLatlng": [
+      null,
+      null
+    ],
+    "tld": [
+      ".mo"
+    ],
+    "fifa": "MAC"
+  },
+  {
+    "cca2": "JO",
+    "name": "Jordan",
+    "latlng": [
+      31,
+      36
+    ],
+    "capital": "Amman",
+    "capitalLatlng": [
+      31.95,
+      35.93
+    ],
+    "tld": [
+      ".jo",
+      "الاردن."
+    ],
+    "fifa": "JOR"
+  },
+  {
+    "cca2": "LA",
+    "name": "Laos",
+    "latlng": [
+      18,
+      105
+    ],
+    "capital": "Vientiane",
+    "capitalLatlng": [
+      17.97,
+      102.6
+    ],
+    "tld": [
+      ".la"
+    ],
+    "fifa": "LAO"
+  },
+  {
+    "cca2": "TG",
+    "name": "Togo",
+    "latlng": [
+      8,
+      1.16666666
+    ],
+    "capital": "Lomé",
+    "capitalLatlng": [
+      6.14,
+      1.21
+    ],
+    "tld": [
+      ".tg"
+    ],
+    "fifa": "TOG"
+  },
+  {
+    "cca2": "MA",
+    "name": "Morocco",
+    "latlng": [
+      32,
+      -5
+    ],
+    "capital": "Rabat",
+    "capitalLatlng": [
+      34.02,
+      -6.82
+    ],
+    "tld": [
+      ".ma",
+      "المغرب."
+    ],
+    "fifa": "MAR"
+  },
+  {
+    "cca2": "PR",
+    "name": "Puerto Rico",
+    "latlng": [
+      18.25,
+      -66.5
+    ],
+    "capital": "San Juan",
+    "capitalLatlng": [
+      18.47,
+      -66.12
+    ],
+    "tld": [
+      ".pr"
+    ],
+    "fifa": "PUR"
+  },
+  {
+    "cca2": "GF",
+    "name": "French Guiana",
+    "latlng": [
+      4,
+      -53
+    ],
+    "capital": "Cayenne",
+    "capitalLatlng": [
+      4.94,
+      -52.33
+    ],
+    "tld": [
+      ".gf"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "PM",
+    "name": "Saint Pierre and Miquelon",
+    "latlng": [
+      46.83333333,
+      -56.33333333
+    ],
+    "capital": "Saint-Pierre",
+    "capitalLatlng": [
+      46.77,
+      -56.18
+    ],
+    "tld": [
+      ".pm"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "MF",
+    "name": "Saint Martin",
+    "latlng": [
+      18.0708,
+      -63.0501
+    ],
+    "capital": "Marigot",
+    "capitalLatlng": [
+      18.07,
+      -63.08
+    ],
+    "tld": [
+      ".fr",
+      ".gp"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "EE",
+    "name": "Estonia",
+    "latlng": [
+      59,
+      26
+    ],
+    "capital": "Tallinn",
+    "capitalLatlng": [
+      59.43,
+      24.72
+    ],
+    "tld": [
+      ".ee"
+    ],
+    "fifa": "EST"
+  },
+  {
+    "cca2": "ID",
+    "name": "Indonesia",
+    "latlng": [
+      -5,
+      120
+    ],
+    "capital": "Jakarta",
+    "capitalLatlng": [
+      -6.17,
+      106.82
+    ],
+    "tld": [
+      ".id"
+    ],
+    "fifa": "IDN"
+  },
+  {
+    "cca2": "SC",
+    "name": "Seychelles",
+    "latlng": [
+      -4.58333333,
+      55.66666666
+    ],
+    "capital": "Victoria",
+    "capitalLatlng": [
+      -4.62,
+      55.45
+    ],
+    "tld": [
+      ".sc"
+    ],
+    "fifa": "SEY"
+  },
+  {
+    "cca2": "ML",
+    "name": "Mali",
+    "latlng": [
+      17,
+      -4
+    ],
+    "capital": "Bamako",
+    "capitalLatlng": [
+      12.65,
+      -8
+    ],
+    "tld": [
+      ".ml"
+    ],
+    "fifa": "MLI"
+  },
+  {
+    "cca2": "TL",
+    "name": "Timor-Leste",
+    "latlng": [
+      -8.83333333,
+      125.91666666
+    ],
+    "capital": "Dili",
+    "capitalLatlng": [
+      -8.58,
+      125.6
+    ],
+    "tld": [
+      ".tl"
+    ],
+    "fifa": "TLS"
+  },
+  {
+    "cca2": "BR",
+    "name": "Brazil",
+    "latlng": [
+      -10,
+      -55
+    ],
+    "capital": "Brasília",
+    "capitalLatlng": [
+      -15.79,
+      -47.88
+    ],
+    "tld": [
+      ".br"
+    ],
+    "fifa": "BRA"
+  },
+  {
+    "cca2": "GH",
+    "name": "Ghana",
+    "latlng": [
+      8,
+      -2
+    ],
+    "capital": "Accra",
+    "capitalLatlng": [
+      5.55,
+      -0.22
+    ],
+    "tld": [
+      ".gh"
+    ],
+    "fifa": "GHA"
+  },
+  {
+    "cca2": "KE",
+    "name": "Kenya",
+    "latlng": [
+      1,
+      38
+    ],
+    "capital": "Nairobi",
+    "capitalLatlng": [
+      -1.28,
+      36.82
+    ],
+    "tld": [
+      ".ke"
+    ],
+    "fifa": "KEN"
+  },
+  {
+    "cca2": "IS",
+    "name": "Iceland",
+    "latlng": [
+      65,
+      -18
+    ],
+    "capital": "Reykjavik",
+    "capitalLatlng": [
+      64.15,
+      -21.95
+    ],
+    "tld": [
+      ".is"
+    ],
+    "fifa": "ISL"
+  },
+  {
+    "cca2": "MG",
+    "name": "Madagascar",
+    "latlng": [
+      -20,
+      47
+    ],
+    "capital": "Antananarivo",
+    "capitalLatlng": [
+      -18.92,
+      47.52
+    ],
+    "tld": [
+      ".mg"
+    ],
+    "fifa": "MAD"
+  },
+  {
+    "cca2": "BD",
+    "name": "Bangladesh",
+    "latlng": [
+      24,
+      90
+    ],
+    "capital": "Dhaka",
+    "capitalLatlng": [
+      23.72,
+      90.4
+    ],
+    "tld": [
+      ".bd"
+    ],
+    "fifa": "BAN"
+  },
+  {
+    "cca2": "CD",
+    "name": "DR Congo",
+    "latlng": [
+      0,
+      25
+    ],
+    "capital": "Kinshasa",
+    "capitalLatlng": [
+      -4.32,
+      15.3
+    ],
+    "tld": [
+      ".cd"
+    ],
+    "fifa": "COD"
+  },
+  {
+    "cca2": "ZW",
+    "name": "Zimbabwe",
+    "latlng": [
+      -20,
+      30
+    ],
+    "capital": "Harare",
+    "capitalLatlng": [
+      -17.82,
+      31.03
+    ],
+    "tld": [
+      ".zw"
+    ],
+    "fifa": "ZIM"
+  },
+  {
+    "cca2": "PF",
+    "name": "French Polynesia",
+    "latlng": [
+      -17.6797,
+      -149.4068
+    ],
+    "capital": "Papeetē",
+    "capitalLatlng": [
+      -17.53,
+      -149.56
+    ],
+    "tld": [
+      ".pf"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "TR",
+    "name": "Turkey",
+    "latlng": [
+      39,
+      35
+    ],
+    "capital": "Ankara",
+    "capitalLatlng": [
+      39.93,
+      32.87
+    ],
+    "tld": [
+      ".tr"
+    ],
+    "fifa": "TUR"
+  },
+  {
+    "cca2": "CV",
+    "name": "Cape Verde",
+    "latlng": [
+      16.5388,
+      -23.0418
+    ],
+    "capital": "Praia",
+    "capitalLatlng": [
+      14.92,
+      -23.52
+    ],
+    "tld": [
+      ".cv"
+    ],
+    "fifa": "CPV"
+  },
+  {
+    "cca2": "DO",
+    "name": "Dominican Republic",
+    "latlng": [
+      19,
+      -70.66666666
+    ],
+    "capital": "Santo Domingo",
+    "capitalLatlng": [
+      18.47,
+      -69.9
+    ],
+    "tld": [
+      ".do"
+    ],
+    "fifa": "DOM"
+  },
+  {
+    "cca2": "BS",
+    "name": "Bahamas",
+    "latlng": [
+      25.0343,
+      -77.3963
+    ],
+    "capital": "Nassau",
+    "capitalLatlng": [
+      25.08,
+      -77.35
+    ],
+    "tld": [
+      ".bs"
+    ],
+    "fifa": "BAH"
+  },
+  {
+    "cca2": "DE",
+    "name": "Germany",
+    "latlng": [
+      51,
+      9
+    ],
+    "capital": "Berlin",
+    "capitalLatlng": [
+      52.52,
+      13.4
+    ],
+    "tld": [
+      ".de"
+    ],
+    "fifa": "GER"
+  },
+  {
+    "cca2": "SR",
+    "name": "Suriname",
+    "latlng": [
+      4,
+      -56
+    ],
+    "capital": "Paramaribo",
+    "capitalLatlng": [
+      5.83,
+      -55.17
+    ],
+    "tld": [
+      ".sr"
+    ],
+    "fifa": "SUR"
+  },
+  {
+    "cca2": "TO",
+    "name": "Tonga",
+    "latlng": [
+      -20,
+      -175
+    ],
+    "capital": "Nuku'alofa",
+    "capitalLatlng": [
+      -21.13,
+      -175.2
+    ],
+    "tld": [
+      ".to"
+    ],
+    "fifa": "TGA"
+  },
+  {
+    "cca2": "IO",
+    "name": "British Indian Ocean Territory",
+    "latlng": [
+      -6,
+      71.5
+    ],
+    "capital": "Diego Garcia",
+    "capitalLatlng": [
+      -7.3,
+      72.4
+    ],
+    "tld": [
+      ".io"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "LC",
+    "name": "Saint Lucia",
+    "latlng": [
+      13.88333333,
+      -60.96666666
+    ],
+    "capital": "Castries",
+    "capitalLatlng": [
+      14,
+      -61
+    ],
+    "tld": [
+      ".lc"
+    ],
+    "fifa": "LCA"
+  },
+  {
+    "cca2": "IE",
+    "name": "Ireland",
+    "latlng": [
+      53,
+      -8
+    ],
+    "capital": "Dublin",
+    "capitalLatlng": [
+      53.32,
+      -6.23
+    ],
+    "tld": [
+      ".ie"
+    ],
+    "fifa": "IRL"
+  },
+  {
+    "cca2": "VA",
+    "name": "Vatican City",
+    "latlng": [
+      41.9,
+      12.45
+    ],
+    "capital": "Vatican City",
+    "capitalLatlng": [
+      41.9,
+      12.45
+    ],
+    "tld": [
+      ".va"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "CO",
+    "name": "Colombia",
+    "latlng": [
+      4,
+      -72
+    ],
+    "capital": "Bogotá",
+    "capitalLatlng": [
+      4.71,
+      -74.07
+    ],
+    "tld": [
+      ".co"
+    ],
+    "fifa": "COL"
+  },
+  {
+    "cca2": "PT",
+    "name": "Portugal",
+    "latlng": [
+      39.5,
+      -8
+    ],
+    "capital": "Lisbon",
+    "capitalLatlng": [
+      38.72,
+      -9.13
+    ],
+    "tld": [
+      ".pt"
+    ],
+    "fifa": "POR"
+  },
+  {
+    "cca2": "FO",
+    "name": "Faroe Islands",
+    "latlng": [
+      62,
+      -7
+    ],
+    "capital": "Tórshavn",
+    "capitalLatlng": [
+      62.01,
+      -6.77
+    ],
+    "tld": [
+      ".fo"
+    ],
+    "fifa": "FRO"
+  },
+  {
+    "cca2": "ST",
+    "name": "São Tomé and Príncipe",
+    "latlng": [
+      1,
+      7
+    ],
+    "capital": "São Tomé",
+    "capitalLatlng": [
+      0.34,
+      6.73
+    ],
+    "tld": [
+      ".st"
+    ],
+    "fifa": "STP"
+  },
+  {
+    "cca2": "MP",
+    "name": "Northern Mariana Islands",
+    "latlng": [
+      15.2,
+      145.75
+    ],
+    "capital": "Saipan",
+    "capitalLatlng": [
+      15.2,
+      145.75
+    ],
+    "tld": [
+      ".mp"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "JE",
+    "name": "Jersey",
+    "latlng": [
+      49.25,
+      -2.16666666
+    ],
+    "capital": "Saint Helier",
+    "capitalLatlng": [
+      49.18,
+      -2.1
+    ],
+    "tld": [
+      ".je"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "YT",
+    "name": "Mayotte",
+    "latlng": [
+      -12.83333333,
+      45.16666666
+    ],
+    "capital": "Mamoudzou",
+    "capitalLatlng": [
+      -12.78,
+      45.22
+    ],
+    "tld": [
+      ".yt"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "YE",
+    "name": "Yemen",
+    "latlng": [
+      15,
+      48
+    ],
+    "capital": "Sana'a",
+    "capitalLatlng": [
+      15.37,
+      44.19
+    ],
+    "tld": [
+      ".ye"
+    ],
+    "fifa": "YEM"
+  },
+  {
+    "cca2": "NG",
+    "name": "Nigeria",
+    "latlng": [
+      10,
+      8
+    ],
+    "capital": "Abuja",
+    "capitalLatlng": [
+      9.08,
+      7.53
+    ],
+    "tld": [
+      ".ng"
+    ],
+    "fifa": "NGA"
+  },
+  {
+    "cca2": "AF",
+    "name": "Afghanistan",
+    "latlng": [
+      33,
+      65
+    ],
+    "capital": "Kabul",
+    "capitalLatlng": [
+      34.52,
+      69.18
+    ],
+    "tld": [
+      ".af"
+    ],
+    "fifa": "AFG"
+  },
+  {
+    "cca2": "BW",
+    "name": "Botswana",
+    "latlng": [
+      -22,
+      24
+    ],
+    "capital": "Gaborone",
+    "capitalLatlng": [
+      -24.63,
+      25.9
+    ],
+    "tld": [
+      ".bw"
+    ],
+    "fifa": "BOT"
+  },
+  {
+    "cca2": "IM",
+    "name": "Isle of Man",
+    "latlng": [
+      54.25,
+      -4.5
+    ],
+    "capital": "Douglas",
+    "capitalLatlng": [
+      54.15,
+      -4.48
+    ],
+    "tld": [
+      ".im"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "SV",
+    "name": "El Salvador",
+    "latlng": [
+      13.83333333,
+      -88.91666666
+    ],
+    "capital": "San Salvador",
+    "capitalLatlng": [
+      13.7,
+      -89.2
+    ],
+    "tld": [
+      ".sv"
+    ],
+    "fifa": "SLV"
+  },
+  {
+    "cca2": "UG",
+    "name": "Uganda",
+    "latlng": [
+      1,
+      32
+    ],
+    "capital": "Kampala",
+    "capitalLatlng": [
+      0.32,
+      32.55
+    ],
+    "tld": [
+      ".ug"
+    ],
+    "fifa": "UGA"
+  },
+  {
+    "cca2": "AD",
+    "name": "Andorra",
+    "latlng": [
+      42.5,
+      1.5
+    ],
+    "capital": "Andorra la Vella",
+    "capitalLatlng": [
+      42.5,
+      1.52
+    ],
+    "tld": [
+      ".ad"
+    ],
+    "fifa": "AND"
+  },
+  {
+    "cca2": "TC",
+    "name": "Turks and Caicos Islands",
+    "latlng": [
+      21.75,
+      -71.58333333
+    ],
+    "capital": "Cockburn Town",
+    "capitalLatlng": [
+      21.46,
+      -71.14
+    ],
+    "tld": [
+      ".tc"
+    ],
+    "fifa": "TCA"
+  },
+  {
+    "cca2": "TD",
+    "name": "Chad",
+    "latlng": [
+      15,
+      19
+    ],
+    "capital": "N'Djamena",
+    "capitalLatlng": [
+      12.1,
+      15.03
+    ],
+    "tld": [
+      ".td"
+    ],
+    "fifa": "CHA"
+  },
+  {
+    "cca2": "FI",
+    "name": "Finland",
+    "latlng": [
+      64,
+      26
+    ],
+    "capital": "Helsinki",
+    "capitalLatlng": [
+      60.17,
+      24.93
+    ],
+    "tld": [
+      ".fi"
+    ],
+    "fifa": "FIN"
+  },
+  {
+    "cca2": "RU",
+    "name": "Russia",
+    "latlng": [
+      60,
+      100
+    ],
+    "capital": "Moscow",
+    "capitalLatlng": [
+      55.75,
+      37.6
+    ],
+    "tld": [
+      ".ru",
+      ".su",
+      ".рф"
+    ],
+    "fifa": "RUS"
+  },
+  {
+    "cca2": "KZ",
+    "name": "Kazakhstan",
+    "latlng": [
+      48.0196,
+      66.9237
+    ],
+    "capital": "Astana",
+    "capitalLatlng": [
+      51.16,
+      71.45
+    ],
+    "tld": [
+      ".kz",
+      ".қаз"
+    ],
+    "fifa": "KAZ"
+  },
+  {
+    "cca2": "SJ",
+    "name": "Svalbard and Jan Mayen",
+    "latlng": [
+      78,
+      20
+    ],
+    "capital": "Longyearbyen",
+    "capitalLatlng": [
+      78.22,
+      15.63
+    ],
+    "tld": [
+      ".sj"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "VE",
+    "name": "Venezuela",
+    "latlng": [
+      8,
+      -66
+    ],
+    "capital": "Caracas",
+    "capitalLatlng": [
+      10.48,
+      -66.87
+    ],
+    "tld": [
+      ".ve"
+    ],
+    "fifa": "VEN"
+  },
+  {
+    "cca2": "MC",
+    "name": "Monaco",
+    "latlng": [
+      43.73333333,
+      7.4
+    ],
+    "capital": "Monaco",
+    "capitalLatlng": [
+      43.73,
+      7.42
+    ],
+    "tld": [
+      ".mc"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "SN",
+    "name": "Senegal",
+    "latlng": [
+      14,
+      -14
+    ],
+    "capital": "Dakar",
+    "capitalLatlng": [
+      14.73,
+      -17.63
+    ],
+    "tld": [
+      ".sn"
+    ],
+    "fifa": "SEN"
+  },
+  {
+    "cca2": "NP",
+    "name": "Nepal",
+    "latlng": [
+      28,
+      84
+    ],
+    "capital": "Kathmandu",
+    "capitalLatlng": [
+      27.72,
+      85.32
+    ],
+    "tld": [
+      ".np"
+    ],
+    "fifa": "NEP"
+  },
+  {
+    "cca2": "AE",
+    "name": "United Arab Emirates",
+    "latlng": [
+      24,
+      54
+    ],
+    "capital": "Abu Dhabi",
+    "capitalLatlng": [
+      24.47,
+      54.37
+    ],
+    "tld": [
+      ".ae",
+      "امارات."
+    ],
+    "fifa": "UAE"
+  },
+  {
+    "cca2": "TW",
+    "name": "Taiwan",
+    "latlng": [
+      23.5,
+      121
+    ],
+    "capital": "Taipei",
+    "capitalLatlng": [
+      25.03,
+      121.52
+    ],
+    "tld": [
+      ".tw",
+      ".台灣",
+      ".台湾"
+    ],
+    "fifa": "TPE"
+  },
+  {
+    "cca2": "NC",
+    "name": "New Caledonia",
+    "latlng": [
+      -21.5,
+      165.5
+    ],
+    "capital": "Nouméa",
+    "capitalLatlng": [
+      -22.27,
+      166.45
+    ],
+    "tld": [
+      ".nc"
+    ],
+    "fifa": "NCL"
+  },
+  {
+    "cca2": "BO",
+    "name": "Bolivia",
+    "latlng": [
+      -17,
+      -65
+    ],
+    "capital": "Sucre",
+    "capitalLatlng": [
+      -19.02,
+      -65.26
+    ],
+    "tld": [
+      ".bo"
+    ],
+    "fifa": "BOL"
+  },
+  {
+    "cca2": "CL",
+    "name": "Chile",
+    "latlng": [
+      -30,
+      -71
+    ],
+    "capital": "Santiago",
+    "capitalLatlng": [
+      -33.45,
+      -70.67
+    ],
+    "tld": [
+      ".cl"
+    ],
+    "fifa": "CHI"
+  },
+  {
+    "cca2": "CI",
+    "name": "Ivory Coast",
+    "latlng": [
+      8,
+      -5
+    ],
+    "capital": "Yamoussoukro",
+    "capitalLatlng": [
+      6.82,
+      -5.27
+    ],
+    "tld": [
+      ".ci"
+    ],
+    "fifa": "CIV"
+  },
+  {
+    "cca2": "LY",
+    "name": "Libya",
+    "latlng": [
+      25,
+      17
+    ],
+    "capital": "Tripoli",
+    "capitalLatlng": [
+      32.88,
+      13.17
+    ],
+    "tld": [
+      ".ly"
+    ],
+    "fifa": "LBY"
+  },
+  {
+    "cca2": "PE",
+    "name": "Peru",
+    "latlng": [
+      -10,
+      -76
+    ],
+    "capital": "Lima",
+    "capitalLatlng": [
+      -12.05,
+      -77.05
+    ],
+    "tld": [
+      ".pe"
+    ],
+    "fifa": "PER"
+  },
+  {
+    "cca2": "CA",
+    "name": "Canada",
+    "latlng": [
+      60,
+      -95
+    ],
+    "capital": "Ottawa",
+    "capitalLatlng": [
+      45.42,
+      -75.7
+    ],
+    "tld": [
+      ".ca"
+    ],
+    "fifa": "CAN"
+  },
+  {
+    "cca2": "FR",
+    "name": "France",
+    "latlng": [
+      46,
+      2
+    ],
+    "capital": "Paris",
+    "capitalLatlng": [
+      48.87,
+      2.33
+    ],
+    "tld": [
+      ".fr"
+    ],
+    "fifa": "FRA"
+  },
+  {
+    "cca2": "DJ",
+    "name": "Djibouti",
+    "latlng": [
+      11.5,
+      43
+    ],
+    "capital": "Djibouti",
+    "capitalLatlng": [
+      11.58,
+      43.15
+    ],
+    "tld": [
+      ".dj"
+    ],
+    "fifa": "DJI"
+  },
+  {
+    "cca2": "BI",
+    "name": "Burundi",
+    "latlng": [
+      -3.5,
+      30
+    ],
+    "capital": "Gitega",
+    "capitalLatlng": [
+      -3.43,
+      29.93
+    ],
+    "tld": [
+      ".bi"
+    ],
+    "fifa": "BDI"
+  },
+  {
+    "cca2": "XK",
+    "name": "Kosovo",
+    "latlng": [
+      42.666667,
+      21.166667
+    ],
+    "capital": "Pristina",
+    "capitalLatlng": [
+      42.67,
+      21.17
+    ],
+    "tld": [],
+    "fifa": "KVX"
+  },
+  {
+    "cca2": "DK",
+    "name": "Denmark",
+    "latlng": [
+      56,
+      10
+    ],
+    "capital": "Copenhagen",
+    "capitalLatlng": [
+      55.67,
+      12.58
+    ],
+    "tld": [
+      ".dk"
+    ],
+    "fifa": "DEN"
+  },
+  {
+    "cca2": "GR",
+    "name": "Greece",
+    "latlng": [
+      39,
+      22
+    ],
+    "capital": "Athens",
+    "capitalLatlng": [
+      37.98,
+      23.73
+    ],
+    "tld": [
+      ".gr"
+    ],
+    "fifa": "GRE"
+  },
+  {
+    "cca2": "CZ",
+    "name": "Czechia",
+    "latlng": [
+      49.75,
+      15.5
+    ],
+    "capital": "Prague",
+    "capitalLatlng": [
+      50.08,
+      14.47
+    ],
+    "tld": [
+      ".cz"
+    ],
+    "fifa": "CZE"
+  },
+  {
+    "cca2": "ER",
+    "name": "Eritrea",
+    "latlng": [
+      15,
+      39
+    ],
+    "capital": "Asmara",
+    "capitalLatlng": [
+      15.33,
+      38.93
+    ],
+    "tld": [
+      ".er"
+    ],
+    "fifa": "ERI"
+  },
+  {
+    "cca2": "NA",
+    "name": "Namibia",
+    "latlng": [
+      -22,
+      17
+    ],
+    "capital": "Windhoek",
+    "capitalLatlng": [
+      -22.57,
+      17.08
+    ],
+    "tld": [
+      ".na"
+    ],
+    "fifa": "NAM"
+  },
+  {
+    "cca2": "VG",
+    "name": "British Virgin Islands",
+    "latlng": [
+      18.431383,
+      -64.62305
+    ],
+    "capital": "Road Town",
+    "capitalLatlng": [
+      18.42,
+      -64.62
+    ],
+    "tld": [
+      ".vg"
+    ],
+    "fifa": "VGB"
+  },
+  {
+    "cca2": "IR",
+    "name": "Iran",
+    "latlng": [
+      32,
+      53
+    ],
+    "capital": "Tehran",
+    "capitalLatlng": [
+      35.7,
+      51.42
+    ],
+    "tld": [
+      ".ir",
+      "ایران."
+    ],
+    "fifa": "IRN"
+  },
+  {
+    "cca2": "GQ",
+    "name": "Equatorial Guinea",
+    "latlng": [
+      2,
+      10
+    ],
+    "capital": "Ciudad de la Paz",
+    "capitalLatlng": [
+      1.35,
+      10.49
+    ],
+    "tld": [
+      ".gq"
+    ],
+    "fifa": "EQG"
+  },
+  {
+    "cca2": "MR",
+    "name": "Mauritania",
+    "latlng": [
+      20,
+      -12
+    ],
+    "capital": "Nouakchott",
+    "capitalLatlng": [
+      18.07,
+      -15.97
+    ],
+    "tld": [
+      ".mr"
+    ],
+    "fifa": "MTN"
+  },
+  {
+    "cca2": "BH",
+    "name": "Bahrain",
+    "latlng": [
+      26,
+      50.55
+    ],
+    "capital": "Manama",
+    "capitalLatlng": [
+      26.23,
+      50.57
+    ],
+    "tld": [
+      ".bh"
+    ],
+    "fifa": "BHR"
+  },
+  {
+    "cca2": "CC",
+    "name": "Cocos (Keeling) Islands",
+    "latlng": [
+      -12.1642,
+      96.871
+    ],
+    "capital": "West Island",
+    "capitalLatlng": [
+      -12.17,
+      96.83
+    ],
+    "tld": [
+      ".cc"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "ET",
+    "name": "Ethiopia",
+    "latlng": [
+      8,
+      38
+    ],
+    "capital": "Addis Ababa",
+    "capitalLatlng": [
+      9.03,
+      38.7
+    ],
+    "tld": [
+      ".et"
+    ],
+    "fifa": "ETH"
+  },
+  {
+    "cca2": "ZM",
+    "name": "Zambia",
+    "latlng": [
+      -15,
+      30
+    ],
+    "capital": "Lusaka",
+    "capitalLatlng": [
+      -15.42,
+      28.28
+    ],
+    "tld": [
+      ".zm"
+    ],
+    "fifa": "ZAM"
+  },
+  {
+    "cca2": "BA",
+    "name": "Bosnia and Herzegovina",
+    "latlng": [
+      44,
+      18
+    ],
+    "capital": "Sarajevo",
+    "capitalLatlng": [
+      43.87,
+      18.42
+    ],
+    "tld": [
+      ".ba"
+    ],
+    "fifa": "BIH"
+  },
+  {
+    "cca2": "FK",
+    "name": "Falkland Islands",
+    "latlng": [
+      -51.75,
+      -59
+    ],
+    "capital": "Stanley",
+    "capitalLatlng": [
+      -51.7,
+      -57.85
+    ],
+    "tld": [
+      ".fk"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "GD",
+    "name": "Grenada",
+    "latlng": [
+      12.11666666,
+      -61.66666666
+    ],
+    "capital": "St. George's",
+    "capitalLatlng": [
+      32.38,
+      -64.68
+    ],
+    "tld": [
+      ".gd"
+    ],
+    "fifa": "GRN"
+  },
+  {
+    "cca2": "TH",
+    "name": "Thailand",
+    "latlng": [
+      15,
+      100
+    ],
+    "capital": "Bangkok",
+    "capitalLatlng": [
+      13.75,
+      100.52
+    ],
+    "tld": [
+      ".th",
+      ".ไทย"
+    ],
+    "fifa": "THA"
+  },
+  {
+    "cca2": "RO",
+    "name": "Romania",
+    "latlng": [
+      46,
+      25
+    ],
+    "capital": "Bucharest",
+    "capitalLatlng": [
+      44.43,
+      26.1
+    ],
+    "tld": [
+      ".ro"
+    ],
+    "fifa": "ROU"
+  },
+  {
+    "cca2": "VC",
+    "name": "Saint Vincent and the Grenadines",
+    "latlng": [
+      13.25,
+      -61.2
+    ],
+    "capital": "Kingstown",
+    "capitalLatlng": [
+      13.13,
+      -61.22
+    ],
+    "tld": [
+      ".vc"
+    ],
+    "fifa": "VIN"
+  },
+  {
+    "cca2": "LR",
+    "name": "Liberia",
+    "latlng": [
+      6.5,
+      -9.5
+    ],
+    "capital": "Monrovia",
+    "capitalLatlng": [
+      6.3,
+      -10.8
+    ],
+    "tld": [
+      ".lr"
+    ],
+    "fifa": "LBR"
+  },
+  {
+    "cca2": "US",
+    "name": "United States",
+    "latlng": [
+      38,
+      -97
+    ],
+    "capital": "Washington, D.C.",
+    "capitalLatlng": [
+      38.89,
+      -77.05
+    ],
+    "tld": [
+      ".us"
+    ],
+    "fifa": "USA"
+  },
+  {
+    "cca2": "SS",
+    "name": "South Sudan",
+    "latlng": [
+      7,
+      30
+    ],
+    "capital": "Juba",
+    "capitalLatlng": [
+      4.85,
+      31.62
+    ],
+    "tld": [
+      ".ss"
+    ],
+    "fifa": "SSD"
+  },
+  {
+    "cca2": "BV",
+    "name": "Bouvet Island",
+    "latlng": [
+      -54.4208,
+      3.3464
+    ],
+    "capital": null,
+    "capitalLatlng": [
+      null,
+      null
+    ],
+    "tld": [
+      ".bv"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "AM",
+    "name": "Armenia",
+    "latlng": [
+      40,
+      45
+    ],
+    "capital": "Yerevan",
+    "capitalLatlng": [
+      40.17,
+      44.5
+    ],
+    "tld": [
+      ".am"
+    ],
+    "fifa": "ARM"
+  },
+  {
+    "cca2": "JP",
+    "name": "Japan",
+    "latlng": [
+      36,
+      138
+    ],
+    "capital": "Tokyo",
+    "capitalLatlng": [
+      35.68,
+      139.75
+    ],
+    "tld": [
+      ".jp",
+      ".みんな"
+    ],
+    "fifa": "JPN"
+  },
+  {
+    "cca2": "PK",
+    "name": "Pakistan",
+    "latlng": [
+      30,
+      70
+    ],
+    "capital": "Islamabad",
+    "capitalLatlng": [
+      33.68,
+      73.05
+    ],
+    "tld": [
+      ".pk"
+    ],
+    "fifa": "PAK"
+  },
+  {
+    "cca2": "SZ",
+    "name": "Eswatini",
+    "latlng": [
+      -26.5,
+      31.5
+    ],
+    "capital": "Mbabane",
+    "capitalLatlng": [
+      -26.32,
+      31.13
+    ],
+    "tld": [
+      ".sz"
+    ],
+    "fifa": "SWZ"
+  },
+  {
+    "cca2": "LI",
+    "name": "Liechtenstein",
+    "latlng": [
+      47.26666666,
+      9.53333333
+    ],
+    "capital": "Vaduz",
+    "capitalLatlng": [
+      47.13,
+      9.52
+    ],
+    "tld": [
+      ".li"
+    ],
+    "fifa": "LIE"
+  },
+  {
+    "cca2": "IL",
+    "name": "Israel",
+    "latlng": [
+      31.47,
+      35.13
+    ],
+    "capital": "Jerusalem",
+    "capitalLatlng": [
+      31.77,
+      35.23
+    ],
+    "tld": [
+      ".il"
+    ],
+    "fifa": "ISR"
+  },
+  {
+    "cca2": "AS",
+    "name": "American Samoa",
+    "latlng": [
+      -14.33333333,
+      -170
+    ],
+    "capital": "Pago Pago",
+    "capitalLatlng": [
+      -14.27,
+      -170.7
+    ],
+    "tld": [
+      ".as"
+    ],
+    "fifa": "ASA"
+  },
+  {
+    "cca2": "LK",
+    "name": "Sri Lanka",
+    "latlng": [
+      7,
+      81
+    ],
+    "capital": "Sri Jayawardenepura Kotte",
+    "capitalLatlng": [
+      6.89,
+      79.9
+    ],
+    "tld": [
+      ".lk",
+      ".இலங்கை",
+      ".ලංකා"
+    ],
+    "fifa": "SRI"
+  },
+  {
+    "cca2": "GS",
+    "name": "South Georgia",
+    "latlng": [
+      -54.5,
+      -37
+    ],
+    "capital": "King Edward Point",
+    "capitalLatlng": [
+      -54.28,
+      -36.5
+    ],
+    "tld": [
+      ".gs"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "AL",
+    "name": "Albania",
+    "latlng": [
+      41,
+      20
+    ],
+    "capital": "Tirana",
+    "capitalLatlng": [
+      41.32,
+      19.82
+    ],
+    "tld": [
+      ".al"
+    ],
+    "fifa": "ALB"
+  },
+  {
+    "cca2": "DZ",
+    "name": "Algeria",
+    "latlng": [
+      28,
+      3
+    ],
+    "capital": "Algiers",
+    "capitalLatlng": [
+      36.75,
+      3.05
+    ],
+    "tld": [
+      ".dz",
+      "الجزائر."
+    ],
+    "fifa": "ALG"
+  },
+  {
+    "cca2": "UA",
+    "name": "Ukraine",
+    "latlng": [
+      49,
+      32
+    ],
+    "capital": "Kyiv",
+    "capitalLatlng": [
+      50.43,
+      30.52
+    ],
+    "tld": [
+      ".ua",
+      ".укр"
+    ],
+    "fifa": "UKR"
+  },
+  {
+    "cca2": "SH",
+    "name": "Saint Helena, Ascension and Tristan da Cunha",
+    "latlng": [
+      -15.95,
+      -5.72
+    ],
+    "capital": "Jamestown",
+    "capitalLatlng": [
+      -15.93,
+      -5.72
+    ],
+    "tld": [
+      ".sh",
+      ".ac"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "HM",
+    "name": "Heard Island and McDonald Islands",
+    "latlng": [
+      -53.0818,
+      73.5042
+    ],
+    "capital": null,
+    "capitalLatlng": [
+      null,
+      null
+    ],
+    "tld": [
+      ".hm",
+      ".aq"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "SM",
+    "name": "San Marino",
+    "latlng": [
+      43.76666666,
+      12.41666666
+    ],
+    "capital": "City of San Marino",
+    "capitalLatlng": [
+      43.94,
+      12.45
+    ],
+    "tld": [
+      ".sm"
+    ],
+    "fifa": "SMR"
+  },
+  {
+    "cca2": "CU",
+    "name": "Cuba",
+    "latlng": [
+      21.5,
+      -80
+    ],
+    "capital": "Havana",
+    "capitalLatlng": [
+      23.12,
+      -82.35
+    ],
+    "tld": [
+      ".cu"
+    ],
+    "fifa": "CUB"
+  },
+  {
+    "cca2": "NR",
+    "name": "Nauru",
+    "latlng": [
+      -0.53333333,
+      166.91666666
+    ],
+    "capital": "Yaren",
+    "capitalLatlng": [
+      -0.55,
+      166.92
+    ],
+    "tld": [
+      ".nr"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "ES",
+    "name": "Spain",
+    "latlng": [
+      40,
+      -4
+    ],
+    "capital": "Madrid",
+    "capitalLatlng": [
+      40.4,
+      -3.68
+    ],
+    "tld": [
+      ".es"
+    ],
+    "fifa": "ESP"
+  },
+  {
+    "cca2": "KW",
+    "name": "Kuwait",
+    "latlng": [
+      29.5,
+      45.75
+    ],
+    "capital": "Kuwait City",
+    "capitalLatlng": [
+      29.37,
+      47.97
+    ],
+    "tld": [
+      ".kw"
+    ],
+    "fifa": "KUW"
+  },
+  {
+    "cca2": "MS",
+    "name": "Montserrat",
+    "latlng": [
+      16.75,
+      -62.2
+    ],
+    "capital": "Plymouth",
+    "capitalLatlng": [
+      16.7,
+      -62.22
+    ],
+    "tld": [
+      ".ms"
+    ],
+    "fifa": "MSR"
+  },
+  {
+    "cca2": "MU",
+    "name": "Mauritius",
+    "latlng": [
+      -20.28333333,
+      57.55
+    ],
+    "capital": "Port Louis",
+    "capitalLatlng": [
+      -20.15,
+      57.48
+    ],
+    "tld": [
+      ".mu"
+    ],
+    "fifa": "MRI"
+  },
+  {
+    "cca2": "SE",
+    "name": "Sweden",
+    "latlng": [
+      62,
+      15
+    ],
+    "capital": "Stockholm",
+    "capitalLatlng": [
+      59.33,
+      18.05
+    ],
+    "tld": [
+      ".se"
+    ],
+    "fifa": "SWE"
+  },
+  {
+    "cca2": "AU",
+    "name": "Australia",
+    "latlng": [
+      -27,
+      133
+    ],
+    "capital": "Canberra",
+    "capitalLatlng": [
+      -35.27,
+      149.13
+    ],
+    "tld": [
+      ".au"
+    ],
+    "fifa": "AUS"
+  },
+  {
+    "cca2": "CM",
+    "name": "Cameroon",
+    "latlng": [
+      6,
+      12
+    ],
+    "capital": "Yaoundé",
+    "capitalLatlng": [
+      3.85,
+      11.5
+    ],
+    "tld": [
+      ".cm"
+    ],
+    "fifa": "CMR"
+  },
+  {
+    "cca2": "EC",
+    "name": "Ecuador",
+    "latlng": [
+      -2,
+      -77.5
+    ],
+    "capital": "Quito",
+    "capitalLatlng": [
+      -0.22,
+      -78.5
+    ],
+    "tld": [
+      ".ec"
+    ],
+    "fifa": "ECU"
+  },
+  {
+    "cca2": "QA",
+    "name": "Qatar",
+    "latlng": [
+      25.5,
+      51.25
+    ],
+    "capital": "Doha",
+    "capitalLatlng": [
+      25.28,
+      51.53
+    ],
+    "tld": [
+      ".qa",
+      "قطر."
+    ],
+    "fifa": "QAT"
+  },
+  {
+    "cca2": "MH",
+    "name": "Marshall Islands",
+    "latlng": [
+      9,
+      168
+    ],
+    "capital": "Majuro",
+    "capitalLatlng": [
+      7.1,
+      171.38
+    ],
+    "tld": [
+      ".mh"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "PL",
+    "name": "Poland",
+    "latlng": [
+      52,
+      20
+    ],
+    "capital": "Warsaw",
+    "capitalLatlng": [
+      52.25,
+      21
+    ],
+    "tld": [
+      ".pl"
+    ],
+    "fifa": "POL"
+  },
+  {
+    "cca2": "KY",
+    "name": "Cayman Islands",
+    "latlng": [
+      19.3133,
+      -81.2546
+    ],
+    "capital": "George Town",
+    "capitalLatlng": [
+      19.3,
+      -81.38
+    ],
+    "tld": [
+      ".ky"
+    ],
+    "fifa": "CAY"
+  },
+  {
+    "cca2": "ZA",
+    "name": "South Africa",
+    "latlng": [
+      -29,
+      24
+    ],
+    "capital": "Pretoria",
+    "capitalLatlng": [
+      -25.7,
+      28.22
+    ],
+    "tld": [
+      ".za"
+    ],
+    "fifa": "RSA"
+  },
+  {
+    "cca2": "WF",
+    "name": "Wallis and Futuna",
+    "latlng": [
+      -13.3,
+      -176.2
+    ],
+    "capital": "Mata-Utu",
+    "capitalLatlng": [
+      -13.95,
+      -171.93
+    ],
+    "tld": [
+      ".wf"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "WS",
+    "name": "Samoa",
+    "latlng": [
+      -13.58333333,
+      -172.33333333
+    ],
+    "capital": "Apia",
+    "capitalLatlng": [
+      -13.82,
+      -171.77
+    ],
+    "tld": [
+      ".ws"
+    ],
+    "fifa": "SAM"
+  },
+  {
+    "cca2": "NL",
+    "name": "Netherlands",
+    "latlng": [
+      52.5,
+      5.75
+    ],
+    "capital": "Amsterdam",
+    "capitalLatlng": [
+      52.35,
+      4.92
+    ],
+    "tld": [
+      ".nl"
+    ],
+    "fifa": "NED"
+  },
+  {
+    "cca2": "EH",
+    "name": "Western Sahara",
+    "latlng": [
+      24.5,
+      -13
+    ],
+    "capital": "El Aaiún",
+    "capitalLatlng": [
+      -13.28,
+      27.14
+    ],
+    "tld": [
+      ".eh"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "ME",
+    "name": "Montenegro",
+    "latlng": [
+      42.5,
+      19.3
+    ],
+    "capital": "Podgorica",
+    "capitalLatlng": [
+      42.43,
+      19.27
+    ],
+    "tld": [
+      ".me"
+    ],
+    "fifa": "MNE"
+  },
+  {
+    "cca2": "BT",
+    "name": "Bhutan",
+    "latlng": [
+      27.5,
+      90.5
+    ],
+    "capital": "Thimphu",
+    "capitalLatlng": [
+      27.47,
+      89.63
+    ],
+    "tld": [
+      ".bt"
+    ],
+    "fifa": "BHU"
+  },
+  {
+    "cca2": "MT",
+    "name": "Malta",
+    "latlng": [
+      35.9375,
+      14.3754
+    ],
+    "capital": "Valletta",
+    "capitalLatlng": [
+      35.88,
+      14.5
+    ],
+    "tld": [
+      ".mt"
+    ],
+    "fifa": "MLT"
+  },
+  {
+    "cca2": "VU",
+    "name": "Vanuatu",
+    "latlng": [
+      -16,
+      167
+    ],
+    "capital": "Port Vila",
+    "capitalLatlng": [
+      -17.73,
+      168.32
+    ],
+    "tld": [
+      ".vu"
+    ],
+    "fifa": "VAN"
+  },
+  {
+    "cca2": "TZ",
+    "name": "Tanzania",
+    "latlng": [
+      -6,
+      35
+    ],
+    "capital": "Dodoma",
+    "capitalLatlng": [
+      -6.16,
+      35.75
+    ],
+    "tld": [
+      ".tz"
+    ],
+    "fifa": "TAN"
+  },
+  {
+    "cca2": "NZ",
+    "name": "New Zealand",
+    "latlng": [
+      -41,
+      174
+    ],
+    "capital": "Wellington",
+    "capitalLatlng": [
+      -41.3,
+      174.78
+    ],
+    "tld": [
+      ".nz"
+    ],
+    "fifa": "NZL"
+  },
+  {
+    "cca2": "PW",
+    "name": "Palau",
+    "latlng": [
+      7.5,
+      134.5
+    ],
+    "capital": "Ngerulmud",
+    "capitalLatlng": [
+      7.5,
+      134.62
+    ],
+    "tld": [
+      ".pw"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "PA",
+    "name": "Panama",
+    "latlng": [
+      9,
+      -80
+    ],
+    "capital": "Panama City",
+    "capitalLatlng": [
+      8.97,
+      -79.53
+    ],
+    "tld": [
+      ".pa"
+    ],
+    "fifa": "PAN"
+  },
+  {
+    "cca2": "TV",
+    "name": "Tuvalu",
+    "latlng": [
+      -8,
+      178
+    ],
+    "capital": "Funafuti",
+    "capitalLatlng": [
+      -8.52,
+      179.22
+    ],
+    "tld": [
+      ".tv"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "FJ",
+    "name": "Fiji",
+    "latlng": [
+      -17.7134,
+      178.065
+    ],
+    "capital": "Suva",
+    "capitalLatlng": [
+      -18.13,
+      178.42
+    ],
+    "tld": [
+      ".fj"
+    ],
+    "fifa": "FIJ"
+  },
+  {
+    "cca2": "NI",
+    "name": "Nicaragua",
+    "latlng": [
+      13,
+      -85
+    ],
+    "capital": "Managua",
+    "capitalLatlng": [
+      12.13,
+      -86.25
+    ],
+    "tld": [
+      ".ni"
+    ],
+    "fifa": "NCA"
+  },
+  {
+    "cca2": "KG",
+    "name": "Kyrgyzstan",
+    "latlng": [
+      41,
+      75
+    ],
+    "capital": "Bishkek",
+    "capitalLatlng": [
+      42.87,
+      74.6
+    ],
+    "tld": [
+      ".kg"
+    ],
+    "fifa": "KGZ"
+  },
+  {
+    "cca2": "TF",
+    "name": "French Southern and Antarctic Lands",
+    "latlng": [
+      -49.25,
+      69.167
+    ],
+    "capital": "Port-aux-Français",
+    "capitalLatlng": [
+      48.81,
+      -1.4
+    ],
+    "tld": [
+      ".tf"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "LV",
+    "name": "Latvia",
+    "latlng": [
+      57,
+      25
+    ],
+    "capital": "Riga",
+    "capitalLatlng": [
+      56.95,
+      24.1
+    ],
+    "tld": [
+      ".lv"
+    ],
+    "fifa": "LVA"
+  },
+  {
+    "cca2": "GE",
+    "name": "Georgia",
+    "latlng": [
+      42,
+      43.5
+    ],
+    "capital": "Tbilisi",
+    "capitalLatlng": [
+      41.68,
+      44.83
+    ],
+    "tld": [
+      ".ge"
+    ],
+    "fifa": "GEO"
+  },
+  {
+    "cca2": "LU",
+    "name": "Luxembourg",
+    "latlng": [
+      49.75,
+      6.16666666
+    ],
+    "capital": "Luxembourg",
+    "capitalLatlng": [
+      49.6,
+      6.12
+    ],
+    "tld": [
+      ".lu"
+    ],
+    "fifa": "LUX"
+  },
+  {
+    "cca2": "AT",
+    "name": "Austria",
+    "latlng": [
+      47.33333333,
+      13.33333333
+    ],
+    "capital": "Vienna",
+    "capitalLatlng": [
+      48.2,
+      16.37
+    ],
+    "tld": [
+      ".at"
+    ],
+    "fifa": "AUT"
+  },
+  {
+    "cca2": "MK",
+    "name": "North Macedonia",
+    "latlng": [
+      41.83333333,
+      22
+    ],
+    "capital": "Skopje",
+    "capitalLatlng": [
+      42,
+      21.43
+    ],
+    "tld": [
+      ".mk"
+    ],
+    "fifa": "MKD"
+  },
+  {
+    "cca2": "BL",
+    "name": "Saint Barthélemy",
+    "latlng": [
+      18.5,
+      -63.41666666
+    ],
+    "capital": "Gustavia",
+    "capitalLatlng": [
+      17.88,
+      -62.85
+    ],
+    "tld": [
+      ".bl"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "CX",
+    "name": "Christmas Island",
+    "latlng": [
+      -10.5,
+      105.66666666
+    ],
+    "capital": "Flying Fish Cove",
+    "capitalLatlng": [
+      -10.42,
+      105.68
+    ],
+    "tld": [
+      ".cx"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "SB",
+    "name": "Solomon Islands",
+    "latlng": [
+      -8,
+      159
+    ],
+    "capital": "Honiara",
+    "capitalLatlng": [
+      -9.43,
+      159.95
+    ],
+    "tld": [
+      ".sb"
+    ],
+    "fifa": "SOL"
+  },
+  {
+    "cca2": "AG",
+    "name": "Antigua and Barbuda",
+    "latlng": [
+      17.05,
+      -61.8
+    ],
+    "capital": "Saint John's",
+    "capitalLatlng": [
+      17.12,
+      -61.85
+    ],
+    "tld": [
+      ".ag"
+    ],
+    "fifa": "ATG"
+  },
+  {
+    "cca2": "IQ",
+    "name": "Iraq",
+    "latlng": [
+      33,
+      44
+    ],
+    "capital": "Baghdad",
+    "capitalLatlng": [
+      33.33,
+      44.4
+    ],
+    "tld": [
+      ".iq"
+    ],
+    "fifa": "IRQ"
+  },
+  {
+    "cca2": "MD",
+    "name": "Moldova",
+    "latlng": [
+      47,
+      29
+    ],
+    "capital": "Chișinău",
+    "capitalLatlng": [
+      47.01,
+      28.9
+    ],
+    "tld": [
+      ".md"
+    ],
+    "fifa": "MDA"
+  },
+  {
+    "cca2": "NF",
+    "name": "Norfolk Island",
+    "latlng": [
+      -29.03333333,
+      167.95
+    ],
+    "capital": "Kingston",
+    "capitalLatlng": [
+      -29.05,
+      167.97
+    ],
+    "tld": [
+      ".nf"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "CG",
+    "name": "Republic of the Congo",
+    "latlng": [
+      -1,
+      15
+    ],
+    "capital": "Brazzaville",
+    "capitalLatlng": [
+      -4.25,
+      15.28
+    ],
+    "tld": [
+      ".cg"
+    ],
+    "fifa": "CGO"
+  },
+  {
+    "cca2": "NU",
+    "name": "Niue",
+    "latlng": [
+      -19.03333333,
+      -169.86666666
+    ],
+    "capital": "Alofi",
+    "capitalLatlng": [
+      -19.02,
+      -169.92
+    ],
+    "tld": [
+      ".nu"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "LT",
+    "name": "Lithuania",
+    "latlng": [
+      56,
+      24
+    ],
+    "capital": "Vilnius",
+    "capitalLatlng": [
+      54.68,
+      25.32
+    ],
+    "tld": [
+      ".lt"
+    ],
+    "fifa": "LTU"
+  },
+  {
+    "cca2": "NE",
+    "name": "Niger",
+    "latlng": [
+      16,
+      8
+    ],
+    "capital": "Niamey",
+    "capitalLatlng": [
+      13.52,
+      2.12
+    ],
+    "tld": [
+      ".ne"
+    ],
+    "fifa": "NIG"
+  },
+  {
+    "cca2": "GY",
+    "name": "Guyana",
+    "latlng": [
+      5,
+      -59
+    ],
+    "capital": "Georgetown",
+    "capitalLatlng": [
+      6.8,
+      -58.15
+    ],
+    "tld": [
+      ".gy"
+    ],
+    "fifa": "GUY"
+  },
+  {
+    "cca2": "BM",
+    "name": "Bermuda",
+    "latlng": [
+      32.33333333,
+      -64.75
+    ],
+    "capital": "Hamilton",
+    "capitalLatlng": [
+      32.28,
+      -64.78
+    ],
+    "tld": [
+      ".bm"
+    ],
+    "fifa": "BER"
+  },
+  {
+    "cca2": "GA",
+    "name": "Gabon",
+    "latlng": [
+      -1,
+      11.75
+    ],
+    "capital": "Libreville",
+    "capitalLatlng": [
+      0.38,
+      9.45
+    ],
+    "tld": [
+      ".ga"
+    ],
+    "fifa": "GAB"
+  },
+  {
+    "cca2": "CK",
+    "name": "Cook Islands",
+    "latlng": [
+      -21.23333333,
+      -159.76666666
+    ],
+    "capital": "Avarua",
+    "capitalLatlng": [
+      -21.2,
+      -159.77
+    ],
+    "tld": [
+      ".ck"
+    ],
+    "fifa": "COK"
+  },
+  {
+    "cca2": "AO",
+    "name": "Angola",
+    "latlng": [
+      -12.5,
+      18.5
+    ],
+    "capital": "Luanda",
+    "capitalLatlng": [
+      -8.83,
+      13.22
+    ],
+    "tld": [
+      ".ao"
+    ],
+    "fifa": "ANG"
+  },
+  {
+    "cca2": "NO",
+    "name": "Norway",
+    "latlng": [
+      62,
+      10
+    ],
+    "capital": "Oslo",
+    "capitalLatlng": [
+      59.92,
+      10.75
+    ],
+    "tld": [
+      ".no"
+    ],
+    "fifa": "NOR"
+  },
+  {
+    "cca2": "GP",
+    "name": "Guadeloupe",
+    "latlng": [
+      16.25,
+      -61.583333
+    ],
+    "capital": "Basse-Terre",
+    "capitalLatlng": [
+      16.03,
+      -61.73
+    ],
+    "tld": [
+      ".gp"
+    ],
+    "fifa": null
+  },
+  {
+    "cca2": "MV",
+    "name": "Maldives",
+    "latlng": [
+      3.25,
+      73
+    ],
+    "capital": "Malé",
+    "capitalLatlng": [
+      4.17,
+      73.51
+    ],
+    "tld": [
+      ".mv"
+    ],
+    "fifa": "MDV"
+  },
+  {
+    "cca2": "BE",
+    "name": "Belgium",
+    "latlng": [
+      50.83333333,
+      4
+    ],
+    "capital": "Brussels",
+    "capitalLatlng": [
+      50.83,
+      4.33
+    ],
+    "tld": [
+      ".be"
+    ],
+    "fifa": "BEL"
+  },
+  {
+    "cca2": "HR",
+    "name": "Croatia",
+    "latlng": [
+      45.16666666,
+      15.5
+    ],
+    "capital": "Zagreb",
+    "capitalLatlng": [
+      45.8,
+      16
+    ],
+    "tld": [
+      ".hr"
+    ],
+    "fifa": "CRO"
+  },
+  {
+    "cca2": "BZ",
+    "name": "Belize",
+    "latlng": [
+      17.25,
+      -88.75
+    ],
+    "capital": "Belmopan",
+    "capitalLatlng": [
+      17.25,
+      -88.77
+    ],
+    "tld": [
+      ".bz"
+    ],
+    "fifa": "BLZ"
+  },
+  {
+    "cca2": "KN",
+    "name": "Saint Kitts and Nevis",
+    "latlng": [
+      17.33333333,
+      -62.75
+    ],
+    "capital": "Basseterre",
+    "capitalLatlng": [
+      17.3,
+      -62.72
+    ],
+    "tld": [
+      ".kn"
+    ],
+    "fifa": "SKN"
+  },
+  {
+    "cca2": "SG",
+    "name": "Singapore",
+    "latlng": [
+      1.36666666,
+      103.8
+    ],
+    "capital": "Singapore",
+    "capitalLatlng": [
+      1.28,
+      103.85
+    ],
+    "tld": [
+      ".sg",
+      ".新加坡",
+      ".சிங்கப்பூர்"
+    ],
+    "fifa": "SIN"
+  },
+  {
+    "cca2": "LS",
+    "name": "Lesotho",
+    "latlng": [
+      -29.5,
+      28.5
+    ],
+    "capital": "Maseru",
+    "capitalLatlng": [
+      -29.32,
+      27.48
+    ],
+    "tld": [
+      ".ls"
+    ],
+    "fifa": "LES"
+  },
+  {
+    "cca2": "UY",
+    "name": "Uruguay",
+    "latlng": [
+      -33,
+      -56
+    ],
+    "capital": "Montevideo",
+    "capitalLatlng": [
+      -34.85,
+      -56.17
+    ],
+    "tld": [
+      ".uy"
+    ],
+    "fifa": "URU"
+  },
+  {
+    "cca2": "BF",
+    "name": "Burkina Faso",
+    "latlng": [
+      13,
+      -2
+    ],
+    "capital": "Ouagadougou",
+    "capitalLatlng": [
+      12.37,
+      -1.52
+    ],
+    "tld": [
+      ".bf"
+    ],
+    "fifa": "BFA"
+  },
+  {
+    "cca2": "IN",
+    "name": "India",
+    "latlng": [
+      20,
+      77
+    ],
+    "capital": "New Delhi",
+    "capitalLatlng": [
+      28.6,
+      77.2
+    ],
+    "tld": [
+      ".in"
+    ],
+    "fifa": "IND"
+  },
+  {
+    "cca2": "PH",
+    "name": "Philippines",
+    "latlng": [
+      13,
+      122
+    ],
+    "capital": "Manila",
+    "capitalLatlng": [
+      14.6,
+      120.97
+    ],
+    "tld": [
+      ".ph"
+    ],
+    "fifa": "PHI"
+  },
+  {
+    "cca2": "CF",
+    "name": "Central African Republic",
+    "latlng": [
+      7,
+      21
+    ],
+    "capital": "Bangui",
+    "capitalLatlng": [
+      4.37,
+      18.58
+    ],
+    "tld": [
+      ".cf"
+    ],
+    "fifa": "CTA"
+  },
+  {
+    "cca2": "SD",
+    "name": "Sudan",
+    "latlng": [
+      15,
+      30
+    ],
+    "capital": "Khartoum",
+    "capitalLatlng": [
+      15.6,
+      32.53
+    ],
+    "tld": [
+      ".sd"
+    ],
+    "fifa": "SDN"
+  },
+  {
+    "cca2": "GW",
+    "name": "Guinea-Bissau",
+    "latlng": [
+      12,
+      -15
+    ],
+    "capital": "Bissau",
+    "capitalLatlng": [
+      11.85,
+      -15.58
+    ],
+    "tld": [
+      ".gw"
+    ],
+    "fifa": "GNB"
+  },
+  {
+    "cca2": "PG",
+    "name": "Papua New Guinea",
+    "latlng": [
+      -6,
+      147
+    ],
+    "capital": "Port Moresby",
+    "capitalLatlng": [
+      -9.45,
+      147.18
+    ],
+    "tld": [
+      ".pg"
+    ],
+    "fifa": "PNG"
+  },
+  {
+    "cca2": "UM",
+    "name": "United States Minor Outlying Islands",
+    "latlng": [
+      19.3,
+      166.633333
+    ],
+    "capital": "Washington DC",
+    "capitalLatlng": [
+      null,
+      null
+    ],
+    "tld": [
+      ".us"
+    ],
+    "fifa": null
+  }
+]

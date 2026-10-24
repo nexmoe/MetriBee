@@ -1,0 +1,150 @@
+import { Filter } from "@rybbit/shared";
+import { DateTime } from "luxon";
+import { Time } from "../components/DateSelector/types";
+import axios, { AxiosRequestConfig } from "axios";
+import { BACKEND_URL } from "../lib/const";
+import { getRequestPrivateKey } from "./requestContext";
+import { CommonApiParams } from "./analytics/endpoints/types";
+
+export function getStartAndEndDate(time: Time, timeZone: string): { startDate: string | null; endDate: string | null } {
+  if (time.mode === "range") {
+    if (time.startTime && time.endTime) {
+      const end = DateTime.fromISO(`${time.endDate}T${time.endTime}`, { zone: timeZone });
+      return {
+        startDate: time.startDate,
+        endDate: end.minus({ milliseconds: 1 }).toISODate(),
+      };
+    }
+    return { startDate: time.startDate, endDate: time.endDate };
+  }
+  if (time.mode === "week") {
+    return {
+      startDate: time.week,
+      endDate: DateTime.fromISO(time.week).endOf("week").toISODate(),
+    };
+  }
+  if (time.mode === "month") {
+    return {
+      startDate: time.month,
+      endDate: DateTime.fromISO(time.month).endOf("month").toISODate(),
+    };
+  }
+  if (time.mode === "year") {
+    return {
+      startDate: time.year,
+      endDate: DateTime.fromISO(time.year).endOf("year").toISODate(),
+    };
+  }
+  if (time.mode === "all-time" || time.mode === "past-minutes") {
+    return { startDate: null, endDate: null };
+  }
+  return { startDate: time.day, endDate: time.day };
+}
+
+function sanitizeFilters(filters?: Filter[]): Filter[] | undefined {
+  if (!filters) return undefined;
+  const cleaned = filters.filter(f => {
+    if (f.type === "is_null" || f.type === "is_not_null") return true;
+    return f.value.length > 0 && f.value.every(v => v !== "" && v !== null && v !== undefined);
+  });
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
+/**
+ * Build CommonApiParams from a Time object, handling every time mode
+ * (date range, exact datetime range, past-minutes). The timezone is injected
+ * rather than read from the store, so the whole time-window serialisation is a
+ * pure function of its arguments.
+ */
+export function buildApiParams(time: Time, options: { timeZone: string; filters?: Filter[] }): CommonApiParams {
+  const { timeZone } = options;
+  const filters = sanitizeFilters(options.filters);
+
+  if (time.mode === "past-minutes") {
+    return {
+      startDate: "",
+      endDate: "",
+      timeZone,
+      filters,
+      pastMinutesStart: time.pastMinutesStart,
+      pastMinutesEnd: time.pastMinutesEnd,
+    };
+  }
+
+  if (time.mode === "range" && time.startTime && time.endTime) {
+    const start = DateTime.fromISO(`${time.startDate}T${time.startTime}`, { zone: timeZone });
+    const end = DateTime.fromISO(`${time.endDate}T${time.endTime}`, { zone: timeZone });
+    return {
+      startDate: "",
+      endDate: "",
+      timeZone,
+      filters,
+      startDateTime: start.toUTC().toFormat("yyyy-MM-dd HH:mm:ss"),
+      endDateTime: end.toUTC().toFormat("yyyy-MM-dd HH:mm:ss"),
+    };
+  }
+
+  const { startDate, endDate } = getStartAndEndDate(time, timeZone);
+  return {
+    startDate: startDate ?? "",
+    endDate: endDate ?? "",
+    timeZone,
+    filters,
+  };
+}
+
+export async function authedFetch<T>(
+  url: string,
+  params?: Record<string, any>,
+  config: AxiosRequestConfig = {}
+): Promise<T> {
+  const fullUrl = url.startsWith("http") ? url : `${BACKEND_URL}${url}`;
+
+  // Process params to handle arrays correctly for backend JSON parsing
+  let processedParams = params;
+  if (params) {
+    processedParams = { ...params };
+    Object.entries(processedParams).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        // Convert arrays to JSON strings for backend parsing
+        processedParams![key] = JSON.stringify(value);
+      }
+    });
+  }
+
+  const privateKey = getRequestPrivateKey();
+  const headers = {
+    ...config.headers,
+    ...(privateKey ? { "x-private-key": privateKey } : {}),
+  };
+
+  try {
+    const response = await axios({
+      url: fullUrl,
+      params: processedParams,
+      withCredentials: true,
+      ...config,
+      headers,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    if (error?.response?.data?.error) {
+      throw new ApiError(error.response.data.error, error.response.status, error.response.data);
+    }
+    throw error;
+  }
+}
+
+/** A backend error response: its public message, plus the status and body for callers that branch on them. */
+export class ApiError extends Error {
+  status: number | undefined;
+  body: unknown;
+
+  constructor(message: string, status: number | undefined, body: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+  }
+}

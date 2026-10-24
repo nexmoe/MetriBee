@@ -1,0 +1,219 @@
+<link rel="stylesheet" href="/css/panel.css" />
+<style>
+  /* Head */
+  .lh-head { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
+  .lh-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; color: var(--text-3); font-size: .8125rem; margin-top: 4px; }
+  .lh-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+  .spinning { animation: lh-spin 700ms linear infinite; }
+  @keyframes lh-spin { to { transform: rotate(360deg); } }
+
+  /* Spike rule popover */
+  .c-strip .sums .counts { display: grid; gap: 4px; }
+  .live-home .c-strip { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+  /* Globe peeks in from the strip's right edge: the tile is clipped, so part of the globe sits off-card */
+  .globe-tile { position: relative; align-self: stretch; width: 132px; min-height: 104px; margin: -16px -20px -16px 0; overflow: hidden; border-radius: 0 var(--r-lg) var(--r-lg) 0; color: var(--text-3); }
+  .globe-tile svg, .globe-tile canvas { position: absolute; left: 8px; top: 50%; width: 200px; height: 200px; margin-top: -100px; transition: transform .2s var(--ease-out); }
+  .globe-tile svg { fill: none; stroke: currentColor; stroke-width: .75; }
+  @media (hover: hover) { .globe-tile:hover canvas, .globe-tile:hover svg { transform: scale(1.04); } }
+  .globe-tile:active canvas { transform: scale(.98); }
+  #navMenu .nb-rs { margin-left: auto; font-size: .75rem; }
+  @media (max-width: 860px) {
+    .live-home .c-strip { grid-template-columns: minmax(0, 1fr) auto; }
+    .live-home .c-strip > .chart, .live-home .c-strip > .sums { grid-column: 1 / -1; }
+    .globe-tile { grid-row: 1; grid-column: 2; width: 112px; min-height: 96px; margin-bottom: 0; border-radius: 0 var(--r-lg) 0 0; }
+    .globe-tile svg, .globe-tile canvas { width: 160px; height: 160px; margin-top: -80px; }
+  }
+  .pop { position: fixed; z-index: 30; top: calc(var(--nav-h, 52px) + 8px); right: max(16px, calc((100vw - 1320px) / 2)); width: min(320px, calc(100vw - 32px)); padding: 14px; display: grid; gap: 12px; text-align: left; background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--r-lg); box-shadow: var(--pop-shadow); opacity: 0; transform: translateY(-4px); visibility: hidden; transition: opacity .15s var(--ease-out), transform .15s var(--ease-out), visibility 0s linear .15s; }
+  .pop.open { opacity: 1; transform: none; visibility: visible; transition-delay: 0s; }
+  .pop-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .pop-h b { font-size: .875rem; font-weight: 600; }
+  .rule-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .rule-fields label { display: grid; gap: 4px; font-size: .75rem; color: var(--text-2); }
+  .rule-fields input { height: 32px; width: 100%; padding: 0 8px; border: 1px solid var(--border-2); border-radius: var(--r); background: var(--surface); color: var(--text); font: 500 .8125rem/1 var(--font); font-variant-numeric: tabular-nums; }
+  .pop-note { margin: 0; font-size: .75rem; color: var(--text-3); line-height: 1.45; }
+  .pop-f { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+  /* Spike banner */
+  .spike { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding: 12px 16px; background: var(--warn-soft); border-radius: var(--r-lg); }
+  .spike + .spike { margin-top: 8px; }
+  .spike .t { font-weight: 600; min-width: 0; }
+  .spike .why { grid-column: 1 / -1; color: var(--text-2); font-size: .8125rem; overflow-wrap: anywhere; }
+  .spike-more { margin: 8px 0 0; font-size: .8125rem; color: var(--text-2); }
+  .spike { align-items: center; }
+  .spike:has(.spike-tg) { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .spike:has(.spike-tg) .why { grid-column: 1 / -1; }
+  .spike-tg { margin: -6px -8px -6px 0; color: var(--text-2); }
+  .spike-min { padding-block: 8px; }
+  .spike-min .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Property cards */
+  .pc-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-bottom: 8px; }
+  .pc-range { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: .8125rem; }
+  .pc-range select { height: 32px; max-width: 100%; padding: 0 32px 0 10px; border: 1px solid var(--border-2); border-radius: var(--r); background-color: var(--surface); color: var(--text); font: 500 .8125rem/1 var(--font); cursor: pointer; }
+  .pc-updated { margin: 0 0 12px; }
+  .pc-accounts { display: grid; gap: 24px; }
+  .pc-account { display: grid; gap: 12px; min-width: 0; }
+  .pc-account-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+  .pc-account-head h3 { min-width: 0; overflow-wrap: anywhere; }
+  .pc-account-quiet { display: grid; gap: 8px; }
+  .c-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .pc { display: grid; gap: 10px; padding: 14px 16px; transition: background-color .12s; }
+  .pc:hover, .pc:focus-within { background: var(--surface-2); }
+  .pc.hot, .pc.hot:hover, .pc.hot:focus-within { background: var(--warn-soft); }
+  .pc .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .site { display: grid; min-width: 0; }
+  .site b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .site span { font-size: .75rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pc .nums { display: flex; gap: 20px; align-items: baseline; }
+  .pc .nums div { display: grid; }
+  .pc .nums .n { font-size: 1.25rem; font-weight: 600; letter-spacing: -.011em; }
+  .pc .nums .n.v { font-weight: 500; }
+  .pc .chart svg { height: 44px; }
+  .pc .foot { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+  .pc .x-hot { color: var(--warn); font-weight: 600; }
+  .meter { position: relative; height: 6px; background: var(--surface-3); border-radius: 1px; min-width: 64px; }
+  .meter i { position: absolute; inset: 0 auto 0 0; background: var(--text-3); border-radius: 1px; }
+  .meter i.hot { background: var(--warn); }
+  .meter b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--text-2); }
+  .pc-actions { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 -8px -6px; opacity: 0; transition: opacity .15s var(--ease-out); }
+  .pc:hover .pc-actions, .pc:focus-within .pc-actions { opacity: 1; }
+  @media (hover: none), (pointer: coarse) {
+    .pc-actions { opacity: 1; }
+    .rule-fields input { height: 44px; }
+    .pc-range select { height: 44px; }
+  }
+
+  /* Quiet + errors */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid var(--border-2); border-radius: var(--r); background: var(--surface); font-size: .75rem; color: var(--text-2); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+  a.chip:hover { background: var(--surface-2); color: var(--text); }
+  .chip.bad { color: var(--bad); }
+  .empty { display: flex; gap: 12px; align-items: center; padding: 14px 16px; color: var(--text-2); font-size: .8125rem; }
+
+  /* Quota */
+  .quota { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px 32px; }
+  .qm-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: .75rem; color: var(--text-2); }
+  .qm-bar-bg { height: 6px; background: var(--surface-3); border-radius: 1px; overflow: hidden; }
+  .qm-bar-fill { height: 100%; width: 100%; background: var(--good); transform-origin: left; transform: scaleX(var(--pct, 0)); transition: transform .2s var(--ease-out); }
+  .qm-bar-fill.amber { background: var(--warn); }
+  .qm-bar-fill.danger { background: var(--bad); }
+
+  /* Foot */
+  .lh-foot { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; color: var(--text-3); font-size: .75rem; }
+  .lh-foot dl { display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 0; }
+  .lh-foot dt { display: inline; }
+  .lh-foot dd { display: inline; margin: 0 0 0 4px; color: var(--text-2); }
+  .lh-foot code { font-family: var(--mono); background: var(--surface-3); color: var(--text-2); padding: 1px 5px; border-radius: var(--r); }
+
+  /* Privacy mode hides names, domains and URLs */
+  body.privacy-blur [data-privacy] { filter: blur(8px); user-select: none; }
+
+  @media (max-width: 860px) {
+    .c-strip .sums .counts { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+    .pop { left: 16px; right: 16px; }
+    .c-cards { grid-template-columns: minmax(0, 1fr); }
+    .pc-actions { opacity: 1; }
+  }
+</style>
+
+<div class="live-home panel" id="liveHome">
+  <div class="lh-head">
+    <div>
+      <h1>Live</h1>
+      <div class="lh-meta"><span class="dot" aria-hidden="true"></span><span id="lhUpdated">Loading live data</span><span>· last 30 min</span><span id="refreshCountdown" class="num"></span></div>
+    </div>
+    <div class="lh-tools">
+      <button class="btn" type="button" id="autoRefreshToggle" aria-pressed="false" title="Reload every 5 minutes (A)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Auto
+      </button>
+      <button class="btn" type="button" id="privacyBtn" aria-pressed="false" title="Hide names and domains (P)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        Privacy
+      </button>
+      <button class="btn" type="button" id="reloadBtn" title="Reload (R)">
+        <svg id="reloadIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+        Reload
+      </button>
+      <button class="btn" type="button" id="refreshCacheBtn" title="Fetch the property list again from GA4">Refresh properties</button>
+    </div>
+  </div>
+
+  <section class="card c-strip" aria-label="All properties, last 30 minutes">
+    <div><div class="hero-n num" id="jsTotal">{{totalActiveUsers}}</div><div class="muted small">active now</div></div>
+    <div class="chart" id="jsCombined"></div>
+    <div class="sums">
+      <div class="counts">
+        <span class="small"><b class="num" id="jsTotalViews">{{totalPageViews}}</b> <span class="faint">views, 30 min</span></span>
+        <span class="small"><b class="num" id="jsLiveCount">0</b> <span class="faint">of {{accessibleCount}} live</span></span>
+      </div>
+    </div>
+    <a class="globe-tile" href="/globe" aria-label="Open the live globe">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26"/><ellipse cx="32" cy="32" rx="11" ry="26"/><path d="M6 32h52M10 19h44M10 45h44M32 6v52"/></svg>
+    </a>
+  </section>
+
+  {{! Spike rule: opened from Settings > Spike rule > Custom (main.js adds that menu group on this page). }}
+  <div class="pop rule-pop" id="rulePop" role="dialog" aria-label="Spike rule">
+    <div class="pop-h"><b>Spike rule</b></div>
+    <div class="seg" role="radiogroup" aria-label="Preset" id="rulePresets">
+      <button type="button" role="radio" aria-checked="false" data-preset="sensitive">Sensitive</button>
+      <button type="button" role="radio" aria-checked="false" data-preset="normal">Normal</button>
+      <button type="button" role="radio" aria-checked="false" data-preset="strict">Strict</button>
+    </div>
+    <div class="rule-fields">
+      <label>How unusual (z)<input type="number" id="ruleZ" min="1.5" max="6" step="0.1" inputmode="decimal"></label>
+      <label>Minimum lift (x)<input type="number" id="ruleLift" min="1" max="5" step="0.1" inputmode="decimal"></label>
+    </div>
+    <p class="pop-note">Spike = this many standard deviations above the usual for this hour, and at least this many times the usual.</p>
+    <div class="pop-f">
+      <button class="btn btn-sm btn-ghost" type="button" id="ruleReset">Reset</button>
+      <button class="btn btn-sm" type="button" id="ruleClose">Done</button>
+    </div>
+  </div>
+
+  <div id="spikeBanner" class="section" hidden></div>
+
+  <section class="section" aria-labelledby="propertiesHeading">
+    <div class="pc-head">
+      <h2 id="propertiesHeading">Properties</h2>
+      <label class="pc-range" for="homeCardRange">Time range
+        <select id="homeCardRange" aria-describedby="cardsUpdated">
+          <option value="30m">Last 30 minutes</option>
+          <option value="today">Today</option>
+          <option value="7d">Last 7 days</option>
+          <option value="28d">Last 28 days</option>
+        </select>
+      </label>
+    </div>
+    <p class="faint cap pc-updated" id="cardsUpdated" role="status"></p>
+    <div class="pc-accounts" id="propGrid" aria-busy="false"></div>
+  </section>
+
+  <section class="section card" id="quotaPanel">
+    <div class="card-h"><h2>API quota</h2><span class="faint cap" id="quotaUpdatedAt"></span></div>
+    <div class="card-b quota" id="quotaMeters" style="padding-top:0">
+      <span class="faint small" id="quotaNone">No quota data yet. It appears after the first successful API call.</span>
+    </div>
+  </section>
+
+  <div class="lh-foot">
+    <dl>
+      <div><dt>Properties cached</dt><dd id="jsCacheAge">{{cacheAge}}</dd></div>
+      <div><dt>Fetch time</dt><dd class="num">{{fetchDurationMs}} ms</dd></div>
+      <div><dt>Cache TTL</dt><dd>12 h</dd></div>
+    </dl>
+    <span>Run <code>node app.js --refresh-cache</code> to refresh on startup. MCP server included in <code>mcp-server/</code>.</span>
+  </div>
+</div>
+
+<script src="/js/homeAccounts.js"></script>
+<script>
+  const PAGE_DATA = {{{ json_stringify data }}};
+  const QUOTA = {{{ json_stringify quota }}};
+  const CACHE_AGE = {{{ json_stringify cacheAge }}};
+</script>
+{{! Mini globe in the live strip tile: same d3 and topojson builds as /globe, so the browser cache serves both. }}
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script defer src="/js/miniGlobe.js"></script>

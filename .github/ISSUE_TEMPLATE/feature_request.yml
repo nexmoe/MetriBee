@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose one new feature or change. Wait for the `approved` label before opening a PR.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: One feature or edit only. Split unrelated ideas into separate issues.
+    validations:
+      required: true
+  - type: checkboxes
+    id: pr
+    attributes:
+      label: Pull request
+      options:
+        - label: I want to build this myself after the issue is approved.

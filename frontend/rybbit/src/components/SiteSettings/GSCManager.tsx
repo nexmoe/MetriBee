@@ -1,0 +1,96 @@
+"use client";
+
+import { useConnectGSC } from "@/api/gsc/hooks/useConnectGSC";
+import { useDisconnectGSC } from "@/api/gsc/hooks/useDisconnectGSC";
+import { useGetGSCConnection } from "@/api/gsc/hooks/useGetGSCConnection";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { Button } from "@/components/ui/button";
+import { SiGoogle } from "@icons-pack/react-simple-icons";
+import { ExternalLink } from "lucide-react";
+import { useExtracted } from "next-intl";
+import { useEffect, useState } from "react";
+import { toast } from "@/components/ui/sonner";
+import { useQueryState, parseAsString } from "nuqs";
+
+interface GSCManagerProps {
+  disabled?: boolean;
+  siteId?: number;
+}
+
+export function GSCManager({ disabled = false, siteId }: GSCManagerProps) {
+  const t = useExtracted();
+  const [gscStatus] = useQueryState("gsc", parseAsString);
+  const { data: connection, isLoading, refetch } = useGetGSCConnection({ site: siteId });
+  const { mutate: connect, isPending: isConnecting } = useConnectGSC(siteId);
+  const { mutate: disconnect, isPending: isDisconnecting } = useDisconnectGSC(siteId);
+  const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
+
+  // Check for OAuth success/error in URL params
+  useEffect(() => {
+    if (gscStatus === "success") {
+      toast.success(t("Google Search Console connected successfully"));
+      refetch();
+    }
+  }, [gscStatus, refetch]);
+
+  const handleDisconnect = async () => {
+    return new Promise((resolve, reject) => {
+      disconnect(undefined, {
+        onSuccess: () => {
+          toast.success(t("Google Search Console disconnected"));
+          resolve(undefined);
+        },
+        onError: error => {
+          toast.error(t("Failed to disconnect Google Search Console"));
+          reject(error);
+        },
+      });
+    });
+  };
+
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground">{t("Loading...")}</p>;
+  }
+
+  const isConnected = connection?.connected;
+
+  return (
+    <div className="space-y-3">
+      {isConnected ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+            <span className="text-muted-foreground">{t("Connected to:")}</span>
+            <a
+              href={connection.gscPropertyUrl || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:underline flex items-center gap-1"
+            >
+              {connection.gscPropertyUrl?.replace("sc-domain:", "")}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          <ConfirmationModal
+            title={t("Disconnect Google Search Console?")}
+            description={t("This will remove the connection to Google Search Console. You can reconnect at any time.")}
+            isOpen={isDisconnectModalOpen}
+            setIsOpen={setIsDisconnectModalOpen}
+            onConfirm={handleDisconnect}
+            primaryAction={{ variant: "destructive", children: t("Disconnect") }}
+          >
+            <Button variant="outline" disabled={disabled || isDisconnecting}>
+              {isDisconnecting ? t("Disconnecting...") : t("Disconnect")}
+            </Button>
+          </ConfirmationModal>
+        </div>
+      ) : (
+        <Button onClick={() => connect()} disabled={disabled || isConnecting}>
+          <SiGoogle />
+          {isConnecting ? t("Connecting...") : t("Connect Google Search Console")}
+        </Button>
+      )}
+    </div>
+  );
+}
