@@ -1,6 +1,5 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MotionConfig } from "framer-motion";
 import { ThemeProvider } from "next-themes";
 import { NextIntlClientProvider } from "next-intl";
@@ -16,6 +15,7 @@ import { Toaster } from "../rybbit/src/components/ui/sonner";
 import messages from "../rybbit/messages/en.json";
 import { getAppPath, getLocale, getSharedRoute, useLocation } from "./navigation";
 import { PrivacyProvider } from "./privacy/Privacy";
+import { QueryProvider } from "./QueryProvider";
 import "./urlState";
 import "../rybbit/src/app/globals.css";
 import "./integration.css";
@@ -93,11 +93,6 @@ function App() {
     <SiteLayout>{content}</SiteLayout>
   );
 }
-const client = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 300000, retry: false, refetchOnWindowFocus: false },
-  },
-});
 async function boot() {
   const shared = getSharedRoute();
   setPrivateKeyResolver(() => getSharedRoute()?.privateKey ?? null);
@@ -130,7 +125,7 @@ async function boot() {
           disableTransitionOnChange
         >
           <NuqsAdapter>
-            <QueryClientProvider client={client}>
+            <QueryProvider>
               <TooltipProvider>
                 <PrivacyProvider>
                   <Boundary>
@@ -140,7 +135,7 @@ async function boot() {
                   </Boundary>
                 </PrivacyProvider>
               </TooltipProvider>
-            </QueryClientProvider>
+            </QueryProvider>
           </NuqsAdapter>
         </ThemeProvider>
       </MotionConfig>

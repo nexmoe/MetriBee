@@ -418,7 +418,7 @@ function SectionPages({ section }: { section: PageRow }) {
   if (isLoading) return <SkeletonRows count={Math.min(section.pages, 3)} child />;
 
   const batches = data?.pages ?? [];
-  if (isError || batches.length === 0) {
+  if ((isError && !data) || batches.length === 0) {
     return (
       <TableRow>
         <TableCell colSpan={2} className={cn("py-2 pl-11 pr-3 text-xs", MUTED)}>
@@ -595,7 +595,7 @@ export function PagesTable({
     },
   };
 
-  if (isError) {
+  if (isError && !data) {
     return (
       <ErrorState
         title={t("Failed to load pages")}

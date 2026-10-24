@@ -17,17 +17,13 @@ export default defineConfig({
     });
     return { code: rewritten, map: null };
   } }, {
-    // Swap the Rybbit rail for the MetriBee one at resolve time. An alias cannot do
-    // this: relative imports are expanded to a full path before alias matching.
+    // Resolve sibling imports (./AppSidebar), paths and aliases to the same
+    // MetriBee components, including explicit .tsx imports and resolved IDs.
     name: 'metribee-rail',
     enforce: 'pre',
     async resolveId(source, importer, options) {
       if (!importer) return;
-      const target = source.endsWith('components/AppSidebar')
-        ? 'AppSidebar'
-        : source.endsWith('components/RybbitLogo')
-          ? 'RybbitLogo'
-          : null;
+      const target = source.match(/(?:^|\/)(AppSidebar|RybbitLogo)(?:\.tsx)?$/)?.[1];
       if (!target) return;
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
       if (resolved && resolved.id.endsWith(`/rybbit/src/components/${target}.tsx`)) {

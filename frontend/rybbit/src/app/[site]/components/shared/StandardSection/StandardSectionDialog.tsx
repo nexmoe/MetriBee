@@ -228,7 +228,7 @@ export function StandardSectionDialogBody({
     sortDescFirst: true,
   });
 
-  if (isError) {
+  if (isError && !data) {
     return (
       <ErrorState
         title={t("Failed to load data")}

@@ -157,8 +157,49 @@ describe("MCP native dashboard integration", function () {
 		for (const name of ["countries", "revenue-key-events", "regions", "cities", "operating-systems"])
 			assert.ok(catalog.reports.some((report) => report.id === name));
 		assert.ok(catalog.additionalReports.includes("what-changed"));
+		assert.ok(catalog.additionalReports.includes("live-users"));
 		assert.equal(catalog.limits.propertiesPerQuestion, 1);
 		assert.equal(catalog.reports[0].icon, undefined);
+	});
+
+	it("serves live user aggregates through realtime quota guards and the shared cache", async () => {
+		let low = false;
+		const { service, calls } = harness({ guard: { checkQuota: (_id, pool) => low && pool === "realtime" ? { error: "quota_low" } : null } });
+		const args = { propertyId: "123", report: "live-users", limit: 1 };
+		const first = await service.execute("get_dashboard_report", args);
+		assert.equal(first.error, undefined, JSON.stringify(first));
+		assert.equal(first.data.activeUsers, 10);
+		assert.equal(first.apiCalls, 4);
+		assert.ok(first.quota.realtime);
+		assert.ok(calls.every(call => call.property === "properties/123" && call.minuteRanges[0].startMinutesAgo === 4 && call.returnPropertyQuota));
+		assert.match(first.limitations[0], /past 5 minutes/);
+		low = true;
+		const cached = await service.execute("get_dashboard_report", args);
+		assert.equal(cached.error, undefined);
+		assert.equal(cached.apiCalls, 0);
+		assert.ok(cached.quota.realtime);
+		const refused = await service.execute("get_dashboard_report", { ...args, propertyId: "456" });
+		assert.equal(refused.error, "quota_low");
+		assert.equal(calls.length, 4);
+		const filtered = await service.execute("get_dashboard_report", { ...args, filters: [{ parameter: "country", type: "equals", value: ["US"] }] });
+		assert.ok(filtered.error);
+		assert.equal(calls.length, 4);
+	});
+
+	it("limits each live user group and preserves explicit truncation", async () => {
+		const { service } = harness({ deps: { dataClient: () => ({ runRealtimeReport: async request => [{
+			rows: request.dimensions.length ? [row(["One", "US"], [3]), row(["Two", "CN"], [2])] : [row([], [5, 8])],
+			rowCount: request.dimensions.length ? 80 : 1,
+		}] }) } });
+		const result = await service.execute("get_dashboard_report", { propertyId: "123", report: "live-users", limit: 1 });
+		assert.equal(result.error, undefined, JSON.stringify(result));
+		for (const key of ["countries", "devices", "pages"]) {
+			assert.equal(result.data[key].rows.length, 1);
+			assert.equal(result.data[key].returned, 1);
+			assert.equal(result.data[key].totalCount, 80);
+			assert.equal(result.data[key].truncated, true);
+		}
+		assert.equal(result.dataQuality.truncated, true);
 	});
 
 	it("searches and paginates the dashboard's property/account metadata", async () => {

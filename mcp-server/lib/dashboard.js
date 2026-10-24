@@ -23,6 +23,7 @@ const REPORTS = [
 	"visitors",
 	"diagnostics",
 	"live-spike",
+	"live-users",
 ];
 const FILTER_PARAMETERS = [
 	"pathname",
@@ -55,6 +56,7 @@ const LIMITATIONS = [
 	"Funnels count ordered active users, not independent event counts. Saving definitions changes only local dashboard data, never GA4.",
 	"Revenue uses each property's currency. Optional AdSense values come from saved snapshots only when the requested dates are covered.",
 	"Live spikes cover the whole property's last 30 minutes, independently of historical dates, and do not accept audience filters.",
+	"Live users cover the whole property's past 5 minutes, independently of historical dates, without audience filters. Country, device and page rows are aggregates, not individual sessions; page user counts overlap.",
 ];
 
 function capabilities() {
@@ -401,6 +403,7 @@ function createDashboardService(deps = {}) {
 				if (args.segment && !Object.hasOwn(getAnalyticsCardConfig(args.report)?.segments || {}, args.segment))
 					throw new Error("Choose a segment listed for this report in get_capabilities.");
 				if (args.report === "live-spike" && args.filters?.length) throw new Error("Live spikes do not accept historical audience filters.");
+				if (args.report === "live-users" && args.filters?.length) throw new Error("Live users do not accept historical audience filters.");
 				const action =
 					args.report === "overview" ? "overview" : args.report === "time-series" ? "overview/time-series" : `ga4/${args.report}`;
 				result = await request(action, { query: { ...query, segment: args.segment, bucket: args.bucket || "day" } });
@@ -412,6 +415,13 @@ function createDashboardService(deps = {}) {
 						truncated: result.data.rows.length > (args.limit || 20) || result.data.rowCount > result.data.rows.length,
 					};
 				if (args.report === "live-spike") result.limitations = [LIMITATIONS[5]];
+				if (args.report === "live-users") {
+					for (const key of ["countries", "devices", "pages"]) {
+						const group = result.data[key], limit = args.limit || 20;
+						result.data[key] = { ...group, rows: group.rows.slice(0, limit), returned: Math.min(group.rows.length, limit), truncated: group.truncated || group.rows.length > limit };
+					}
+					result.limitations = [LIMITATIONS[6]];
+				}
 			} else if (operation === "get_pages_report") {
 				result = await request("pages", {
 					query: {
@@ -571,7 +581,7 @@ function createDashboardService(deps = {}) {
 				};
 			}
 			if (context.refusal) result = context.refusal;
-			if (!definitionOnly && !context.pools.size) context.pools.add(operation === "analyze_funnel" ? "funnel" : "core");
+			if (!definitionOnly && !context.pools.size) context.pools.add(args.report === "live-users" ? "realtime" : operation === "analyze_funnel" ? "funnel" : "core");
 			return {
 				...result,
 				propertyId: args.propertyId,

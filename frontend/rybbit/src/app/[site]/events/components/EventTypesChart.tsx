@@ -89,7 +89,7 @@ export function EventTypesChart() {
   }));
 
   const hasHiddenPerformance = present.some(config => config.type === "performance");
-  const placeholder = isError
+  const placeholder = isError && !data
     ? {
         title: t("Failed to load events"),
         description: t("There was a problem fetching the events. Please try again later."),

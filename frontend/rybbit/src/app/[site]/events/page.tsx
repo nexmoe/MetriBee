@@ -77,7 +77,7 @@ export default function EventsPage() {
         <EventNamesCard
           rows={rows}
           isLoading={stats.isPending}
-          isError={stats.isError}
+          isError={stats.isError && !stats.data}
           trendBucket={trendBucket}
           silentEvents={silentNames}
         />

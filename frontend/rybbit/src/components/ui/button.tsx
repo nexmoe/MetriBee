@@ -4,6 +4,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+const primaryButtonColors =
+  "bg-button-primary text-button-primary-foreground border border-button-primary-border hover:bg-button-primary-hover";
+
 const buttonVariants = cva(
   "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-950 disabled:pointer-events-none disabled:opacity-50 aria-busy:cursor-progress [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 dark:focus-visible:ring-neutral-300",
   {
@@ -13,10 +16,8 @@ const buttonVariants = cva(
           "bg-white text-neutral-950 border border-neutral-150 hover:bg-neutral-50 hover:border-neutral-300 dark:bg-neutral-850 dark:border-neutral-750 dark:text-neutral-50 dark:hover:bg-neutral-800/90 dark:hover:border-neutral-650",
         secondary:
           "bg-neutral-50 text-neutral-900 border border-neutral-150 hover:bg-neutral-100 hover:border-neutral-200 dark:bg-neutral-900 dark:text-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/80 dark:hover:border-neutral-700",
-        accent:
-          "bg-accent-500 text-neutral-50 border border-accent-600 hover:bg-accent-500/90 dark:bg-accent-600 dark:text-neutral-50 dark:border-accent-700 dark:hover:bg-accent-600/90",
-        success:
-          "bg-accent-500 text-neutral-50 border border-accent-600 hover:bg-accent-500/90 dark:bg-accent-800 dark:border-accent-600 dark:text-neutral-50 dark:hover:bg-accent-800/90 dark:hover:border-accent-500",
+        accent: primaryButtonColors,
+        success: primaryButtonColors,
         destructive:
           "bg-red-500 text-neutral-50 border border-red-500 hover:bg-red-500/90 dark:bg-red-900 dark:border-red-700 dark:text-neutral-50 dark:hover:bg-red-900/90 dark:hover:border-red-500",
         warning:

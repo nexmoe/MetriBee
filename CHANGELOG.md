@@ -13,9 +13,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Data pages use TanStack Query cache-first loading with 30-minute cache retention and session restoration for historical reports. Stale results refresh in the background and remain visible if a refresh fails; shared pages and public embeds keep server-side access checks.
+
+- Primary buttons use bee yellow with dark text in both themes.
+
 - The project as a whole is now declared AGPL-3.0-only, matching the Rybbit code it includes. The original GA4-Dashboard-MCP MIT license moves to `LICENSES/`, and a root `NOTICE` lists both sources. The Docker image and `/ui-source.tar.gz` now include `LICENSE`, `NOTICE` and `LICENSES/`.
 
 ### Added
+
+- The live-user drawer shows five-minute GA4 totals and country, device and page breakdowns, sharing cached totals with the toolbar and exposing the same aggregates through MCP.
 
 - Analytics merges Google Search Console metrics into the existing page, country and device tables, with keywords in the Sources card. Expanded tables combine GA4 and GSC columns with search, sorting and CSV export; summaries, comparisons and daily reports remain available through MCP. Automatic domain matching, read-only caches and explicit source/date/privacy limits apply.
 
@@ -44,6 +50,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Home groups active, quiet and failed properties by their GA4 account across all time ranges.
 
 ### Fixed
+
+- Sidebar and logo imports consistently resolve to the shared MetriBee components across workspace pages.
+
+- Subdomains without a favicon automatically use their main domain's icon, sharing cached results while respecting public and private suffix boundaries.
 
 - Property and account names refresh automatically every five minutes instead of remaining in an indefinitely reused metadata cache. Home can sync names immediately, and cached realtime metrics use the latest property names.
 

@@ -115,12 +115,12 @@ export default function Home() {
   });
   const rows = useMemo(
     () =>
-      (query.isError ? [] : query.data?.data || []).map((row) =>
+      (query.data?.data || []).map((row) =>
         scoreProperty(row, rule)
       ),
-    [query.data, query.isError, rule]
+    [query.data, rule]
   );
-  const health = feedHealth(rows, query.isError);
+  const health = feedHealth(rows, query.isError && !query.data);
   const unavailable = health.status === "unavailable";
   const partial = health.status === "partial";
   const available = rows.filter((row) => !row.error);

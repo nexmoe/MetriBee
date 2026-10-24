@@ -25,6 +25,11 @@
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
 
+  --color-button-primary: hsl(var(--yellow-400));
+  --color-button-primary-hover: hsl(var(--yellow-300));
+  --color-button-primary-border: hsl(var(--yellow-500));
+  --color-button-primary-foreground: hsl(var(--neutral-950));
+
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
 

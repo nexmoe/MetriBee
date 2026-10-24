@@ -148,7 +148,7 @@ export function WidgetManager({
         )}
         {query.isPending ? (
           <Skeleton className="h-24 w-full" />
-        ) : query.isError ? (
+        ) : query.isError && !query.data ? (
           <ErrorState
             title={t("Widgets unavailable")}
             message={query.error.message}

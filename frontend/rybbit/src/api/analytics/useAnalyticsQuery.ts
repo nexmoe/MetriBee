@@ -133,6 +133,7 @@ export function useAnalyticsQuery<TData>(options: AnalyticsQueryOptions<TData>):
     queryKey,
     queryFn: () => fetchAnalytics<TData>(site!, request, undefined, status => recordReportStatus(client, queryKey, status)),
     staleTime: options.staleTime ?? 60_000,
+    meta: { persist: options.useTime !== false && request.params.past_minutes_start === undefined },
     refetchInterval: options.refetchInterval,
     placeholderData:
       (options.placeholder ?? true)
@@ -180,6 +181,7 @@ export function useAnalyticsInfiniteQuery<TPage, TCursor = number>(
     initialPageParam: options.initialPageParam,
     getNextPageParam: options.getNextPageParam,
     staleTime: options.staleTime ?? 60_000,
+    meta: { persist: options.useTime !== false && request.params.past_minutes_start === undefined },
     refetchInterval: options.refetchInterval,
     refetchOnWindowFocus: options.refetchOnWindowFocus,
     enabled: (options.enabled ?? true) && hasScope && hasPeriod,

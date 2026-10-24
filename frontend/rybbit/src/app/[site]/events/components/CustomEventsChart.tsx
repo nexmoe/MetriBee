@@ -83,7 +83,7 @@ export function CustomEventsChart({ eventLimit }: { eventLimit: number }) {
     delta: previous ? percentDelta(totalsByEvent.get(name) ?? 0, previousCounts.get(name) ?? 0) : null,
   }));
 
-  const placeholder = isError
+  const placeholder = isError && !data
     ? {
         title: t("Failed to load events"),
         description: t("There was a problem fetching the events. Please try again later."),

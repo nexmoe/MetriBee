@@ -286,7 +286,7 @@ export default function JourneysPage() {
           <div className="px-4 pb-3 pt-3">
             {isLoading ? (
               <SankeySkeleton />
-            ) : journeysQuery.error ? (
+            ) : journeysQuery.error && !journeysQuery.data ? (
               <ErrorState
                 title={t("Failed to load journeys")}
                 message={journeysQuery.error.message}

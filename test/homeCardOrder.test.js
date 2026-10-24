@@ -68,6 +68,18 @@ describe("homepage Sessions ordering", () => {
     expect(mergeCardMetrics([1, 2], [failed, failed])).to.include({ data: undefined, isError: true, error });
   });
 
+  it("keeps cached cards when every background refresh fails", () => {
+    const error = new Error("GA4 temporarily unavailable");
+    const cached = { 1: { current: { sessions: 30, users: 10 } } };
+    const result = mergeCardMetrics([1, 2], [
+      { data: cached, isError: true, isFetching: false, error },
+      { isError: true, isFetching: false, error },
+    ]);
+    expect(result.isError).to.equal(false);
+    expect(result.data[1]).to.deep.equal(cached[1]);
+    expect(result.data[2]).to.deep.equal({ error: error.message });
+  });
+
   it("sorts the selected period numerically, preserving ties and placing unknown reports after valid zeros", () => {
     const sites = [1, 2, 3, 4, 5, 6].map(siteId => ({ siteId }));
     const metric = (sessions, previous = 0) => ({ current: { sessions, users: 1 }, previous: { sessions: previous, users: 1 } });

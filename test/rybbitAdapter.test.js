@@ -23,10 +23,10 @@ function handler(overrides = {}) {
     ...overrides,
   });
 }
-async function invoke(h, path, query = {}, method = "GET", body = {}) {
+async function invoke(h, path, query = {}, method = "GET", body = {}, headers = {}) {
   const out = { status: 200 };
   await h(
-    { path, query, method, body },
+    { path, query, method, body, headers },
     {
       status(code) {
         out.status = code;
@@ -41,6 +41,98 @@ async function invoke(h, path, query = {}, method = "GET", body = {}) {
   return out;
 }
 const dates = { start_date: "2026-10-01", end_date: "2026-10-22" };
+describe("GA4 live user drawer", () => {
+  function liveHandler(overrides = {}) {
+    const calls = [];
+    const cache = new Map();
+    const h = handler({
+      run: async () => { throw new Error("Live users must not query historical reports"); },
+      admin: () => { throw new Error("Live users do not require a property timezone"); },
+      readEntry: async (namespace, key) => cache.get(`${namespace}:${key}`),
+      write: async (namespace, key, data, meta) => cache.set(`${namespace}:${key}`, { data, cachedAt: meta.cachedAt }),
+      client: () => ({ runRealtimeReport: async query => {
+        calls.push(query);
+        const dimension = query.dimensions[0]?.name;
+        const rows = dimension === "country" ? [row(["United States", "US"], [4, 8]), row(["China", "CN"], [3, 6])]
+          : dimension === "deviceCategory" ? [row(["desktop"], [5, 9]), row(["mobile"], [2, 5])]
+          : dimension === "unifiedScreenName" ? [row(["Home"], [6, 10]), row(["Docs"], [4, 4])]
+          : [row([], [7, 14])];
+        return [{ rows, rowCount: rows.length }];
+      } }),
+      ...overrides,
+    });
+    return { h, calls };
+  }
+  it("loads five-minute aggregates instead of unsupported individual sessions", async () => {
+    const { h, calls } = liveHandler();
+    const result = await invoke(h, "/sites/123/ga4/live-users", { start_date: "invalid", filters: "invalid" });
+    expect(result.status).to.equal(200);
+    expect(result.body.data).to.include({ activeUsers: 7, pageviews: 14 });
+    expect(result.body.data.countries.rows[0]).to.deep.equal({ name: "United States", countryCode: "US", users: 4 });
+    expect(result.body.data.devices.rows[0]).to.deep.equal({ name: "desktop", users: 5 });
+    expect(result.body.data.pages.rows.map(item => item.users)).to.deep.equal([6, 4]);
+    // A user can visit multiple pages: page groups are never summed into the total.
+    expect(result.body.data.activeUsers).not.to.equal(10);
+    expect(calls).to.have.length(4);
+    expect(calls.every(query => query.property === "properties/123" && query.returnPropertyQuota)).to.equal(true);
+    expect(calls.every(query => JSON.stringify(query.minuteRanges) === JSON.stringify([{ startMinutesAgo: 4, endMinutesAgo: 0 }]))).to.equal(true);
+    expect(result.body.reportStatus).to.deep.equal({ fetchedAt: "2026-10-22T10:00:00.000Z", cacheStatus: "fresh" });
+  });
+  it("shares the exact live total with the toolbar and caches repeated openings", async () => {
+    let now = new Date("2026-10-22T10:00:00Z");
+    const { h, calls } = liveHandler({ now: () => now });
+    const count = await invoke(h, "/sites/123/live-user-count", { minutes: "5" });
+    const first = await invoke(h, "/sites/123/ga4/live-users");
+    const second = await invoke(h, "/sites/123/ga4/live-users");
+    expect(first.status).to.equal(200);
+    expect(first.body.data.activeUsers).to.equal(count.body.count);
+    expect(second.body.reportStatus.cacheStatus).to.equal("cached");
+    expect(calls).to.have.length(4);
+    now = new Date("2026-10-22T10:01:00Z");
+    await invoke(h, "/sites/123/ga4/live-users");
+    expect(calls).to.have.length(8);
+  });
+  it("returns a real empty state when nobody is online", async () => {
+    const { h } = liveHandler({ client: () => ({ runRealtimeReport: async () => [{ rows: [], rowCount: 0 }] }) });
+    const result = await invoke(h, "/sites/123/ga4/live-users");
+    expect(result.status).to.equal(200);
+    expect(result.body.data).to.include({ activeUsers: 0, pageviews: 0 });
+    expect(result.body.data.countries).to.deep.equal({ rows: [], totalCount: 0, truncated: false });
+  });
+  it("marks top-row truncation and asks GA4 for the largest groups first", async () => {
+    const calls = [];
+    const { h } = liveHandler({ client: () => ({ runRealtimeReport: async query => {
+      calls.push(query);
+      return [{ rows: query.dimensions.length ? [row(["Home", "US"], [5])] : [row([], [7, 14])], rowCount: query.dimensions.length ? 80 : 1 }];
+    } }) });
+    const result = await invoke(h, "/sites/123/ga4/live-users");
+    expect(result.status).to.equal(200);
+    expect(result.body.data.pages).to.include({ totalCount: 80, truncated: true });
+    expect(calls.filter(query => query.dimensions.length).every(query => query.limit === 50 && query.orderBys[0].metric.metricName === "activeUsers" && query.orderBys[0].desc)).to.equal(true);
+  });
+  it("preserves quota and API errors instead of replacing them with zero users", async () => {
+    for (const [code, status] of [[8, 429], [7, 403], [14, 502]]) {
+      const { h } = liveHandler({ client: () => ({ runRealtimeReport: async () => { throw Object.assign(new Error("Realtime unavailable"), { code }); } }) });
+      const result = await invoke(h, "/sites/123/ga4/live-users");
+      expect(result.status).to.equal(status);
+      expect(result.body).to.deep.equal({ error: "Realtime unavailable" });
+    }
+  });
+  it("rejects unknown properties before calling GA4", async () => {
+    const { h, calls } = liveHandler();
+    expect((await invoke(h, "/sites/999/ga4/live-users")).status).to.equal(404);
+    expect(calls).to.have.length(0);
+  });
+  it("keeps live details inside the property authorized by a private link", async () => {
+    const { h, calls } = liveHandler({ embeds: { store: { validate: async (site, key) => site === "123" && key === "valid" } } });
+    const shared = { "x-private-site": "123", "x-private-key": "valid" };
+    expect((await invoke(h, "/sites/999/ga4/live-users", {}, "GET", {}, shared)).status).to.equal(403);
+    expect((await invoke(h, "/sites/123/ga4/live-users", {}, "GET", {}, { ...shared, "x-private-key": "revoked" })).status).to.equal(403);
+    expect(calls).to.have.length(0);
+    expect((await invoke(h, "/sites/123/ga4/live-users", {}, "GET", {}, shared)).status).to.equal(200);
+    expect(calls.every(query => query.property === "properties/123")).to.equal(true);
+  });
+});
 describe('analytics change and spike summaries', () => {
   it('compares equal calendar windows, retains filters, and includes sources that disappeared', async () => {
     const calls = [];

@@ -68,7 +68,7 @@ export function useOverviewReport<T = Report>(type: string, params?: Record<stri
 export function ReportState({ query }: { query: ReturnType<typeof useOverviewReport<any>> }) {
   const t = useExtracted();
   return <>
-    {query.isFetching && <div className="absolute top-[-8px] left-0 h-full w-full"><CardLoader /></div>}
+    {query.isFetching && <div className="pointer-events-none absolute top-[-8px] left-0 h-full w-full"><CardLoader /></div>}
     {query.error && !query.data
       ? <ErrorState title={t("Failed to load data")} message={query.error.message} refetch={query.refetch} />
       : query.isPending ? <div className="flex flex-col gap-2"><StandardSkeleton /></div> : null}

@@ -1,7 +1,7 @@
 import { useIntersectionObserver } from "@uidotdev/usehooks";
 import { Rewind } from "lucide-react";
 import { useExtracted } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { FlashNumber } from "@/components/interior/value-flash";
 import { useStore } from "@/lib/store";
 import { useGetLiveUserCount } from "../../../../api/analytics/hooks/useGetLiveUserCount";
@@ -16,7 +16,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { ScrollArea } from "../../../../components/ui/scroll-area";
 import { useLiveSessionsForFirstVisitor } from "../Header/firstPageview";
 
-export function LiveUserCount() {
+export function LiveUserCount({ renderDetails }: { renderDetails?: (openedAt: number) => ReactNode } = {}) {
   const t = useExtracted();
   const site = useStore(state => state.site);
   const { data, isFetching } = useGetLiveUserCount(5);
@@ -31,7 +31,7 @@ export function LiveUserCount() {
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      {keepLive && !open && <KeepLiveSessionsPolling />}
+      {!renderDetails && keepLive && !open && <KeepLiveSessionsPolling />}
       <Tooltip>
         <TooltipTrigger asChild>
           <DrawerTrigger asChild>
@@ -65,7 +65,7 @@ export function LiveUserCount() {
           </DrawerHeader>
         </VisuallyHidden>
         {/* Keyed by opening: every opening mounts a fresh list, even one mid exit animation. */}
-        <LiveSessionsList key={openedAt} openedAt={openedAt} />
+        {renderDetails ? renderDetails(openedAt) : <LiveSessionsList key={openedAt} openedAt={openedAt} />}
       </DrawerContent>
     </Drawer>
   );

@@ -8,7 +8,7 @@ import { Filters } from "./Filters/Filters";
 import { DateSelector } from "../../../../components/DateSelector/DateSelector";
 import { MobileSidebar } from "../Sidebar/MobileSidebar";
 import { NewFilterButton } from "./Filters/NewFilterButton";
-import { LiveUserCount } from "./LiveUserCount";
+import { LiveUserCount } from "../../../../../../adapter/realtime/LiveUserCount";
 import { ShareExportButton } from "./ShareExportButton";
 import { ReportFreshness } from "../../../../../../adapter/overview/ReportFreshness";
 import { usePathname } from "next/navigation";

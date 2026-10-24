@@ -10,7 +10,7 @@
     "server/src/services/favicon/favicon.ts": {
       "target": "controllers/rybbitFavicon.ts",
       "upstreamSha256": "e26f7260306778f29f65202ff97efce0c47ae42e757816226f8d4d50fa5d23b0",
-      "sha256": "3c04947f572dbf16f5798ee5c1e6603b2ecb93153ec5e36110d0745b8fbdea7d"
+      "sha256": "16ba64e362dc84684ff06da9bd1ffef13f4c21f0ccedf0a9d256db17bba0399f"
     },
     "client/src/app/widget/[siteId]/route.ts": {
       "target": "controllers/rybbitWidget.ts",

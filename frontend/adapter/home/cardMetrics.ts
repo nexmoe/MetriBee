@@ -12,6 +12,7 @@ export function homeCardQueries(
     queryFn: ({ signal }: { signal: AbortSignal }) => read(id, signal),
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
+    meta: { persist: true },
     retry: false,
   }));
 }
@@ -31,7 +32,7 @@ export function mergeCardMetrics(siteIds: number[], queries: CardQueryResult[]) 
     if (query.data) Object.assign(metrics, query.data);
     else if (query.isError) metrics[ids[index]] = { error: query.error?.message || "Report unavailable" };
   });
-  const isError = queries.length > 0 && queries.every(query => query.isError);
+  const isError = queries.length > 0 && queries.every(query => query.isError && query.data === undefined);
   const isFetching = queries.some(query => query.isFetching);
   if (isError) return {
     data: undefined,

@@ -1,5 +1,6 @@
 import { fetchPublicHttp } from "./publicHttpFetch";
 import { debuglog } from "node:util";
+import { getDomain } from "tldts";
 
 // Use the host application logger without pulling in Fastify/Pino.
 const debug = debuglog("rybbit-favicon");
@@ -93,8 +94,13 @@ export class FaviconService {
     if (this.pending.size >= MAX_CACHE_ENTRIES) return { icon: null, expiresAt: Date.now() };
 
     const task = this.loadQueued(domain)
-      .then(icon => {
-        const entry = { icon, expiresAt: Date.now() + (icon ? CACHE_MS : FAILURE_CACHE_MS) };
+      .then(async icon => {
+        const mainDomain = !icon ? getDomain(domain, { allowPrivateDomains: true }) : null;
+        // Release the fetch slot before sharing a main-domain request, so
+        // concurrent subdomain misses cannot fill the queue and deadlock.
+        const entry = mainDomain && mainDomain !== domain
+          ? await this.get(mainDomain)
+          : { icon, expiresAt: Date.now() + (icon ? CACHE_MS : FAILURE_CACHE_MS) };
         this.cache.delete(domain);
         if (this.cache.size >= MAX_CACHE_ENTRIES) this.cache.delete(this.cache.keys().next().value!);
         this.cache.set(domain, entry);

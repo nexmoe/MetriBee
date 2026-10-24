@@ -9,7 +9,12 @@ colors:
   foreground: "#fafafa"        # hsl(0 0% 98%) — primary text (dark)
   muted-foreground: "#999999"  # hsl(0 0% 60%) — secondary text / descriptions
   border: "#1f1f1f"            # hsl(0 0% 12%) — hairline dividers (dark)
-  # Accent — emerald ramp carries primary action + success
+  # Primary action — bee yellow in both themes
+  button-primary: "#facc15"            # yellow-400
+  button-primary-hover: "#fde047"      # yellow-300
+  button-primary-border: "#eab308"     # yellow-500
+  button-primary-foreground: "#131313" # neutral-950
+  # Accent — emerald ramp carries selection + semantic success
   accent: "#10b981"            # emerald-500
   accent-strong: "#059669"     # emerald-600 (border / dark-mode fill)
   accent-deep: "#065f46"       # emerald-800 (dark success fill)
@@ -63,14 +68,14 @@ components:
     padding: "8px 12px"
     height: "36px"
   button-accent:
-    backgroundColor: "{colors.accent-strong}"
-    textColor: "#fafafa"
+    backgroundColor: "{colors.button-primary}"
+    textColor: "{colors.button-primary-foreground}"
     rounded: "{rounded.lg}"
     padding: "8px 12px"
     height: "36px"
   button-accent-hover:
-    backgroundColor: "{colors.accent}"
-    textColor: "#fafafa"
+    backgroundColor: "{colors.button-primary-hover}"
+    textColor: "{colors.button-primary-foreground}"
   button-outline:
     backgroundColor: "transparent"
     textColor: "{colors.muted-foreground}"
@@ -101,25 +106,26 @@ components:
 
 **Creative North Star: "The Instrument Panel"**
 
-Rybbit is a precise, legible cockpit for understanding a website. Every surface is flat; depth comes from tonal layering of a pure-grayscale ramp, not from shadows. The canvas recedes (near-black `#141414` in the default dark theme), panels lift one notch (`#1b1b1b`), interactive chrome lifts one more (`#242424`), and hairline 1px borders draw the seams. Onto that calm gray instrument, two signals are painted with intent: a single **emerald** for action and success, and a single **periwinkle** (`#b3bfff`) for the data lines themselves. The data is the instrument; the chrome stays out of the way.
+Rybbit is a precise, legible cockpit for understanding a website. Every surface is flat; depth comes from tonal layering of a pure-grayscale ramp, not from shadows. The canvas recedes (near-black `#141414` in the default dark theme), panels lift one notch (`#1b1b1b`), interactive chrome lifts one more (`#242424`), and hairline 1px borders draw the seams. Onto that calm gray instrument, **bee yellow** marks primary buttons and **periwinkle** (`#b3bfff`) draws the data lines. Emerald remains the signal for selection and semantic success. The data is the instrument; the chrome stays out of the way.
 
-The personality is friendly, precise, and trustworthy: approachable without being toy-like (PRODUCT.md). Warmth lives at the edges (the frog, an empty state, a small touch), never on top of the numbers. Density is a feature here, not a flaw: this is a tool people open to answer a specific question, and the layout should put that answer in front of them in seconds with depth one layer down. Radii are deliberately tight (`0.3rem` / 4.8px max), so the UI reads as engineered and exact rather than soft or playful.
+The personality is friendly, precise, and trustworthy: approachable without being toy-like (PRODUCT.md). Warmth lives at the edges (the bee, an empty state, a small touch), never on top of the numbers. Density is a feature here, not a flaw: this is a tool people open to answer a specific question, and the layout should put that answer in front of them in seconds with depth one layer down. Radii are deliberately tight (`0.3rem` / 4.8px max), so the UI reads as engineered and exact rather than soft or playful.
 
 This system explicitly rejects the **generic SaaS template** (purple gradients, the hero-metric template, endless identical icon+heading+text card grids), anything **over-playful or toy-like** that undermines trust in the data, the **cluttered GA4** maze, and **cold enterprise-BI** heaviness (PRODUCT.md anti-references). It should feel like Linear or a Vercel/Stripe dashboard: confident, quiet, fast.
 
 **Key Characteristics:**
 - Dark-mode-default; a full light theme mirrors every token.
 - Flat by default: depth via a 21-step grayscale ramp + 1px borders, never shadows.
-- One accent (emerald) for action/success, one data hue (periwinkle) for charts.
+- Bee yellow for primary buttons, emerald for selection/success, periwinkle for charts.
 - Tight geometry: 4.8px max radius, Inter throughout, compact 36px controls.
 - Density with legibility: dense data, but body text stays ≥4.5:1 contrast.
 
 ## 2. Colors
 
-A pure-neutral grayscale chassis carrying exactly two chromatic signals; semantic state colors appear only on state.
+A pure-neutral grayscale chassis carrying bee-yellow primary actions and periwinkle data; selection and semantic state retain their existing colors.
 
 ### Primary
-- **Emerald Signal** (`#10b981`, `--accent-500`; border `#059669`, `--accent-600`): The single brand accent. Primary buttons, success buttons, current selection, positive deltas, the `success` badge. In dark mode the fill deepens to `#059669`/`#065f46` so it sits calmly on near-black. This is the only color allowed to mean "act here" or "this went well."
+- **Bee Yellow** (`#facc15`, `--color-button-primary`; hover `#fde047`, `--color-button-primary-hover`; border `#eab308`, `--color-button-primary-border`): Primary buttons use the existing yellow-400/300/500 ramp with neutral-950 text (`#131313`, `--color-button-primary-foreground`) in both themes. The native `accent` and `success` button variants share these tokens.
+- **Emerald State** (`#10b981`, `--accent-500`; deeper `#059669`, `--accent-600`): Current selection, positive deltas and semantic success badges retain the original emerald ramp.
 
 ### Secondary
 - **Periwinkle Data Line** (`#b3bfff` dark / `#99aaff` light, `--dataviz`; second series `#c2caff` / `#b3bfff`, `--dataviz-2`): Reserved exclusively for data visualization (line/bar/area series, the activity globe). It is a *data* color, never a UI color: it must not appear on buttons, links, or chrome.
@@ -141,9 +147,9 @@ The workhorse. A 21-step pure-grayscale ramp (`--neutral-0` at 97% L through `--
 A full Tailwind-style ramp (red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink, rose) is defined in `globals.css` for chart palettes and category coloring. Outside data viz and state, do not reach into it.
 
 ### Named Rules
-**The Signal-Not-Decoration Rule.** Emerald marks primary actions, success, and current selection only. It never tints a surface, never fills a background, never decorates. If emerald is on screen and nothing actionable or successful is being communicated, remove it.
+**The Signal-Not-Decoration Rule.** Bee yellow marks primary buttons only. Emerald marks success and current selection. Neither hue decorates unrelated surfaces or backgrounds.
 
-**The Two-Voice Rule.** The interface speaks in grayscale. Exactly two chromatic voices are allowed on top: emerald for *action*, periwinkle for *data*. State colors (red/yellow/blue) are whispers that appear only when state demands them.
+**The Two-Voice Rule.** The interface speaks in grayscale. Bee yellow is the primary *action* voice and periwinkle is the *data* voice. Selection and semantic state colors appear only when their state demands them.
 
 **The Flat Rule.** No `box-shadow` for resting elevation. Depth is the grayscale ramp plus 1px borders. If two surfaces need separating, change the neutral step or add a hairline border, not a shadow.
 
@@ -176,7 +182,7 @@ This system is **flat by default**. There is no resting shadow vocabulary; depth
 ### Buttons
 - **Shape:** `rounded-lg` (4.8px) for default/sm/lg; `rounded-md` (2.8px) for xs/icon. Height 36px default (`h-9`), 32px sm, 24px xs. `font-medium`, `transition-colors`.
 - **Default:** Raised neutral surface with a 1px border (`#242424` fill, `#3d3d3d` border in dark; white fill, `#d9d9d9` border in light). Hover lightens the fill and border one step. This is the neutral workhorse button.
-- **Accent / Success:** Emerald fill (`#059669` dark / `#10b981` light) with a deeper emerald border, white text. The primary call to action.
+- **Accent / Success:** Bee-yellow fill (`#facc15`) with a yellow-500 border and neutral-950 text in both themes. Hover uses yellow-300 (`#fde047`). Both native variants use the shared `button-primary` tokens in `frontend/rybbit/src/app/globals.css`.
 - **Destructive / Warning:** Red / yellow fills, used only for genuinely destructive or cautionary actions.
 - **Outline / Ghost / Link:** Transparent surfaces with muted neutral text; hover fills with the faintest neutral step. For secondary and tertiary actions.
 - **Focus:** `focus-visible:ring-1` in `--neutral-950` (light) / `--neutral-300` (dark). Always keep a visible focus ring.
@@ -206,7 +212,7 @@ This system is **flat by default**. There is no resting shadow vocabulary; depth
 
 ### Do:
 - **Do** keep surfaces flat: convey depth with the neutral ramp (`#141414` → `#1b1b1b` → `#242424`) and 1px borders.
-- **Do** reserve emerald for action, success, and current selection (The Signal-Not-Decoration Rule).
+- **Do** reserve bee yellow for primary buttons and emerald for success/current selection (The Signal-Not-Decoration Rule).
 - **Do** keep data viz in periwinkle (`--dataviz`) and the broader ramp; never use the data hue on chrome.
 - **Do** use Inter at fixed rem sizes with weight contrast (400/500/600) for all hierarchy.
 - **Do** keep radii tight (≤4.8px) and controls compact (36px default height).
@@ -215,13 +221,13 @@ This system is **flat by default**. There is no resting shadow vocabulary; depth
 
 ### Don't:
 - **Don't** ship the **generic SaaS template**: no purple gradients, no hero-metric template (big number + tiny label + gradient accent), no endless identical icon+heading+text card grids.
-- **Don't** let the frog or friendly tone tip into **over-playful / toy-like** territory that undermines trust in the numbers.
+- **Don't** let the bee or friendly tone tip into **over-playful / toy-like** territory that undermines trust in the numbers.
 - **Don't** recreate the **cluttered GA4** maze or **cold enterprise-BI** heaviness: surface the likely answer first, depth one layer down.
 - **Don't** add resting `box-shadow` for elevation (The Flat Rule); don't use shadows where a neutral step or border works.
 - **Don't** use `border-left`/`border-right` > 1px as a colored accent stripe; use full hairline borders or a tint.
 - **Don't** use gradient text (`background-clip: text`) or decorative glassmorphism.
 - **Don't** introduce a second UI typeface or fluid `clamp()` headings.
-- **Don't** tint surfaces or backgrounds with emerald, or paint chrome in the periwinkle data hue.
+- **Don't** tint unrelated surfaces or backgrounds with bee yellow or emerald, or paint chrome in the periwinkle data hue.
 
 
 ## MetriBee integration

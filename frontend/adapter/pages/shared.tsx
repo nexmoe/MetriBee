@@ -50,8 +50,8 @@ export {
   TabsTrigger,
   TabsContent,
 } from "../../rybbit/src/components/ui/tabs";
-export async function get<T = any>(url: string): Promise<T> {
-  const res = await fetch(url);
+export async function get<T = any>(url: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(url, { signal });
   const data = await res.json();
   if (!res.ok || data.ok === false)
     throw new Error(data.error || data.message || "Data unavailable");
@@ -63,7 +63,7 @@ export function useData<T = any>(
 ) {
   return useQuery<T, Error>({
     queryKey: ["ga4", url],
-    queryFn: () => get<T>(url),
+    queryFn: ({ signal }) => get<T>(url, signal),
     refetchInterval: interval,
   });
 }
@@ -115,7 +115,7 @@ export function Choice({
   );
 }
 export function QueryState({ query }: { query: any }) {
-  return query.isError ? (
+  return query.isError && query.data === undefined ? (
     <ErrorState
       title="Data unavailable"
       message={query.error.message}

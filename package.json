@@ -45,6 +45,7 @@
     "google-auth-library": "^10.9.1",
     "ip-address": "^10.7.4",
     "luxon": "3.6.1",
+    "tldts": "^7.4.19",
     "tz-lookup": "^6.1.25",
     "zod": "^4.6.7"
   },

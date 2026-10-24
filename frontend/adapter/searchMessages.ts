@@ -1,6 +1,9 @@
 // Adapter-only messages extend the copied catalogs without changing upstream source.
 export const searchMessages: Record<string, Record<string, string>> = {
   zh: {
+    "GA4 realtime data is aggregated by country, device and page.":
+      "GA4 实时数据按国家、设备和页面汇总。",
+    "Showing the top {count} results.": "仅显示前 {count} 条结果。",
     "Request activity observed in this process. Today uses Pacific time.":
       "当前进程的请求统计，按美国太平洋时间计算今日用量。",
     "Updating local usage does not query Google.":

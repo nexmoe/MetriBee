@@ -107,7 +107,7 @@ export function StandardSection({
   return (
     <>
       {isFetching && !isFetchingNextPage && (
-        <div className="absolute top-[-8px] left-0 w-full h-full">
+        <div className="pointer-events-none absolute top-[-8px] left-0 w-full h-full">
           <CardLoader />
         </div>
       )}
@@ -138,7 +138,7 @@ export function StandardSection({
         <div className="flex flex-col gap-2 overflow-x-hidden">
           {isLoading ? (
             <StandardSkeleton />
-          ) : error ? (
+          ) : error && !data ? (
             <ErrorState title={t("Failed to load data")} message={error.message} refetch={refetch} />
           ) : (
             <>
@@ -171,7 +171,7 @@ export function StandardSection({
               ) : null}
             </>
           )}
-          {renderDialog && close && !isLoading && !error && itemsForDisplay?.length ? (
+          {renderDialog && close && !isLoading && itemsForDisplay?.length ? (
             <div className="flex flex-row gap-2 justify-between items-center">
               <StandardSectionDialog
                 title={title}

@@ -136,6 +136,28 @@ function createRybbitHandler(deps = {}) {
     return { timeZone: data.timeZone, createTime: data.createTime };
   });
 
+  // The toolbar and its drawer share dimensionless totals. Distinct users in page
+  // groups overlap, so summing those rows would overstate the number online.
+  const liveReport = (propertyId, minutes, dimensions, asOf, observe) => cached(
+    JSON.stringify({ live: 2, propertyId, minutes, dimensions, minute: Math.floor(asOf.getTime() / 60000) }),
+    () => limited(async () => {
+      try {
+        const [data] = await (deps.client || getGA4DataClient)().runRealtimeReport({
+          property: `properties/${propertyId}`,
+          dimensions: dimensions.map(name => ({ name })),
+          metrics: (dimensions.length ? ['activeUsers'] : ['activeUsers', 'screenPageViews']).map(name => ({ name })),
+          minuteRanges: [{ startMinutesAgo: minutes - 1, endMinutesAgo: 0 }],
+          orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
+          limit: 50,
+          returnPropertyQuota: true,
+        });
+        return data;
+      } catch (error) {
+        throw failure(error.message || 'GA4 realtime report unavailable.', error.status || (error.code === 8 ? 429 : error.code === 7 ? 403 : 502));
+      }
+    }), 'home', observe,
+  );
+
   return async function gateway(req, res, requestTime) {
     const asOf = requestTime instanceof Date ? requestTime : now();
     try {
@@ -235,6 +257,28 @@ function createRybbitHandler(deps = {}) {
       }
       if (action === 'annotations' || action === 'segments' || action === 'dashboards') return res.json({ data: [] });
       if (action === 'goals') return res.json({ data: [], totalCount: 0 });
+      // Realtime aggregates have their own window, independent of historical
+      // dates, audience filters and the property's timezone metadata.
+      if (action === 'live-user-count' || action === 'ga4/live-users') {
+        const minutes = action === 'live-user-count' ? Math.floor(Math.min(30, Math.max(1, Number(q.minutes) || 5))) : 5;
+        const observations = [], observe = status => observations.push(status);
+        const total = await liveReport(propertyId, minutes, [], asOf, observe);
+        const activeUsers = n(total.rows?.[0], 0);
+        if (action === 'live-user-count') return res.json({ count: activeUsers });
+        const groups = [
+          ['countries', ['country', 'countryId']],
+          ['devices', ['deviceCategory']],
+          ['pages', ['unifiedScreenName']],
+        ];
+        const sections = await Promise.all(groups.map(async ([key, dimensions]) => {
+          const result = activeUsers ? await liveReport(propertyId, minutes, dimensions, asOf, observe) : { rows: [], rowCount: 0 };
+          const rows = (result.rows || []).map(row => ({ name: d(row, 0), ...(key === 'countries' ? { countryCode: d(row, 1) } : {}), users: n(row, 0) }));
+          const totalCount = Number(result.rowCount) || rows.length;
+          return [key, { rows, totalCount, truncated: totalCount > rows.length }];
+        }));
+        return res.json({ data: { activeUsers, pageviews: n(total.rows?.[0], 1), ...Object.fromEntries(sections) },
+          reportStatus: combineReportStatus(observations) });
+      }
       // Like the official analytics screen, live spikes cover the whole property in the
       // last 30 minutes. Keep them independent of historical dates/audience filters.
       if (action === 'ga4/live-spike') {
@@ -286,14 +330,6 @@ function createRybbitHandler(deps = {}) {
         const bucket = ['minute', 'hour', 'day', 'week', 'month', 'year'].includes(q.bucket) ? q.bucket : 'hour', dimension = timeDimension(bucket);
         const result = await report([dimension], OVERVIEW_METRICS, null, { orderBys: [{ dimension: { dimensionName: dimension }, desc: false }] });
         return send(result.rows.map(row => ({ time: pointTime(d(row, 0), bucket), ...overview(row, result.metadata) })));
-      }
-      if (action === 'live-user-count') {
-        const minutes = Math.min(30, Math.max(1, Number(q.minutes) || 5));
-        const count = await cached(`live:${propertyId}:${minutes}:${Math.floor(now().getTime() / 60000)}`, () => limited(async () => {
-          const [data] = await (deps.client || getGA4DataClient)().runRealtimeReport({ property: `properties/${propertyId}`, dimensions: [], metrics: [{ name: 'activeUsers' }], minuteRanges: [{ startMinutesAgo: minutes - 1, endMinutesAgo: 0 }] });
-          return { count: n(data.rows?.[0], 0) };
-        }), 'home');
-        return res.json(count);
       }
       if (action === 'metric' || action === 'metric-lite' || action === 'page-titles') {
         const parameter = action === 'page-titles' ? 'page_title' : q.parameter;

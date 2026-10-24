@@ -30,7 +30,10 @@ export function useHomeCardMetrics(organizationId: string, siteIds: number[], en
       }, signal, status => recordReportStatus(client, queryKey(id), status));
       if (!data[id] || data[id].error) throw new Error(data[id]?.error || "Report unavailable");
       return data;
-    }).map(query => ({ ...query, enabled: enabled && !!organizationId && hasPeriod })),
+    }).map(query => ({ ...query,
+      meta: { persist: request.params.past_minutes_start === undefined },
+      enabled: enabled && !!organizationId && hasPeriod,
+    })),
   });
   return {
     ...mergeCardMetrics(ids, queries),

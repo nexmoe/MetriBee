@@ -189,7 +189,7 @@ export default function RetentionPage() {
       <div className="p-2 md:p-4 max-w-[1300px] mx-auto space-y-3">
         <SubHeader availableFilters={SESSION_PAGE_FILTERS} />
 
-        {(isLoading || hasGrid) && !isError && <StatBand cells={stats} isLoading={isLoading} />}
+        {(isLoading || hasGrid) && !(isError && !data) && <StatBand cells={stats} isLoading={isLoading} />}
 
         {/* Always rendered, and live while a query loads: a new choice only changes the query key. */}
         <AnalysisBar
@@ -219,7 +219,7 @@ export default function RetentionPage() {
           />
         </AnalysisBar>
 
-        {isError ? (
+        {isError && !data ? (
           <Card>
             <ErrorState
               title={t("Failed to load retention data")}
