@@ -39,6 +39,8 @@ describe('Pages with Search Console', () => {
     expect(first.data[0].search).to.include({ clicks: 30, clickSharePct: 30, impressionSharePct: 30 });
     expect(next.data[0].key).to.equal('/docs/a');
     expect(next.data[0].search.clickSharePct).to.equal(10);
+    const continued = await api.request({ include_gsc: 1, sort: 'search_clicks', order: 'desc', limit: 2, offset: 1 });
+    expect(continued.data.map(row => row.key)).to.deep.equal(['/docs/a', '/other']);
     expect(api.calls.every(call => call.action === 'summary' || call.query.dimensions === 'page')).to.equal(true);
     const ascending = await api.request({ include_gsc: 1, sort: 'search_clicks', order: 'asc' });
     expect(ascending.data.map(row => row.key)).to.deep.equal(['/docs/a', '/docs/b', '/other']);

@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- MCP expands to 42 tools with complete local funnel management: detail reads, step validation, partial updates, copying, atomic deduplicated imports, exports, guarded event discovery and native union summaries. Historical comparisons share one analysis budget; pagination survives output trimming. Adds cache-only portfolio reports, joined GA4/GSC country and device metrics, and connection diagnostics.
+
 - Run MetriBee from its own ready-made Docker image on Intel/AMD or ARM computers.
 
 - Main integrates its four GSC metrics into the top clickable metric card, switching the existing line chart with period comparison, saved metric selection and weighted daily/week/month/year search trends.

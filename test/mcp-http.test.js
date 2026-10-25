@@ -92,7 +92,7 @@ describe("MCP Streamable HTTP", function () {
 	it("publishes read/write annotations, resources and a focused analysis prompt", async () => {
 		const { client } = await connect();
 		const { tools } = await client.listTools();
-		for (const tool of tools) assert.equal(tool.annotations.readOnlyHint, !["save_funnel", "delete_funnel", "save_widget", "delete_widget", "request_indexing"].includes(tool.name), tool.name);
+		for (const tool of tools) assert.equal(tool.annotations.readOnlyHint, !["save_funnel", "delete_funnel", 'duplicate_funnel', 'import_funnels', "save_widget", "delete_widget", "request_indexing"].includes(tool.name), tool.name);
 		assert.equal(tools.find(tool => tool.name === "delete_funnel").annotations.destructiveHint, true);
 		const resources = await client.listResources();
 		assert.deepEqual(resources.resources.map(resource => resource.uri), ["ga4://capabilities", "ga4://query-guide"]);
@@ -124,7 +124,9 @@ describe("MCP Streamable HTTP", function () {
 		const status = result.structuredContent;
 		assert.equal(typeof status.configured, "boolean");
 		assert.equal(status.verification, undefined);
-		for (const secret of [process.env.GA4_PRIVATE_KEY, process.env.GA4_OAUTH_REFRESH_TOKEN, process.env.GA4_OAUTH_CLIENT_SECRET].filter(Boolean)) {
+		assert.equal(typeof status.searchConsole.configured, 'boolean');
+		assert.equal(typeof status.pageSpeed.configured, 'boolean');
+		for (const secret of [process.env.GA4_PRIVATE_KEY, process.env.GA4_OAUTH_REFRESH_TOKEN, process.env.GA4_OAUTH_CLIENT_SECRET, process.env.GSC_PRIVATE_KEY, process.env.PSI_API_KEY].filter(Boolean)) {
 			assert.ok(!JSON.stringify(status).includes(secret));
 		}
 	});

@@ -11,6 +11,9 @@ const reportCache = require("../../controllers/reportCache");
 const defaultGuard = require("./guard");
 const defaultLedger = require("./ledger");
 const defaultRateLimit = require("./rateLimit");
+const { comparisonWindow, metricChanges, paginateReport } = require('./results');
+const { createPortfolio } = require('./portfolio');
+const LOCAL_FUNNEL_OPERATIONS = ['list_saved_funnels', 'get_funnel', 'validate_funnel', 'duplicate_funnel', 'import_funnels', 'export_funnels', 'save_funnel', 'delete_funnel'];
 
 const DAY = 86400000;
 const RANGES = { today: 1, "7d": 7, "28d": 28, "30d": 30, "90d": 90 };
@@ -87,6 +90,11 @@ function capabilities() {
 			maxFilters: 20,
 		},
 		limits: { maxDays: 90, maxRequestedRows: 100, maxApiCallsPerAnalysis: 20, propertiesPerQuestion: 1 },
+		comparison: { presets: ['previous_period', 'previous_year'], custom: { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' },
+			budget: 'Both periods share 20 uncached GA4 calls. Previous data and scalar/matched-row changes are returned under comparison; missing/failed matches remain unknown.' },
+		pagination: { offset: true, collection: 'Dashboard reports accept a collection name. _pagination describes each pageable collection; follow its nextOffset. sourceTruncated means upstream top rows are incomplete, not further pageable.',
+			outputBudget: 'The transport recalculates continuation when it trims a page. Cached native reports are never shortened.' },
+		portfolio: { tool: 'get_cached_sites_report', source: 'Saved snapshots and cached metadata only; never schedules Google calls or refreshes missing data.' },
 		timeWindows: { pastMinutes: 'Rolling minute window, e.g. 1440 for Last 24 Hours. Available on dashboard, pages, events, journeys and site status reports; calendar-only reports reject it.', precision: 'minute', freshness: 'GA4 historical processing delay applies; use realtime for live traffic.' },
 		workflow: [
 			"Use list_properties to select one property, and get_capabilities to choose a report.",
@@ -106,6 +114,9 @@ function capabilities() {
 				pathDetails: "Pass path to list its matching sessions. The same step filters, grouping and end-page truncation apply." },
 		},
 		funnels: {
+			tools: [...LOCAL_FUNNEL_OPERATIONS, 'get_funnel_events', 'get_funnel_summary', 'analyze_funnel'],
+			maxSaved: 100, maxSummaryPage: 9, partialUpdates: ['name', 'description', 'steps'],
+			import: 'Single-property, atomic, deduplicated imports; dryRun previews. export_funnels.data is accepted as import_funnels.definitions.',
 			minSteps: 2,
 			maxSteps: 10,
 			audienceParameters: Object.keys(require("../../controllers/funnels").FUNNEL_FIELDS),
@@ -121,6 +132,7 @@ function capabilities() {
 				"MCP manages local definitions and private previews only. It never enables site-wide embeds or generates public/private sharing keys.",
 		},
 		searchConsole: { tool: 'get_search_console_report', reports: ['summary', 'time-series', 'data'], dimensions: ['query', 'page', 'country', 'device'],
+			connectionTool: 'get_search_console_connection', joinedTool: 'get_search_analytics_report', joinedDimensions: ['country', 'device'],
 			quotaTool: 'get_search_console_quota', quotaScope: 'Current process only; Google does not return actual remaining quota or query load.',
 			pagesTool: { tool: 'get_pages_report', option: 'includeSearch', shares: 'Percent of whole-period GSC totals, independent of displayed pages.', sectionTotals: 'Reported top search pages only; partial when truncated.' },
 			timeZone: 'America/Los_Angeles', source: 'gsc', maxRows: 500,
@@ -185,6 +197,11 @@ function createDashboardService(deps = {}) {
 	const store = deps.store || createFunnelStore();
 	const widgetStore = deps.widgetStore || require("../../lib/embedStore").createEmbedStore();
 	const pending = new Map();
+	const cachedSites = createPortfolio({
+		readProperties: deps.cachedProperties || (() => require('../../controllers/apiController').readCachedProperties()),
+		loadSnapshot: deps.snapshot || (options => require('../../controllers/sitesController').loadSitesSnapshot(options)),
+		now, resolveDates: dateWindow,
+	});
 
 	async function listProperties(args = {}) {
 		const loaded = await properties({ force: args.refresh === true });
@@ -210,19 +227,15 @@ function createDashboardService(deps = {}) {
 				timeZone: property.timeZone || null,
 				currencyCode: property.currencyCode || null,
 			}));
-		const offset = args.offset || 0,
-			limit = args.limit || 50;
-		return {
-			properties: rows.slice(offset, offset + limit),
+		return paginateReport({
+			properties: rows,
 			total: rows.length,
-			offset,
 			source: loaded.source,
-			nextOffset: offset + limit < rows.length ? offset + limit : null,
-		};
+		}, { ...args, limit: args.limit || 50 });
 	}
 
 	async function execute(operation, args) {
-		const mutating = ["save_funnel", "delete_funnel", "save_widget", "delete_widget", "refresh_property_quota"].includes(operation);
+		const mutating = ["save_funnel", "delete_funnel", 'duplicate_funnel', 'import_funnels', "save_widget", "delete_widget", "refresh_property_quota"].includes(operation);
 		const key = JSON.stringify([operation, args]);
 		if (!mutating && pending.has(key)) return pending.get(key);
 		const work = perform(operation, args);
@@ -237,8 +250,19 @@ function createDashboardService(deps = {}) {
 		return work;
 	}
 
-	async function perform(operation, args) {
-		let context;
+	async function perform(operation, args, sharedContext, windowOverride) {
+		const context = sharedContext || { calls: 0, pools: new Set(), refusal: null, quality: { truncated: false, thresholded: false, sampled: false } };
+		let previousWindow;
+		const complete = async result => {
+			if (args.comparison && operation !== 'get_site_status' && !result.error && !context.refusal) {
+				const previous = result.data === null ? { error: 'comparison_unavailable', message: 'Current source data is unavailable.' }
+					: await perform(operation, { ...args, comparison: undefined }, context, previousWindow);
+				result = { ...result, comparison: { window: previousWindow, previous,
+					...(previous.error ? { unavailable: true } : { changes: metricChanges(result.data, previous.data) }) } };
+			}
+			return { ...result, ...(result.ga4ApiCalls === 0 ? {} : { apiCalls: context.calls }),
+				...(context.pools.size ? { quota: Object.fromEntries([...context.pools].map(pool => [pool, ledger.status(args.propertyId, pool)])) } : {}) };
+		};
 		try {
 			if (!/^\d+$/.test(args.propertyId || "")) throw new Error("Choose a numeric property ID.");
 			const loaded = await properties();
@@ -246,6 +270,11 @@ function createDashboardService(deps = {}) {
 			if (!property)
 				return { error: "property_not_found", propertyId: args.propertyId, hint: "Use list_properties to choose a connected property." };
 			property = { ...property };
+			if (operation === 'get_search_console_connection') {
+				require('../../lib/setupCheck').syncEnvFile();
+				const { match, ...connection } = await (deps.gsc || require('../../controllers/searchConsole').getSearchConsole()).connection(property);
+				return { ...connection, propertyId: args.propertyId, source: 'gsc', ga4ApiCalls: 0 };
+			}
 			if (operation === 'get_search_console_quota') {
 				require('../../lib/setupCheck').syncEnvFile();
 				const result = await (deps.gsc || require('../../controllers/searchConsole').getSearchConsole()).quota([property],
@@ -255,18 +284,13 @@ function createDashboardService(deps = {}) {
 			if (operation === 'get_search_console_report') {
 				if ((deps.isDemo || require('../../controllers/demoData').enabled)()) return { source: 'gsc', propertyId: args.propertyId, data: null, connection: { connected: false, reason: 'demo' }, ga4ApiCalls: 0 };
 				require('../../lib/setupCheck').syncEnvFile();
-				const query = { ...dateWindow(args, { ...property, timeZone: 'America/Los_Angeles' }, now()),
+				const currentWindow = windowOverride || dateWindow(args, { ...property, timeZone: 'America/Los_Angeles' }, now());
+				previousWindow = comparisonWindow(currentWindow, args.comparison, dates => dateWindow(dates, { timeZone: 'America/Los_Angeles' }, now()));
+				const query = { ...currentWindow,
 					filters: JSON.stringify(args.filters || []), dimensions: args.dimension || 'query' };
 				const result = await (deps.gsc || require('../../controllers/searchConsole').getSearchConsole()).report(property, args.report || 'summary', query);
-				if (Array.isArray(result.data)) {
-					const count = result.data.length;
-					result.data = result.data.slice(0, args.limit || 20);
-					result.returned = result.data.length;
-					result.truncated ||= count > result.data.length;
-				}
-				return { ...result, propertyId: args.propertyId, ga4ApiCalls: 0, quotaSource: 'gsc' };
+				return complete({ ...(Array.isArray(result.data) ? paginateReport(result, args) : result), propertyId: args.propertyId, ga4ApiCalls: 0, quotaSource: 'gsc' });
 			}
-			context = { calls: 0, pools: new Set(), refusal: null, quality: { truncated: false, thresholded: false, sampled: false } };
 			const observe = (data) => {
 				if (!data || typeof data !== "object") return data;
 				context.quality.truncated ||= (Array.isArray(data.rows) && data.rowCount > data.rows.length) || !!data.truncated;
@@ -336,9 +360,7 @@ function createDashboardService(deps = {}) {
 			};
 			const admin = { getProperty: guarded(deps.adminClient || clients.getAdminClient, "getProperty", null, "admin") };
 			const definitionOnly = [
-				"list_saved_funnels",
-				"save_funnel",
-				"delete_funnel",
+				...LOCAL_FUNNEL_OPERATIONS,
 				"list_saved_widgets",
 				"save_widget",
 				"delete_widget",
@@ -364,7 +386,14 @@ function createDashboardService(deps = {}) {
 				dataClient: () => beta,
 				adminClient: () => admin,
 			});
-			const funnels = createFunnels({ properties: scopedProperties, now, client: () => alpha, store });
+			const funnels = createFunnels({ properties: scopedProperties, now, client: () => alpha, store,
+				events: async (propertyId, dateRange) => {
+					const result = await run({ propertyId, dateRange, dimensions: [{ name: 'eventName' }], metrics: [{ name: 'totalUsers' }],
+						limit: 100, orderBys: [{ metric: { metricName: 'totalUsers' }, desc: true }] });
+					if (!result.ok) throw new Error(result.error || 'Event discovery failed.');
+					return (result.rows || []).map(row => ({ eventName: row.dimensionValues?.[0]?.value || '', users: Number(row.metricValues?.[0]?.value) || 0 }))
+						.filter(row => row.eventName && row.eventName !== '(not set)');
+				} });
 			const gateway = createRybbitHandler({
 				backgroundRefresh: false,
 				properties: scopedProperties,
@@ -407,11 +436,35 @@ function createDashboardService(deps = {}) {
 				...(deps.snapshot ? { snapshot: deps.snapshot } : {}),
 			});
 			if (args.pastMinutes !== undefined && !['get_dashboard_report', 'get_pages_report', 'get_events_report', 'get_journeys_report', 'get_site_status'].includes(operation)) throw new Error('This report requires calendar dates.');
-			const window = definitionOnly || operation === "get_widget_report" ? {} : dateWindow(args, property, now());
+			const window = definitionOnly || operation === "get_widget_report" ? {} : windowOverride || dateWindow(args, property, now());
+			if (args.comparison && ['live-users', 'live-spike'].includes(args.report)) throw new Error('Realtime reports do not support historical comparisons.');
+			previousWindow = comparisonWindow(window, args.comparison, dates => dateWindow(dates, property, now()));
 			const query = { ...window, filters: JSON.stringify(args.filters || []) };
 			const request = (action, extra = {}) => invoke(gateway, { path: `/sites/${args.propertyId}/${action}`, query, ...extra });
 			let result;
-			if (operation === "get_dashboard_report") {
+			if (operation === 'get_search_analytics_report') {
+				const dimension = args.dimension;
+				if (!['country', 'device'].includes(dimension)) throw new Error('Choose country or device.');
+				const analytics = await request('metric', { query: { ...query, parameter: dimension === 'country' ? 'country' : 'device_type', limit: 10000 } });
+				if (analytics.error) return complete(analytics);
+				let search;
+				try {
+					require('../../lib/setupCheck').syncEnvFile();
+					search = await (deps.gsc || require('../../controllers/searchConsole').getSearchConsole()).report(property, 'data', { ...query, dimensions: dimension });
+				} catch (error) { search = { data: null, error: error.message }; }
+				const rows = require('../../controllers/searchConsoleRows').joinSearchRows(analytics.data.data, search.data || [], dimension);
+				const metric = row => ['sessions', 'pageviews', 'users'].includes(args.sort || 'sessions')
+					? row.analytics?.[({ sessions: 'count', pageviews: 'pageviews', users: 'active_users' })[args.sort || 'sessions']] : row.search?.[args.sort];
+				rows.sort((a, b) => {
+					const x = metric(a), y = metric(b);
+					if (x == null || y == null) return x == null ? y == null ? a.key.localeCompare(b.key) : 1 : -1;
+					return (args.order === 'asc' ? x - y : y - x) || a.key.localeCompare(b.key);
+				});
+				result = { data: rows, search: { connection: search.connection, error: search.error, range: search.range, reportStatus: search.reportStatus, truncated: !!search.truncated },
+					reportStatus: analytics.reportStatus, source: 'ga4+gsc', timeZones: { ga4: property.timeZone, gsc: 'America/Los_Angeles' },
+					truncated: analytics.data.totalCount > analytics.data.data.length || !!search.truncated,
+					limitations: ['Missing GA4 or GSC matches remain unknown.', 'Sources retain their own calendars, processing delays and privacy limits.', ...(search.limitations || [])] };
+			} else if (operation === "get_dashboard_report") {
 				if (!REPORTS.includes(args.report)) throw new Error("Choose a report from get_capabilities.");
 				if (args.segment && !Object.hasOwn(getAnalyticsCardConfig(args.report)?.segments || {}, args.segment))
 					throw new Error("Choose a segment listed for this report in get_capabilities.");
@@ -420,19 +473,8 @@ function createDashboardService(deps = {}) {
 				const action =
 					args.report === "overview" ? "overview" : args.report === "time-series" ? "overview/time-series" : `ga4/${args.report}`;
 				result = await request(action, { query: { ...query, segment: args.segment, bucket: args.bucket || "day" } });
-				if (Array.isArray(result.data?.rows))
-					result.data = {
-						...result.data,
-						rows: result.data.rows.slice(0, args.limit || 20),
-						returned: Math.min(result.data.rows.length, args.limit || 20),
-						truncated: result.data.rows.length > (args.limit || 20) || result.data.rowCount > result.data.rows.length,
-					};
 				if (args.report === "live-spike") result.limitations = [LIMITATIONS[5]];
 				if (args.report === "live-users") {
-					for (const key of ["countries", "devices", "pages"]) {
-						const group = result.data[key], limit = args.limit || 20;
-						result.data[key] = { ...group, rows: group.rows.slice(0, limit), returned: Math.min(group.rows.length, limit), truncated: group.truncated || group.rows.length > limit };
-					}
 					result.limitations = [LIMITATIONS[6]];
 				}
 			} else if (operation === "get_pages_report") {
@@ -448,8 +490,15 @@ function createDashboardService(deps = {}) {
 						order: args.order,
 						limit: args.limit || 20,
 						page: args.page || 1,
+						offset: args.offset,
 					},
 				});
+				if (!result.error) {
+					const offset = args.offset ?? ((args.page || 1) - 1) * (args.limit || 20);
+					result._pagination = [{ path: 'data.data', offset, returned: result.data.data.length,
+						totalAvailable: result.data.totalCount, sourceTruncated: context.quality.truncated }];
+					require('./results').syncPagination(result);
+				}
 			} else if (operation === "get_events_report") {
 				result = await request(`events/${args.report || "names/stats"}`, {
 					query: { ...query, bucket: args.bucket || "day", limit: args.limit || 20, type: args.type },
@@ -496,12 +545,14 @@ function createDashboardService(deps = {}) {
 							groupBy: args.groupBy || "page",
 							stepFilters: JSON.stringify({ 0: args.from, 1: args.to }),
 							endsAt: args.endsAt,
-							limit: args.limit || 20,
+							limit: 500,
 						},
 					});
 					const { totalSessions, ...native } = result;
 					result = { ...native, totalPageviews: totalSessions, metric: "screenPageViews" };
 					result.limitations = [LIMITATIONS[1]];
+					result.truncated ||= result.journeys?.length === 500;
+					if (!result.error) result = paginateReport(result, args);
 				}
 			} else if (operation === "get_retention_report") {
 				if (args.filters?.length) throw new Error("GA4 cohort reports cannot apply audience filters.");
@@ -511,46 +562,80 @@ function createDashboardService(deps = {}) {
 				});
 				result.limitations = [LIMITATIONS[2]];
 			} else if (operation === "get_site_status") {
+				if (args.comparison && args.compare === false) throw new Error('Do not combine comparison with compare=false.');
 				const days = (Date.parse(window.end_date) - Date.parse(window.start_date)) / DAY + 1;
 				const comparison =
 					args.compare === false
 						? undefined
-						: args.pastMinutes ? { past_minutes_start: args.pastMinutes * 2, past_minutes_end: args.pastMinutes } : {
+						: previousWindow || (args.pastMinutes ? { past_minutes_start: args.pastMinutes * 2, past_minutes_end: args.pastMinutes } : {
 								start_date: new Date(Date.parse(window.start_date) - days * DAY).toISOString().slice(0, 10),
 								end_date: new Date(Date.parse(window.start_date) - DAY).toISOString().slice(0, 10),
-						  };
+							  });
 				result = await invoke(gateway, {
 					method: "POST",
 					path: "/organizations/ga4/site-status",
 					query: { ...query, bucket: args.bucket || "day", time_zone: property.timeZone },
 					body: { siteIds: [args.propertyId], comparison },
 				});
-			} else if (["list_saved_funnels", "save_funnel", "delete_funnel", "analyze_funnel"].includes(operation)) {
+			} else if (operation === 'validate_funnel') {
+				result = { valid: true, data: { steps: require('../../controllers/funnels').normalizeSteps(args.steps).map(({ filterExpression, ...step }) => step) } };
+			} else if (operation === 'import_funnels') {
+				if (!Array.isArray(args.definitions) || !args.definitions.length || args.definitions.length > 100) throw new Error('Import 1–100 definitions into one property.');
+				const definitions = args.definitions.map(definition => {
+					if (typeof definition.name !== 'string' || !definition.name.trim() || definition.name.trim().length > 120
+						|| (definition.description !== undefined && (typeof definition.description !== 'string' || definition.description.length > 2000))) throw new Error('Invalid funnel name or description.');
+					return { name: definition.name.trim(), description: definition.description,
+						steps: require('../../controllers/funnels').normalizeSteps(definition.steps).map(({ filterExpression, ...step }) => step) };
+				});
+				const imported = await store.importDefinitions(args.propertyId, definitions, { dryRun: !!args.dryRun });
+				result = { data: imported, dryRun: !!args.dryRun, added: imported.filter(item => item.status === 'added').length,
+					existing: imported.filter(item => item.status === 'existing').length };
+			} else if (operation === 'export_funnels') {
+				const saved = await store.list(args.propertyId);
+				if (args.funnelIds?.some(id => !saved.some(item => item.id === id))) throw new Error('Funnel not found in this property.');
+				result = paginateReport({ version: 1, data: saved.filter(item => !args.funnelIds || args.funnelIds.includes(item.id))
+					.map(({ name, steps, description }) => ({ name, steps, ...(description !== undefined ? { description } : {}) })) }, args);
+			} else if (operation === 'get_funnel_summary') {
+				const definitions = await store.list(args.propertyId), offset = args.offset || 0, limit = args.limit || 5;
+				if (limit > 9) throw new Error('Summarize up to 9 funnels per page.');
+				const selected = definitions.slice(offset, offset + limit);
+				result = await request('funnels/summary', { query: { ...query, funnel_ids: JSON.stringify(selected.map(item => item.id)) } });
+				if (!result.error) {
+					result.data.funnels = result.data.funnels.map(funnel => ({ ...funnel,
+						name: selected.find(item => item.id === funnel.funnel_id)?.name,
+						steps: funnel.steps.map(({ sessions, ...step }) => ({ ...step, users: sessions })) }));
+					result.summaryScope = 'Selected page of saved funnels; union entrants are not a sum across pages.';
+					result._pagination = [{ path: 'data.funnels', offset, returned: selected.length, totalAvailable: definitions.length,
+						nextOffset: offset + selected.length < definitions.length ? offset + selected.length : null, sourceTruncated: false }];
+					require('./results').syncPagination(result);
+				}
+			} else if (operation === 'get_funnel_events') {
+				result = await request('funnels/events');
+				if (result.data?.length === 100) result.truncated = true;
+			} else if ([...LOCAL_FUNNEL_OPERATIONS, "analyze_funnel"].includes(operation)) {
 				let steps = args.steps;
-				if (operation === "analyze_funnel" && args.funnelId) {
+				let source;
+				if (["analyze_funnel", 'duplicate_funnel'].includes(operation) && args.funnelId) {
 					const saved = (await store.list(args.propertyId)).find((item) => item.id === args.funnelId);
 					if (!saved) throw new Error("Funnel not found.");
 					steps = saved.steps;
+					source = saved;
 				}
-				const action = operation === "delete_funnel" ? String(args.funnelId) : operation === "analyze_funnel" ? "analyze" : "definitions";
+				const action = ['get_funnel', 'delete_funnel'].includes(operation) ? String(args.funnelId) : operation === "analyze_funnel" ? "analyze" : "definitions";
 				result = await invoke(funnels, {
-					method: operation === "delete_funnel" ? "DELETE" : operation === "list_saved_funnels" ? "GET" : "POST",
+					method: operation === "delete_funnel" ? "DELETE" : ['get_funnel', 'list_saved_funnels'].includes(operation) ? "GET" : "POST",
 					params: { propertyId: args.propertyId, action },
 					query,
-					body: { name: args.name, reportId: args.funnelId, steps },
+					body: { name: operation === 'duplicate_funnel' ? args.name || `${source.name.slice(0, 113)} (copy)` : args.name,
+						reportId: operation === 'duplicate_funnel' ? undefined : args.funnelId, steps,
+						description: operation === 'duplicate_funnel' ? source.description : args.description },
 				});
+				if (['save_funnel', 'duplicate_funnel'].includes(operation) && result.success) result.data = (await store.list(args.propertyId)).find(item => item.id === result.funnelId);
+				if (operation === 'get_funnel' && !result.error) result = paginateReport(result, { ...args, limit: args.limit || 10, collection: 'steps' });
 				if (operation === "analyze_funnel" && Array.isArray(result.data)) result.data = result.data.map(({ sessions, ...step }) => step);
 				if (operation === "list_saved_funnels" && Array.isArray(result.data)) {
 					const selected = result.data.filter((item) => !args.search || item.name.toLowerCase().includes(args.search.toLowerCase()));
-					const offset = args.offset || 0,
-						limit = args.limit || 20;
-					result = {
-						...result,
-						data: selected.slice(offset, offset + limit),
-						total: selected.length,
-						offset,
-						nextOffset: offset + limit < selected.length ? offset + limit : null,
-					};
+					result = paginateReport({ ...result, data: selected, total: selected.length }, args);
 				}
 			} else if (["list_saved_widgets", "save_widget", "delete_widget", "get_widget_report"].includes(operation)) {
 				const { normalizeWidgetConfig } = require("../../controllers/widgetConfig");
@@ -589,15 +674,7 @@ function createDashboardService(deps = {}) {
 						const selected = result.data.filter(
 							(item) => !args.search || item.config.name.toLowerCase().includes(args.search.toLowerCase()),
 						);
-						const offset = args.offset || 0,
-							limit = args.limit || 20;
-						result = {
-							...result,
-							data: selected.slice(offset, offset + limit),
-							total: selected.length,
-							offset,
-							nextOffset: offset + limit < selected.length ? offset + limit : null,
-						};
+						result = paginateReport({ ...result, data: selected, total: selected.length }, args);
 					}
 				}
 			} else if (operation === "refresh_property_quota") {
@@ -606,7 +683,9 @@ function createDashboardService(deps = {}) {
 					{},
 				);
 			} else throw new Error("Unsupported dashboard operation.");
-			if (Array.isArray(result.data) && args.limit && result.data.length > args.limit) {
+			if (['get_dashboard_report', 'get_events_report', 'get_funnel_events', 'get_search_analytics_report'].includes(operation) && !result.error) {
+				result = paginateReport(result, args);
+			} else if (Array.isArray(result.data) && args.limit && result.data.length > args.limit && !result._pagination) {
 				const total = result.data.length;
 				result = {
 					...result,
@@ -618,14 +697,14 @@ function createDashboardService(deps = {}) {
 			}
 			if (context.refusal) result = context.refusal;
 			context.quality.truncated ||= !!result.truncated;
-			if (!definitionOnly && !(operation === "get_journeys_report" && args.mode === "sessions") && !context.pools.size) context.pools.add(args.report === "live-users" ? "realtime" : operation === "analyze_funnel" ? "funnel" : "core");
-			return {
+			if (!definitionOnly && !(operation === "get_journeys_report" && args.mode === "sessions") && !context.pools.size) context.pools.add(args.report === "live-users" ? "realtime" : ['analyze_funnel', 'get_funnel_summary'].includes(operation) ? "funnel" : "core");
+			return complete({
 				...result,
 				propertyId: args.propertyId,
 				apiCalls: context.calls,
 				dataQuality: context.quality,
 				quota: context.refusal?.quota || Object.fromEntries([...context.pools].map((pool) => [pool, ledger.status(args.propertyId, pool)])),
-			};
+			});
 		} catch (error) {
 			return {
 				...(context?.refusal || error.mcpResult || { error: "report_unavailable", message: error.message }),
@@ -634,7 +713,7 @@ function createDashboardService(deps = {}) {
 			};
 		}
 	}
-	return { listProperties, execute };
+	return { listProperties, execute, cachedSites };
 }
 
 let singleton;

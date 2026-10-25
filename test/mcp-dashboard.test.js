@@ -520,3 +520,271 @@ describe("MCP demo isolation", () => {
 		}
 	});
 });
+
+describe('MCP complete funnel management', function () {
+	this.timeout(10000);
+	let directory, store;
+	const steps = [{ type: 'page', value: '/pricing' }, { type: 'event', value: 'purchase', propertyFilters: [{ key: 'plan', value: 'pro' }] }];
+	beforeEach(async () => {
+		directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metribee-mcp-funnels-'));
+		store = createFunnelStore({ directory, now });
+	});
+	afterEach(() => fs.rmSync(directory, { recursive: true, force: true }));
+
+	it('manages the full lifecycle through the official client without report calls for definitions', async () => {
+		const { createMcpHandler } = require('@modelcontextprotocol/server');
+		const { Client, StreamableHTTPClientTransport } = require('@modelcontextprotocol/client');
+		const { createServer } = require('../mcp-server');
+		const { service, calls } = harness({ deps: { store } });
+		const handler = createMcpHandler(() => createServer({ dashboardService: service }));
+		const client = new Client({ name: 'funnel-management-test', version: '1' });
+		try {
+			await client.connect(new StreamableHTTPClientTransport(new URL('http://mcp.test/mcp'), {
+				fetch: (input, init) => handler.fetch(new Request(input, init)),
+			}));
+			const call = async (name, args) => {
+				const response = await client.callTool({ name, arguments: { propertyId: '123', ...args } });
+				assert.equal(response.isError, undefined, JSON.stringify(response));
+				return response.structuredContent;
+			};
+			assert.equal((await call('validate_funnel', { steps })).valid, true);
+			assert.deepEqual(fs.readdirSync(directory), []);
+			const created = await call('save_funnel', { name: 'Checkout', description: 'Production', steps });
+			const id = created.funnelId;
+			const before = (await call('get_funnel', { funnelId: id })).data;
+			const renamed = await call('save_funnel', { funnelId: id, name: 'Renamed' });
+			assert.deepEqual(renamed.data.steps, before.steps);
+			assert.equal(renamed.data.description, 'Production');
+			assert.equal(renamed.data.createdAt, before.createdAt);
+			const copied = await call('duplicate_funnel', { funnelId: id, name: 'Copy' });
+			assert.notEqual(copied.funnelId, id);
+			assert.deepEqual(copied.data.steps, before.steps);
+			assert.equal(copied.data.description, 'Production');
+			const exported = await call('export_funnels', {});
+			assert.equal(exported.data.length, 2);
+			assert.equal((await call('import_funnels', { definitions: exported.data })).added, 0);
+			await call('save_funnel', { funnelId: id, description: '' });
+			assert.equal((await call('get_funnel', { funnelId: id })).data.description, undefined);
+			assert.equal((await call('list_saved_funnels', { search: 'copy' })).data.length, 1);
+			assert.equal(calls.length, 0);
+			const analysis = await call('analyze_funnel', { funnelId: id });
+			assert.equal(analysis.apiCalls, 1);
+			assert.equal(analysis.data[0].users, 10);
+			assert.equal(analysis.data[0].sessions, undefined);
+			await call('delete_funnel', { funnelId: id });
+			const missing = await client.callTool({ name: 'get_funnel', arguments: { propertyId: '123', funnelId: id } });
+			assert.equal(missing.isError, true);
+			assert.equal((await store.list('123')).length, 1);
+		} finally { await client.close(); await handler.close(); }
+	});
+
+	it('previews imports without files, validates the whole batch and isolates property IDs', async () => {
+		const { service, calls } = harness({ deps: { store } });
+		const args = { propertyId: '123', definitions: [{ name: 'Checkout', steps }], dryRun: true };
+		assert.equal((await service.execute('import_funnels', args)).added, 1);
+		assert.deepEqual(fs.readdirSync(directory), []);
+		const invalid = await service.execute('import_funnels', { ...args, dryRun: false,
+			definitions: [...args.definitions, { name: 'Invalid', steps: [{ type: 'page', value: '/**' }, steps[1]] }] });
+		assert.ok(invalid.error);
+		assert.deepEqual(await store.list('123'), []);
+		const saved = await service.execute('import_funnels', { ...args, dryRun: false });
+		assert.equal(saved.added, 1);
+		assert.equal((await service.execute('import_funnels', { ...args, dryRun: false })).existing, 1);
+		const other = await service.execute('duplicate_funnel', { propertyId: '456', funnelId: saved.data[0].id });
+		assert.ok(other.error);
+		assert.deepEqual(await store.list('456'), []);
+		assert.equal(calls.length, 0);
+	});
+
+	it('preserves steps across concurrent partial edits and rejects empty updates', async () => {
+		const { service } = harness({ deps: { store } });
+		const saved = await service.execute('save_funnel', { propertyId: '123', name: 'Checkout', steps });
+		await Promise.all([
+			service.execute('save_funnel', { propertyId: '123', funnelId: saved.funnelId, name: 'Renamed' }),
+			service.execute('save_funnel', { propertyId: '123', funnelId: saved.funnelId, description: 'New description' }),
+		]);
+		const [funnel] = await store.list('123');
+		assert.equal(funnel.name, 'Renamed'); assert.equal(funnel.description, 'New description');
+		assert.equal(funnel.steps.length, 2);
+		assert.ok((await service.execute('save_funnel', { propertyId: '123', funnelId: saved.funnelId })).error);
+	});
+
+	it('reads large definitions step by step after output trimming, without losing their rules', async () => {
+		const largeSteps = Array.from({ length: 10 }, (_, i) => ({ type: 'event', value: `step_${i}`,
+			propertyFilters: Array.from({ length: 10 }, (_, j) => ({ key: `param_${j}`, value: 'x'.repeat(500) })) }));
+		const { service } = harness({ deps: { store } });
+		const saved = await service.execute('save_funnel', { propertyId: '123', name: 'Large funnel', steps: largeSteps });
+		const loaded = [];
+		let offset = 0;
+		do {
+			const result = JSON.parse(realGuard.fitResult(await service.execute('get_funnel', { propertyId: '123', funnelId: saved.funnelId, offset })));
+			assert.ok(result.data.steps.length);
+			loaded.push(...result.data.steps);
+			offset = result.nextOffset;
+		} while (offset !== null);
+		assert.deepEqual(loaded, (await store.list('123'))[0].steps);
+	});
+
+	it('leaves existing definitions untouched when an import exceeds capacity', async () => {
+		for (let i = 0; i < 99; i++) await store.save('123', { name: `Funnel ${i}`, steps: [{ type: 'page', value: `/entry-${i}` }, steps[1]] });
+		const before = fs.readFileSync(path.join(directory, '123.json'), 'utf8');
+		const { service } = harness({ deps: { store } });
+		const result = await service.execute('import_funnels', { propertyId: '123', definitions: [
+			{ name: 'New A', steps }, { name: 'New B', steps: [{ type: 'page', value: '/new-b' }, steps[1]] },
+		] });
+		assert.ok(result.error);
+		assert.equal(fs.readFileSync(path.join(directory, '123.json'), 'utf8'), before);
+	});
+
+	it('guards event discovery and native paginated union summaries, including comparison', async () => {
+		for (let i = 0; i < 4; i++) await store.save('123', { name: `Funnel ${i}`, steps: [{ type: 'page', value: `/entry-${i}` }, steps[1]] });
+		let low = false;
+		const { service, calls, records } = harness({ deps: { store }, guard: { checkQuota: () => low ? { error: 'quota_low' } : null } });
+		const summary = await service.execute('get_funnel_summary', { propertyId: '123', limit: 2, comparison: 'previous_period' });
+		assert.equal(summary.error, undefined, JSON.stringify(summary));
+		assert.equal(summary.apiCalls, 6);
+		assert.equal(summary.data.funnels.length, 2);
+		assert.equal(summary.data.funnels[0].steps[0].users, 10);
+		assert.equal(summary.data.users_entered_any, 10);
+		assert.equal(summary.nextOffset, 2);
+		assert.equal(summary.comparison.previous.data.funnels.length, 2);
+		assert.ok(records.every(record => record[1] === 'funnel'));
+		const events = await service.execute('get_funnel_events', { propertyId: '123' });
+		assert.equal(events.data[0].eventName, 'purchase'); assert.equal(events.apiCalls, 1);
+		assert.equal(calls.at(-1).returnPropertyQuota, true);
+		low = true;
+		const blocked = await service.execute('get_funnel_events', { propertyId: '123', range: '30d' });
+		assert.equal(blocked.error, 'quota_low'); assert.equal(calls.length, 7);
+	});
+});
+
+describe('MCP comparisons, continuation and cache-only portfolios', () => {
+	it('resolves explicit and prior-year periods, computes changes and keeps both periods cached', async () => {
+		const { service, calls } = harness({ report: request => {
+			const result = report(request);
+			result.rows = [row([], request.metrics.map(() => request.dateRanges[0].startDate === '2026-10-16' ? 20 : 10))];
+			return result;
+		} });
+		const args = { propertyId: '123', report: 'overview', range: '7d', comparison: 'previous_year' };
+		const result = await service.execute('get_dashboard_report', args);
+		assert.equal(result.comparison.window.start_date, '2025-10-16');
+		assert.equal(result.comparison.changes.sessions.percentChange, 100);
+		assert.equal(result.apiCalls, 2);
+		assert.equal((await service.execute('get_dashboard_report', args)).apiCalls, 0);
+		assert.equal(calls.length, 2);
+		const explicit = await service.execute('get_dashboard_report', { ...args, comparison: { startDate: '2026-09-01', endDate: '2026-09-07' } });
+		assert.equal(explicit.comparison.previous.data.sessions, 10);
+		const before = calls.length;
+		assert.ok((await service.execute('get_dashboard_report', { ...args, comparison: { startDate: '2026-10-30', endDate: '2026-11-01' } })).error);
+		assert.equal(calls.length, before);
+	});
+
+	it('uses one 20-call budget for both periods and preserves current data when comparison is refused', async () => {
+		const { service, calls } = harness();
+		const result = await service.execute('get_retention_report', { propertyId: '123', range: '90d', bucket: 'day', comparison: 'previous_period' });
+		assert.equal(result.error, undefined, JSON.stringify(result));
+		assert.equal(result.apiCalls, 20);
+		assert.equal(calls.length, 20);
+		assert.equal(result.comparison.unavailable, true);
+		assert.equal(result.comparison.previous.error, 'analysis_budget_exceeded');
+		assert.ok(result.cohorts.length);
+	});
+
+	it('continues dashboard and GSC rows without shortening the shared cache', async () => {
+		const gscQueries = [];
+		const { service, calls } = harness({ report: request => ({ ...report(request), rows: [row(['A'], [30]), row(['B'], [20]), row(['C'], [10])], rowCount: 3 }),
+			deps: { isDemo: () => false, gsc: { report: async (_, action, query) => {
+				gscQueries.push(query); return { data: [{ query: 'a' }, { query: 'b' }, { query: 'c' }], truncated: true };
+			} } } });
+		const args = { propertyId: '123', report: 'traffic-sources', limit: 1 };
+		const first = await service.execute('get_dashboard_report', args);
+		const next = await service.execute('get_dashboard_report', { ...args, offset: first.nextOffset });
+		assert.equal(first.data.rows[0].dims[0], 'A'); assert.equal(next.data.rows[0].dims[0], 'B');
+		assert.equal(next.apiCalls, 0); assert.equal(calls.length, 1);
+		const search = await service.execute('get_search_console_report', { propertyId: '123', report: 'data', limit: 1, offset: 2 });
+		assert.equal(search.data[0].query, 'c'); assert.equal(search.nextOffset, null);
+		assert.equal(search._pagination[0].sourceTruncated, true);
+		assert.equal(gscQueries.length, 1);
+	});
+
+	it('recalculates nextOffset when transport output trimming removes records', () => {
+		const { paginateReport } = require('../mcp-server/lib/results');
+		const result = paginateReport({ data: Array.from({ length: 20 }, (_, id) => ({ id, text: 'x'.repeat(300) })) }, { limit: 10, offset: 2 });
+		const fitted = JSON.parse(realGuard.fitResult(result, 1800));
+		assert.ok(fitted.data.length > 0 && fitted.data.length < 10);
+		assert.equal(fitted.nextOffset, 2 + fitted.data.length);
+		assert.equal(fitted.returned, fitted.data.length);
+		assert.equal(fitted._pagination[0].nextOffset, fitted.nextOffset);
+		const tooLarge = JSON.parse(realGuard.fitResult(paginateReport({ data: [{ text: 'x'.repeat(10000) }] }), 1800));
+		assert.equal(tooLarge.nextOffset, null); assert.equal(tooLarge._pagination[0].recordTooLarge, true);
+	});
+
+	it('resolves rolling and leap-year comparisons and uses native custom site-status dates', async () => {
+		const { comparisonWindow } = require('../mcp-server/lib/results');
+		assert.deepEqual(comparisonWindow({ past_minutes_start: 1440, past_minutes_end: 0 }, 'previous_period'), { past_minutes_start: 2880, past_minutes_end: 1440 });
+		assert.throws(() => comparisonWindow({ past_minutes_start: 1440, past_minutes_end: 0 }, 'previous_year'));
+		const leap = comparisonWindow({ start_date: '2024-02-29', end_date: '2024-02-29' }, 'previous_year', dates => dateWindow(dates, { timeZone: 'UTC' }, now()));
+		assert.equal(leap.start_date, '2023-02-28');
+		const { service } = harness();
+		const result = await service.execute('get_site_status', { propertyId: '123', range: '7d', comparison: { startDate: '2026-09-01', endDate: '2026-09-07' } });
+		assert.equal(result.data.comparison.startDate, '2026-09-01'); assert.equal(result.data.sites[0].prev, 10);
+	});
+
+	it('reports GSC connection matches without internal credentials and compares search summaries', async () => {
+		const { service, calls } = harness({ deps: { isDemo: () => false, gsc: {
+			connection: async () => ({ connected: true, gscPropertyUrl: 'sc-domain:example.com', match: { internal: 'not for MCP' } }),
+			report: async (_, action, query) => ({ data: { clicks: query.start_date === '2026-10-15' ? 10 : 0, impressions: 100, ctr: .1, position: 3 } }),
+		} } });
+		const connection = await service.execute('get_search_console_connection', { propertyId: '123' });
+		assert.equal(connection.connected, true); assert.equal(connection.match, undefined);
+		const result = await service.execute('get_search_console_report', { propertyId: '123', comparison: 'previous_period' });
+		assert.equal(result.comparison.window.end_date, '2026-10-14');
+		assert.equal(result.comparison.changes.clicks.difference, 10);
+		assert.equal(result.comparison.changes.clicks.percentChange, null);
+		assert.equal(result.ga4ApiCalls, 0); assert.equal(calls.length, 0);
+	});
+
+	it('reads portfolio snapshots without invoking property discovery, even on misses', async () => {
+		const daily = Object.fromEntries(Array.from({ length: 14 }, (_, i) => [`202610${String(i + 9).padStart(2, '0')}`, i < 7 ? 10 : 20]));
+		let snapshotOptions;
+		const { service, calls } = harness({ deps: {
+			properties: () => { throw new Error('Portfolio must not discover properties'); },
+			cachedProperties: async () => ({ properties }),
+			snapshot: async options => { snapshotOptions = options; return { snapshot: { generatedAt: now().toISOString(), properties: [{ id: '123', daily }] }, adsense: null }; },
+		} });
+		const result = await service.cachedSites({ range: '7d', limit: 1 });
+		assert.equal(result.error, undefined, JSON.stringify(result));
+		assert.equal(result.data[0].id, '123'); assert.equal(result.data[0].last, 140);
+		assert.equal(result.data[0].prev, 70); assert.equal(result.nextOffset, 1);
+		assert.equal(result.coverage.coveredSites, 1); assert.equal(result.apiCalls, 0);
+		assert.deepEqual(snapshotOptions.properties, properties);
+		const next = await service.cachedSites({ range: '7d', limit: 1, offset: 1 });
+		assert.equal(next.data[0].last, null); assert.ok(next.data[0].error);
+		const grouped = await service.cachedSites({ range: '7d', groupBy: 'account' });
+		assert.equal(grouped.data.find(row => row.accountId === '7').last, 140);
+		const missing = await service.cachedSites({ range: '90d' });
+		assert.equal(missing.coverage.coveredSites, 0);
+		assert.equal(calls.length, 0);
+	});
+
+	it('joins country search metrics and keeps unknown matches and GSC failures explicit', async () => {
+		let fail = false;
+		const { service } = harness({ deps: { gsc: { report: async () => {
+			if (fail) throw new Error('Search permission denied');
+			return { connection: { connected: true }, data: [
+				{ country: 'ind', countryCode: 'IN', clicks: 2, impressions: 20, position: 3 },
+				{ country: 'usa', countryCode: 'US', clicks: 9, impressions: 90, position: 5 },
+			] };
+		} } } });
+		const first = await service.execute('get_search_analytics_report', { propertyId: '123', dimension: 'country', sort: 'clicks', limit: 1 });
+		assert.equal(first.error, undefined, JSON.stringify(first));
+		assert.equal(first.data[0].key, 'US'); assert.equal(first.data[0].analytics, undefined);
+		const next = await service.execute('get_search_analytics_report', { propertyId: '123', dimension: 'country', sort: 'clicks', limit: 1, offset: 1 });
+		assert.equal(next.data[0].key, 'IN'); assert.equal(next.data[0].analytics.count, 10);
+		assert.equal(next.data[0].search.ctr, .1);
+		fail = true;
+		const partial = await service.execute('get_search_analytics_report', { propertyId: '123', dimension: 'country' });
+		assert.equal(partial.data[0].analytics.count, 10); assert.equal(partial.data[0].search, undefined);
+		assert.match(partial.search.error, /permission/); assert.equal(partial.error, undefined);
+	});
+});

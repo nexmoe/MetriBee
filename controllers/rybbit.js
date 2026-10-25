@@ -471,7 +471,7 @@ function createRybbitHandler(deps = {}) {
           if (x == null || y == null) return x == null ? y == null ? 0 : 1 : -1;
           return (x - y) * (q.order === 'asc' ? 1 : -1) || a.key.localeCompare(b.key);
         });
-        const limit = Math.min(100, Math.max(1, Number(q.limit) || 25)), offset = Math.max(0, (Number(q.page) || 1) - 1) * limit;
+        const limit = Math.min(100, Math.max(1, Number(q.limit) || 25)), offset = q.offset !== undefined ? Math.max(0, Math.floor(Number(q.offset) || 0)) : Math.max(0, (Number(q.page) || 1) - 1) * limit;
         return send({ data: items.slice(offset, offset + limit), totalCount: items.length, ...(searchConsole ? { searchConsole } : {}) });
       }
       if (action === 'journeys/sessions' || (action === 'journeys' && Number(q.steps || 2) > 2)) {

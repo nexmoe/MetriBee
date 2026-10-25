@@ -108,10 +108,10 @@ The setup page provides a copyable URL, project-scoped `.mcp.json` and Claude Co
 
 <!-- mcp-features:start -->
 1. **Analytics.** Overview, pages, events, journeys, retention, acquisition, audience, revenue and traffic diagnostics use the dashboard's reports and caches.
-2. **Google Search.** Search Console summaries, trends and query/page/country/device reports use the website's matched Search Console property when its optional connection is configured.
-3. **Funnels and widgets.** Analyze funnels and preview metric widgets. Save or delete local definitions when requested; sharing is managed in the dashboard.
-4. **Connection and quota.** Inspect setup, discover current properties, check cache and quota status, and explicitly refresh a selected property's quota.
-5. **Guided analysis.** Read `ga4://capabilities` and `ga4://query-guide`, or use the `analyze_property` prompt to focus on one website.
+2. **Google Search.** Search Console summaries, trends and query/page/country/device reports use the matched Search Console property. Joined country/device reports keep GA4 and search metrics together, with explicit unknown matches.
+3. **Funnels and widgets.** Discover funnel events, validate rules, read, create, partially update, copy, import/export, summarize, analyze and delete local funnels. Preview and manage metric widgets when requested; sharing is managed in the dashboard.
+4. **Connection and quota.** Inspect GA4/OAuth, GSC and PageSpeed configuration, verify a site's GSC match, check cache/quota status, and explicitly refresh a selected property's quota.
+5. **Guided analysis.** Use `ga4://capabilities`, `ga4://query-guide` or `analyze_property`, with period comparisons and pageable results. Multi-site questions can use saved snapshots through `get_cached_sites_report` without querying Google.
 <!-- mcp-features:end -->
 
 <!-- mcp-verify:start -->

@@ -235,7 +235,14 @@ function createFunnels(deps = {}) {
     const range = reportWindow(query, property.timeZone || 'UTC', now());
     const dimensionFilter = funnelFilters(query.filters);
     const definitions = await store.list(String(property.id));
-    const selected = definitions.slice(0, MAX_SUMMARY_FUNNELS).map(funnel => ({ ...funnel, steps: normalizeSteps(funnel.steps) }));
+    let ids;
+    if (query.funnel_ids !== undefined) {
+      try { ids = JSON.parse(query.funnel_ids); } catch { throw failure('Choose valid funnel IDs.'); }
+      if (!Array.isArray(ids) || ids.length > MAX_SUMMARY_FUNNELS || ids.some(id => !Number.isSafeInteger(id) || id < 1)
+        || ids.some(id => !definitions.some(funnel => funnel.id === id))) throw failure('Choose saved funnel IDs belonging to this property.');
+    }
+    const candidates = ids ? definitions.filter(funnel => ids.includes(funnel.id)) : definitions;
+    const selected = candidates.slice(0, MAX_SUMMARY_FUNNELS).map(funnel => ({ ...funnel, steps: normalizeSteps(funnel.steps) }));
     const key = 'summary:' + createHash('sha256').update(JSON.stringify({ property: property.id, range, dimensionFilter, selected })).digest('hex');
     if (pending.has(key)) return pending.get(key);
     const promise = (async () => {
@@ -267,7 +274,7 @@ function createFunnels(deps = {}) {
             steps: reports[index].data.map(step => ({ sessions: step.users, median_seconds_to_next: null })),
             median_seconds_to_convert: null,
           })),
-          truncated: definitions.length > selected.length,
+          truncated: candidates.length > selected.length,
           sampled: reports.some(report => report.sampled),
           metric: 'activeUsers',
         },
@@ -295,11 +302,14 @@ function createFunnels(deps = {}) {
         if (req.method === 'GET') return res.json({ data: await store.list(id) });
         if (req.method !== 'POST') throw failure('Use GET or POST for saved funnels.', 405);
         const name = req.body?.name;
-        if (typeof name !== 'string' || !name.trim() || name.trim().length > 120) throw failure('Use a funnel name of 1 to 120 characters.');
         const reportId = req.body.reportId;
         if (reportId != null && (!Number.isSafeInteger(reportId) || reportId < 1)) throw failure('Choose a numeric funnel ID.');
-        const steps = normalizeSteps(req.body.steps).map(({ filterExpression, ...step }) => step);
-        const saved = await store.save(id, { name: name.trim(), steps, reportId });
+        if ((reportId == null || name !== undefined) && (typeof name !== 'string' || !name.trim() || name.trim().length > 120)) throw failure('Use a funnel name of 1 to 120 characters.');
+        const description = req.body.description;
+        if (description !== undefined && (typeof description !== 'string' || description.length > 2000)) throw failure('Use a funnel description of up to 2000 characters.');
+        if (reportId != null && name === undefined && req.body.steps === undefined && description === undefined) throw failure('Choose a funnel field to update.');
+        const steps = reportId != null && req.body.steps === undefined ? undefined : normalizeSteps(req.body.steps).map(({ filterExpression, ...step }) => step);
+        const saved = await store.save(id, { name: name?.trim(), steps, description, reportId });
         return res.json({ success: true, funnelId: saved.id });
       }
       if (/^[1-9]\d*$/.test(action)) {

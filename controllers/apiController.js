@@ -127,6 +127,8 @@ async function getCachedProperties() {
         return null;
     }
 }
+// Read-only metadata access for cache-only MCP portfolio reports; never schedules Google work.
+exports.readCachedProperties = getCachedProperties;
 
 async function savePropertiesToCache(properties) {
     await fs.mkdir(CACHE_DIR, { recursive: true });

@@ -81,7 +81,7 @@ References: [HTTP serving](https://ts.sdk.modelcontextprotocol.io/v2/serving/htt
 Start with `get_setup_status`, `get_capabilities` and `list_properties`. The
 catalog reads the current analytics recipe definitions, supported segments,
 filters and widget configuration, without exposing UI icon/style metadata.
-There are 30 tools: the original 11 remain compatible, with 19 focused tools
+There are 42 tools: the original 11 remain compatible, with 31 focused tools
 for the current dashboard. All tools declare read/write, destructive and
 idempotency hints. Successful object results have both text and
 `structuredContent`; logical failures set `isError`.
@@ -92,6 +92,11 @@ idempotency hints. Successful object results have both text and
 |---|---|
 | `get_capabilities` | Current report IDs, segment names, filters, widget metrics/defaults, budgets and data limitations; no Google call |
 | `list_properties` | Current site/account names, domains, search and pagination; shares the five-minute property metadata refresh |
+| `get_cached_sites_report` | Multi-site status and account grouping from saved daily snapshots and cached metadata only; missing dates stay unknown, no Google requests |
+| `get_search_console_connection` | Inspect one website's GSC connection and property/hostname match without exposing credentials |
+| `get_search_analytics_report` | Native GA4 + GSC country/device joins, unknown unmatched values, sorting and pagination; GSC failures preserve GA4 data |
+| `get_search_console_report` | GSC summary, daily trends and query/page/country/device top rows, comparison and pagination |
+| `get_search_console_quota` | Published GSC limits and process-local observations; no Google requests |
 | `get_dashboard_report` | Native overview/time series and all analytics catalog reports: acquisition, audience, technology, content, revenue/key events, traffic quality, visitor segments, what changed, referral diagnostics and live spikes |
 | `get_pages_report` | Page/landing-page metrics, directory grouping, search, sorting and pagination |
 | `get_events_report` | Custom-event names and trends, aggregates by event type and outbound links |
@@ -100,7 +105,14 @@ idempotency hints. Successful object results have both text and
 | `get_retention_report` | Native first-visit cohorts, weighted retention and previous-period summaries; property time zone, no audience filters |
 | `get_site_status` | One property's homepage status, time buckets, comparison and fully covered saved AdSense values |
 | `list_saved_funnels` | Search/paginate local funnel definitions, without report calls |
-| `save_funnel` | Create/update a named local funnel; page patterns and exact event parameter conditions |
+| `get_funnel` | One saved definition with metadata and pageable ordered steps |
+| `validate_funnel` | Validate and normalize steps without saving or running reports |
+| `save_funnel` | Create a named funnel, or partially update name, description and/or steps; omitted fields survive concurrent edits |
+| `duplicate_funnel` | Copy one saved funnel in the same property |
+| `import_funnels` | Atomic, rule-deduplicated JSON import into one property; optional write-free `dryRun` |
+| `export_funnels` | Pageable native definitions whose returned `data` can be passed directly to `import_funnels.definitions` |
+| `get_funnel_events` | Native event picker: event names and total users, guarded through the core quota pool |
+| `get_funnel_summary` | Native saved-funnel conversions and union entrants for up to nine funnels per page; optional comparison shares the 20-call budget |
 | `delete_funnel` | Delete one local funnel definition |
 | `analyze_funnel` | Analyze a saved ID or an ad hoc sequence through ordered, closed GA4 funnel active users |
 | `list_saved_widgets` | Search/paginate native saved metric widget definitions |
@@ -108,9 +120,9 @@ idempotency hints. Successful object results have both text and
 | `delete_widget` | Delete one saved widget; its existing URL stops working |
 | `get_widget_report` | Private preview of a saved widget or config, with native totals, comparison, trends, percentage and currency handling |
 | `refresh_property_quota` | Explicitly query one property's quota snapshot and update all three shared pools |
-| `get_setup_status` | Credential/OAuth availability without secrets; `verify=true` explicitly checks Google authentication and property access |
+| `get_setup_status` | GA4/OAuth, GSC and PageSpeed configuration plus ordered-session availability, without secrets; `verify=true` checks GA4 authentication and property access |
 
-`save_funnel`, `delete_funnel`, `save_widget` and `delete_widget` change durable
+`save_funnel`, `duplicate_funnel`, `import_funnels`, `delete_funnel`, `save_widget` and `delete_widget` change durable
 local application data and must only be called at the user's request. They
 do not modify GA4. Widget preview/management never enables site-wide sharing
 or generates sharing keys.
@@ -122,6 +134,41 @@ the dashboard. Retention does not accept filters; funnel filters use the
 subset listed by `get_capabilities`. Event activity uses a preset and day
 offset. Widget configs use their own native presets, limited to 366 days.
 Live spikes always cover the last 30 minutes and reject audience filters.
+
+Historical dashboard, page, event, journey, retention, funnel and GSC reports
+accept `comparison: "previous_period"`, `"previous_year"`, or
+`{ "startDate": "2026-09-01", "endDate": "2026-09-07" }`. Both windows share
+one 20-call GA4 budget. Responses include `comparison.previous` and changes
+for scalar metrics and matching table rows; zero baselines produce an unknown
+percentage, and unmatched top rows are not assumed to be zero. If comparison
+is refused, successful current data remains available with
+`comparison.unavailable: true`. Site status uses the chosen comparison in its
+native `data.comparison`/site metrics instead. Realtime reports refuse historical
+comparisons. Rolling windows support the preceding equal window only.
+
+Dashboard, event, GSC, joined search, exported definitions and cache-only
+portfolio results accept `offset` and `limit`. Dashboard `collection` selects
+one collection, such as `rows` or `countries.rows`. `_pagination` records its
+path, `returned`, `nextOffset`, `totalAvailable` and `sourceTruncated`. Follow
+`nextOffset` using the same report arguments; the transport recalculates it
+when byte limits shorten a page. `sourceTruncated` marks the end of the available
+upstream top rows, not a promise of further Google pagination. Pages also
+accept an exact `offset`, overriding `page`, for byte-budget continuation.
+`get_funnel` uses `offset`/`limit` for steps, so even a large definition can be
+read completely. A record that cannot fit must be narrowed using the detail
+tool. Report caches always retain the original complete native result.
+
+For the complete funnel workflow, discover events with `get_funnel_events`,
+check rules with `validate_funnel`, create with `save_funnel`, then inspect
+with `get_funnel` or `list_saved_funnels`. Rename with
+`{ "propertyId": "123", "funnelId": 1, "name": "New name" }`; existing steps
+and description are retained. Empty `description` clears it. Use
+`duplicate_funnel`, or `export_funnels` followed by `import_funnels` for JSON
+transfer. Imports validate the entire batch before one atomic commit,
+preserve existing definitions, resolve name conflicts and skip duplicate rules.
+`get_funnel_summary` reports union entrants for the selected page only; do not
+sum them across pages. `analyze_funnel` analyzes a saved ID or temporary steps.
+`delete_funnel` removes only the selected property's local definition.
 
 Example arguments for `get_dashboard_report`:
 

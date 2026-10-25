@@ -1,6 +1,7 @@
 // Guardrails that run before the MCP server spends GA4 tokens. Pure functions plus small
 // in-memory state, no Google calls, so they can be unit tested.
 const ledger = require("./ledger");
+const { syncPagination } = require('./results');
 
 const num = (name, fallback) => {
 	const n = Number(process.env[name]);
@@ -144,7 +145,7 @@ function fitResult(value, maxBytes = MAX_RESULT_BYTES) {
 	let text = JSON.stringify(value);
 	if (Buffer.byteLength(text) <= maxBytes) return text;
 	if (Array.isArray(value?.rows) && value.rows.length) {
-		const build = (n) => ({
+		const build = (n) => syncPagination({
 			...value,
 			rows: value.rows.slice(0, n),
 			returned: n,
@@ -172,7 +173,7 @@ function fitResult(value, maxBytes = MAX_RESULT_BYTES) {
 		function collect(object, path = "") {
 			if (!object || typeof object !== "object") return;
 			for (const [key, item] of Object.entries(object)) {
-				if (key === "_truncation") continue;
+				if (key === "_truncation" || key === "_pagination") continue;
 				const name = path ? `${path}.${key}` : key;
 				if (Array.isArray(item) && item.length) arrays.push({ object, key, name, size: Buffer.byteLength(JSON.stringify(item)) });
 				else if (!Array.isArray(item)) collect(item, name);
@@ -187,6 +188,8 @@ function fitResult(value, maxBytes = MAX_RESULT_BYTES) {
 		removed.set(largest.name, (removed.get(largest.name) || 0) + before.length - count);
 		out._truncation = [...removed].slice(0, 12).map(([path, omitted]) => ({ path, omitted }));
 		if (largest.name === "rows") out.returned = count;
+		syncPagination(out);
+		if (out.comparison?.previous) syncPagination(out.comparison.previous);
 		text = JSON.stringify(out);
 		if (Buffer.byteLength(text) <= maxBytes) return text;
 	}

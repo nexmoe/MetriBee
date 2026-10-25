@@ -17,7 +17,7 @@ const cache = require("./lib/cache");
 const rateLimit = require("./lib/rateLimit");
 const guard = require("./lib/guard");
 const ledger = require("./lib/ledger");
-const { registerDashboardTools } = require("./lib/tools");
+const { registerDashboardTools, WRITE_TOOL_NAMES } = require("./lib/tools");
 const setup = require("../lib/setupCheck");
 setup.onCredentialsChange(require("../controllers/ga4Service").resetClients);
 
@@ -30,7 +30,7 @@ Limits per property, per pool (core, realtime and funnel are separate pools):
 - Cost grows with rows, dimensions, metrics, filters, date range length and high-cardinality dimensions. GA4 360 properties get 10x.
 
 Rules:
-- Work on one property per question. Use list_properties to find current site/account names and get_capabilities to choose a report. Never loop reports over many properties. The server refuses after ${guard.MAX_PROPERTIES} distinct properties in ${guard.WINDOW_MS / 60000} minutes.
+- Work on one property per question. Use list_properties to find current site/account names and get_capabilities to choose a report. Never loop reports over many properties. For portfolio questions use get_cached_sites_report, which reads saved snapshots only. The server refuses after ${guard.MAX_PROPERTIES} distinct properties in ${guard.WINDOW_MS / 60000} minutes.
 - Ask for the smallest report that answers: orderBys plus a small limit, a dimensionFilter instead of pulling rows to filter, the shortest date range, few dimensions. High-cardinality dimensions (pagePath, pageLocation, pageTitle, landingPage*, customEvent:*, customUser:*) need orderBys and limit at most 50.
 - Every GA4 result has quota: {cost, projectHourLeft, hourLeft, dayLeft, status}. On status low, finish with what you have and tell the user. On a quota_low error, do not retry; report the reset time from the error.
 - Results are cached (report 1h, realtime 60s, metadata 6h). Repeating the same call is free.
@@ -42,10 +42,10 @@ Journeys are referrer pageview pairs, never complete session paths. Events are a
 function createServer(options = {}) {
 	const server = new McpServer({ name: "ga4-mcp-server", version }, { instructions: `${INSTRUCTIONS}\n\n${DASHBOARD_INSTRUCTIONS}` });
 	function registerTool(name, config, callback) {
-		const write = ["request_indexing", "save_funnel", "delete_funnel", "save_widget", "delete_widget"].includes(name);
+		const write = WRITE_TOOL_NAMES.includes(name);
 		return server.registerTool(name, { ...config, annotations: {
 			readOnlyHint: !write, destructiveHint: ["delete_funnel", "delete_widget", "request_indexing"].includes(name),
-			idempotentHint: !write || name === "delete_funnel" || name === "delete_widget", openWorldHint: !["get_capabilities", "get_cache_status", "get_rate_limit_status", "list_saved_funnels", "save_funnel", "delete_funnel", "list_saved_widgets", "delete_widget"].includes(name),
+			idempotentHint: !write || ['delete_funnel', 'delete_widget', 'import_funnels'].includes(name), openWorldHint: !["get_capabilities", "get_cache_status", "get_rate_limit_status", "list_saved_funnels", "save_funnel", "delete_funnel", 'get_funnel', 'validate_funnel', 'duplicate_funnel', 'import_funnels', "list_saved_widgets", "delete_widget"].includes(name),
 			...config.annotations,
 		} }, async (...args) => {
 			try { setup.syncEnvFile(); return await callback(...args); }

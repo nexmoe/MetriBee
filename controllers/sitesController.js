@@ -25,7 +25,7 @@ function hostOf(url) {
 }
 
 /** Snapshot plus AdSense days attached per property (matched by web stream host). */
-async function loadSitesSnapshot() {
+async function loadSitesSnapshot({ properties: cachedProperties } = {}) {
     // Demo mode never shows the real snapshot (screenshots of a public demo).
     if (demo.enabled()) return { snapshot: null, adsense: null };
     const [snap, ads] = await Promise.all([
@@ -38,7 +38,7 @@ async function loadSitesSnapshot() {
     let props = [];
     if (adDomains) {
         const { ensureProperties } = require("./apiController");
-        props = (await ensureProperties().catch(() => ({ properties: [] }))).properties || [];
+        props = cachedProperties ?? (await ensureProperties().catch(() => ({ properties: [] }))).properties ?? [];
     }
     const keys = adDomains ? Object.keys(adDomains) : [];
     let matched = 0;
