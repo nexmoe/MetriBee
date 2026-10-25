@@ -22,11 +22,6 @@ export function Footer({ disabled = false }: FooterProps) {
       links: [
         { label: "GitHub", href: project },
         { label: t("Releases"), href: `${project}/releases` },
-        {
-          label: t("Download UI source"),
-          href: "/ui-source.tar.gz",
-          download: true,
-        },
       ],
     },
     {
@@ -77,9 +72,8 @@ export function Footer({ disabled = false }: FooterProps) {
                   <li key={link.href}>
                     <a
                       href={link.href}
-                      download={link.download || undefined}
-                      target={link.download ? undefined : "_blank"}
-                      rel={link.download ? undefined : "noopener noreferrer"}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className={linkClass}
                     >
                       {link.label}

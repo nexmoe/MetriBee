@@ -20,15 +20,9 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 FROM pnpm AS ui
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 COPY frontend frontend
-COPY scripts scripts
-COPY app.js LICENSE NOTICE README.md SETUP.md DESIGN.md tsconfig.json ./
-COPY LICENSES LICENSES
+COPY scripts/rybbit-source.js scripts/
 COPY controllers controllers
 COPY lib lib
-COPY mcp-server/index.js mcp-server/index.js
-COPY mcp-server/lib mcp-server/lib
-COPY routes routes
-COPY views views
 COPY public public
 RUN pnpm build:ui
 

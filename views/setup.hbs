@@ -94,7 +94,7 @@
           {{#if docker}}
           <span class="faint small">Run it in the folder with your <code>.env</code> (a clone of the repo works best). The container reads <code>.env</code> only at start: after each change run <code>docker compose up -d</code> (with plain <code>docker run</code>, remove the container and run it again).</span>
           {{else}}
-          <span class="faint small">Run it from <code>{{projectDir}}</code></span>
+          <span class="faint small">Run it from the project folder containing your <code>.env</code>.</span>
           {{/if}}
         </div>
         <details>

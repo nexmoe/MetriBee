@@ -104,8 +104,10 @@ describe("Rybbit message runtime", function () {
       const catalog = require(`../frontend/rybbit/messages/${locale}.json`);
       const t = createTranslator(locale, { ...english, ...catalog });
       expect(t("Pages"), locale).to.be.a("string").and.not.empty;
-      if (locale !== "en")
+      if (locale !== "en") {
         expect(t("Report an issue"), locale).not.to.equal("Report an issue");
+        expect(t("View source on GitHub"), locale).not.to.equal("View source on GitHub");
+      }
     }
   });
 

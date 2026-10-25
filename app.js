@@ -58,6 +58,20 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Static Files
+// Block retired development artifacts left behind by earlier builds.
+app.use((req, res, next) => {
+    let filename;
+    try {
+        filename = path.posix.normalize(decodeURIComponent(req.path)).replace(/\/+$/, '');
+    } catch {
+        return next();
+    }
+    filename = filename.toLowerCase();
+    const retired = filename === '/ui-source.tar.gz' || filename === '/css/main.scss'
+        || filename === '/bee-drafts' || filename.startsWith('/bee-drafts/');
+    if (!retired) return next();
+    res.set('Cache-Control', 'no-store').sendStatus(404);
+});
 app.use(express.static('public'));
 
 
@@ -166,7 +180,6 @@ app.get('/api/setup/instructions', (req, res) => {
 		oauth: SETUP_DOC.oauth,
 		psi: !!process.env.PSI_API_KEY,
 		gaAdminUrl: setup.GA4_ADMIN_URL,
-		projectDir: __dirname,
 		docker,
 		dockerImage: DOCKER_IMAGE,
 	});

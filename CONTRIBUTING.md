@@ -24,6 +24,29 @@ Pull requests without an approved issue, or that bundle unrelated changes, are c
 
 Do not open a public issue for a security problem. Use GitHub's private vulnerability reporting on this repository instead.
 
+## Local funnel imports
+
+Keep business-specific catalogs in `.data/imports/` (ignored by Git and Docker). Preview an import with `pnpm import:funnels path/to/catalog.json --dry-run`, then omit `--dry-run` to apply it. Without a path, the command reads `.data/imports/funnels.json`. Imports use cached connected-property metadata and back up existing definitions before adding rules; they preserve saved IDs and edited names.
+
+Catalogs use this structure; optional fields include `description`, `sources` and `product`:
+
+```json
+{
+  "version": 1,
+  "funnels": [{
+    "propertyId": "123",
+    "domain": "example.com",
+    "name": "Checkout",
+    "steps": [
+      { "type": "event", "value": "page_view" },
+      { "type": "event", "value": "purchase" }
+    ]
+  }]
+}
+```
+
+The property ID and domain must match a connected property. New properties start with no preset funnels. Keep development previews and source inputs outside `public/`, since its files are served directly.
+
 ## Code of conduct
 
 By taking part you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).

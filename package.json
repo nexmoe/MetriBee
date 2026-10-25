@@ -14,6 +14,7 @@
     "setup:check": "node scripts/setup-check.js",
     "oauth:login": "node scripts/oauth-login.js",
     "snapshot:sessions": "node scripts/snapshot-sessions.js",
+    "import:funnels": "node scripts/import-funnels.js",
     "build:ui": "pnpm --filter @metribee/ui build",
     "dev:ui": "pnpm --filter @metribee/ui dev",
     "typecheck:ui": "pnpm --filter @metribee/ui typecheck"

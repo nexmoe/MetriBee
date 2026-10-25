@@ -366,8 +366,8 @@ export default function Setup() {
           )}
         >
           <Button variant="outline" size="sm" asChild>
-            <a href="https://github.com/nexmoe/MetriBee" download>
-              {t("Download UI source")}
+            <a href="https://github.com/nexmoe/MetriBee" target="_blank" rel="noopener noreferrer">
+              {t("View source on GitHub")}
             </a>
           </Button>
         </LedgerSection>

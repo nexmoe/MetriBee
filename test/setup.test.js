@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { spawn } = require("child_process");
+const fs = require("node:fs");
 const path = require("path");
 const { getCredentials, clientOptions } = require("../lib/credentials");
 const { checkSetup } = require("../lib/setupCheck");
@@ -105,6 +106,28 @@ describe("setup gate (not configured)", function () {
         const j = await (await fetch(`${base}/healthz`)).json();
         expect(j).to.deep.equal({ ok: true, version: require("../package.json").version });
     });
+    it("blocks stale source archives before static serving and the setup gate", async () => {
+        const archive = path.join(__dirname, "../public/ui-source.tar.gz");
+        let created = false;
+        try {
+            fs.writeFileSync(archive, "stale source archive", { flag: "wx" });
+            created = true;
+        } catch (err) {
+            if (err.code !== "EEXIST") throw err;
+        }
+        try {
+            for (const url of ["/ui-source.tar.gz", "/ui-source.tar.gz?download=1", "/ui-source%2Etar.gz", "/%2E%2Fui-source.tar.gz", "/UI-SOURCE.TAR.GZ/"]) {
+                for (const method of ["GET", "HEAD"]) {
+                    const res = await fetch(base + url, { method, redirect: "manual" });
+                    expect(res.status, `${method} ${url}`).to.equal(404);
+                    expect(res.headers.get("cache-control")).to.equal("no-store");
+                    expect(await res.text()).not.to.include("stale source archive");
+                }
+            }
+        } finally {
+            if (created) fs.unlinkSync(archive);
+        }
+    });
     it("serves Streamable HTTP MCP before the setup gate", async () => {
         const res = await fetch(`${base}/mcp`, {
             method: "POST",
@@ -115,8 +138,19 @@ describe("setup gate (not configured)", function () {
         expect(res.headers.get("content-type")).to.include("text/event-stream");
         expect(await res.text()).to.include("get_account_summaries");
     });
+    it("blocks retired draft and source paths before the setup gate", async () => {
+        for (const url of ["/bee-drafts", "/bee-drafts/", "/bee-drafts/v1.svg", "/bee%2Ddrafts/v2.svg", "/css/main.scss"]) {
+            const res = await fetch(base + url, { redirect: "manual" });
+            expect(res.status, url).to.equal(404);
+            expect(res.headers.get("cache-control"), url).to.equal("no-store");
+        }
+        const asset = await fetch(`${base}/metribee/mark.svg`);
+        expect(asset.status).to.equal(200);
+        expect(asset.headers.get("content-type")).to.include("image/svg+xml");
+    });
     it("shows the running dashboard's HTTP URL in the setup prompt", async () => {
         const instructions = await (await fetch(`${base}/api/setup/instructions`)).json();
+        expect(instructions).not.to.have.property("projectDir");
         expect(instructions.mcpPrompt).to.include(`${base}/mcp`);
         expect(instructions.mcpPrompt).to.include("--transport http");
         expect(instructions.mcpPrompt).to.not.include("<MCP URL>");

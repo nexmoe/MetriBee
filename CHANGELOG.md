@@ -47,13 +47,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Development logo drafts and the SCSS input are kept out of the public asset directory. Docker builds exclude local UI output, private import catalogs, snapshots and desktop metadata; setup instructions no longer return the installation path.
+
+- Funnel imports read an external JSON catalog, and new properties start without site-specific presets. Existing saved funnels are preserved.
+
+- The Connection page links to the GitHub source repository instead of a source archive hosted by the application. UI builds and Docker images no longer generate or include that archive, and its former URL returns 404.
+
 - The dashboard now uses the MetriBee name throughout the interface.
 
 - Data pages use TanStack Query cache-first loading with 30-minute cache retention and session restoration for historical reports. Stale results refresh in the background and remain visible if a refresh fails; shared pages and public embeds keep server-side access checks.
 
 - Primary buttons use bee yellow with dark text in both themes.
 
-- The project as a whole is now declared AGPL-3.0-only, matching the Rybbit code it includes. The original GA4-Dashboard-MCP MIT license moves to `LICENSES/`, and a root `NOTICE` lists both sources. The Docker image and `/ui-source.tar.gz` now include `LICENSE`, `NOTICE` and `LICENSES/`.
+- The project as a whole is now declared AGPL-3.0-only, matching the Rybbit code it includes. The original GA4-Dashboard-MCP MIT license moves to `LICENSES/`, and a root `NOTICE` lists both sources. The Docker image includes `LICENSE`, `NOTICE` and `LICENSES/`.
 
 - Setup exposes the Streamable HTTP MCP URL, project client configuration, Claude Code command, verification steps and current report capabilities. Optional Search Console and supplemental OAuth instructions now appear alongside GA4 setup, sourced from SETUP.md.
 
@@ -71,7 +77,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Default Home directly reuses the original Rybbit Home and SiteCards. The GA4 realtime overview remains at `/realtime`; Sites, Globe, API quota, connection and the complete GA4 report catalog use the same copied components. User and Documentation menus are removed. Per-property homepage failures do not hide successful cards.
 
-- Main, Pages, Events, Journeys and Retention now directly reuse the Rybbit React theme, Radix controls, stat bands, Sankey and cohort visualizations in one analytics workspace. GA4 APIs remain on the Express server; original UI source licenses are preserved and downloadable.
+- Main, Pages, Events, Journeys and Retention now directly reuse the Rybbit React theme, Radix controls, stat bands, Sankey and cohort visualizations in one analytics workspace. GA4 APIs remain on the Express server; original UI source licenses are preserved in the public source repository.
 - Analytics date windows are inclusive and consistent across the workspace, with 30-day and 90-day support.
 
 - Analytics layout: property and page sidebar with a Main entry, a full-width overview, and six groups of tabbed reports. Card headers contain only tabs and export actions. Mobile stacks navigation above the reports. Report links, CSV exports and keyboard navigation remain available.

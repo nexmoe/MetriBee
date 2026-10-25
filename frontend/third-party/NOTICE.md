@@ -12,7 +12,7 @@ Native analytics pages, Sankey, retention grid, tables, buttons, icons (Lucide),
 
 The native Button's `accent` and `success` variants share MetriBee's bee-yellow primary-button tokens with dark text in both themes. Other semantic colors and native button behavior are preserved under the same AGPL-3.0-only license.
 
-The running application offers the corresponding application source at `/ui-source.tar.gz`, linked from the Connection page. It excludes credentials, caches, snapshots and installed dependencies.
+The Connection page links to the public MetriBee source repository at https://github.com/nexmoe/MetriBee. Application source archives are not generated or served by the running application.
 
 Rybbit's visitor iframe renderer (`client/src/app/widget/[siteId]/route.ts`) is adapted to Express in `controllers/rybbitWidget.ts`, preserving its card/inline markup, styles, branding and refresh behavior for existing iframe URLs. Its source hashes are recorded in `server-upstream.json`. Imported `EmbedTab` and `DashboardEmbedTab` sources are retained, while the application exposes one standalone Widgets page using the custom builder and native code-copy controls. Settings are stored locally; Google Analytics remains read-only.
 

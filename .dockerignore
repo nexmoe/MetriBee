@@ -16,11 +16,17 @@ node_modules
 **/node_modules
 dist
 coverage
+/public/ui/
+/public/ui-source.tar.gz
+/public/bee-drafts/
 
 # Runtime caches
 .cache
 **/.cache
 .data
+**/.data
+/data/snapshots/
+/scripts/data/
 
 # Repo and local tooling
 .git
@@ -29,6 +35,11 @@ coverage
 .playwright-mcp
 .vscode
 .idea
+.agents
+.claude
+.codex
+**/.DS_Store
+**/._*
 tasks
 plans
 docs

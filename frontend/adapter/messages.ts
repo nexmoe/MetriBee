@@ -107,7 +107,6 @@ export const appMessages: Record<string, Record<string, string>> = {
     Decimals: "小数位数",
     "Default chart metric": "默认图表指标",
     "Delete widget?": "删除组件？",
-    "Download UI source": "下载界面源码",
     Duplicate: "复制",
     "Edit widget": "编辑组件",
     "Enable public embeds": "启用公开嵌入",
@@ -136,6 +135,7 @@ export const appMessages: Record<string, Record<string, string>> = {
     "Inline badge": "行内徽章",
     Insights: "洞察",
     "Interface source": "界面源码",
+    "View source on GitHub": "在 GitHub 查看源码",
     Layout: "布局",
     "Live globe": "实时地球",
     "Live traffic across your GA4 properties · last 30 minutes":
@@ -298,7 +298,7 @@ const footerLabels: Record<string, string[]> = {
     "Lizenz",
     "UI von Rybbit",
     "Mit ❤️ erstellt von",
-    "UI-Quellcode herunterladen",
+    "Quellcode auf GitHub ansehen",
     "Ihre Google Analytics 4-Berichte an einem Ort.",
   ],
   fr: [
@@ -309,7 +309,7 @@ const footerLabels: Record<string, string[]> = {
     "Licence",
     "Interface par Rybbit",
     "Créé avec ❤️ par",
-    "Télécharger le code de l’interface",
+    "Voir le code source sur GitHub",
     "Vos rapports Google Analytics 4 dans un seul espace de travail.",
   ],
   es: [
@@ -320,7 +320,7 @@ const footerLabels: Record<string, string[]> = {
     "Licencia",
     "Interfaz de Rybbit",
     "Hecho con ❤️ por",
-    "Descargar código de la interfaz",
+    "Ver el código fuente en GitHub",
     "Tus informes de Google Analytics 4 en un solo espacio de trabajo.",
   ],
   pl: [
@@ -331,7 +331,7 @@ const footerLabels: Record<string, string[]> = {
     "Licencja",
     "Interfejs od Rybbit",
     "Stworzone z ❤️ przez",
-    "Pobierz kod interfejsu",
+    "Zobacz kod źródłowy na GitHub",
     "Twoje raporty Google Analytics 4 w jednym miejscu.",
   ],
   it: [
@@ -342,7 +342,7 @@ const footerLabels: Record<string, string[]> = {
     "Licenza",
     "Interfaccia di Rybbit",
     "Creato con ❤️ da",
-    "Scarica il codice dell’interfaccia",
+    "Visualizza il codice sorgente su GitHub",
     "I tuoi report Google Analytics 4 in un unico spazio di lavoro.",
   ],
   ko: [
@@ -353,7 +353,7 @@ const footerLabels: Record<string, string[]> = {
     "라이선스",
     "Rybbit 기반 UI",
     "❤️를 담아 만든",
-    "UI 소스 다운로드",
+    "GitHub에서 소스 보기",
     "Google Analytics 4 보고서를 한 작업 공간에서 확인하세요.",
   ],
   pt: [
@@ -364,7 +364,7 @@ const footerLabels: Record<string, string[]> = {
     "Licença",
     "Interface por Rybbit",
     "Feito com ❤️ por",
-    "Baixar o código da interface",
+    "Ver o código-fonte no GitHub",
     "Seus relatórios do Google Analytics 4 em um único espaço de trabalho.",
   ],
   ja: [
@@ -375,7 +375,7 @@ const footerLabels: Record<string, string[]> = {
     "ライセンス",
     "Rybbit の UI",
     "❤️を込めて制作：",
-    "UI ソースをダウンロード",
+    "GitHub でソースを表示",
     "Google Analytics 4 のレポートをひとつのワークスペースに。",
   ],
   cs: [
@@ -386,7 +386,7 @@ const footerLabels: Record<string, string[]> = {
     "Licence",
     "Rozhraní od Rybbit",
     "Vytvořeno s ❤️ od",
-    "Stáhnout zdrojový kód rozhraní",
+    "Zobrazit zdrojový kód na GitHubu",
     "Vaše přehledy Google Analytics 4 na jednom místě.",
   ],
   uk: [
@@ -397,7 +397,7 @@ const footerLabels: Record<string, string[]> = {
     "Ліцензія",
     "Інтерфейс від Rybbit",
     "Створено з ❤️ від",
-    "Завантажити код інтерфейсу",
+    "Переглянути вихідний код на GitHub",
     "Ваші звіти Google Analytics 4 в одному робочому просторі.",
   ],
 };
@@ -409,7 +409,7 @@ const footerKeys = [
   "License",
   "UI by Rybbit",
   "Made with ❤️ by",
-  "Download UI source",
+  "View source on GitHub",
   "Your Google Analytics 4 reports, in one workspace.",
 ];
 for (const [locale, labels] of Object.entries(footerLabels)) {

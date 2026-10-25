@@ -25,6 +25,18 @@ describe('Durable funnel definitions', () => {
     expect(await first.list('123')).to.have.length(1);
   });
 
+  it('starts empty and preserves imported rules and deletions across restarts', async () => {
+    const store = createFunnelStore({ directory });
+    expect(await store.list('123')).to.deep.equal([]);
+    await store.importDefinitions('123', [definition('Imported checkout')]);
+    const reopened = createFunnelStore({ directory });
+    const [saved] = await reopened.list('123');
+    expect(saved.name).to.equal('Imported checkout');
+    await reopened.remove('123', saved.id);
+    expect(await createFunnelStore({ directory }).list('123')).to.deep.equal([]);
+    expect((await store.save('123', definition('New'))).id).to.equal(2);
+  });
+
   it('preserves concurrent saves from independent handlers without duplicate IDs or lost rules', async () => {
     const a = createFunnelStore({ directory }), b = createFunnelStore({ directory });
     await Promise.all(Array.from({ length: 12 }, (_, i) => (i % 2 ? a : b).save('123', definition(`Funnel ${i}`))));
@@ -35,10 +47,10 @@ describe('Durable funnel definitions', () => {
   });
 
   it('preserves an unreadable file instead of replacing it with presets', async () => {
-    const file = path.join(directory, '987654321.json');
+    const file = path.join(directory, '123.json');
     await fs.writeFile(file, '{broken');
     let error;
-    try { await createFunnelStore({ directory }).save('987654321', definition('New')); } catch (caught) { error = caught; }
+    try { await createFunnelStore({ directory }).save('123', definition('New')); } catch (caught) { error = caught; }
     expect(error.status).to.equal(503);
     expect(await fs.readFile(file, 'utf8')).to.equal('{broken');
   });
@@ -64,7 +76,7 @@ describe('Durable funnel definitions', () => {
     await store.save('123', definition('Checkout'));
     const filtered = { ...definition('Checkout'), steps: definition('').steps.map(step => ({ ...step, hostname: 'example.com, www.example.com' })) };
     const imported = await store.importDefinitions('123', [filtered]);
-    expect(imported[0]).to.include({ name: 'Checkout (seomachine)', status: 'added' });
+    expect(imported[0]).to.include({ name: 'Checkout (imported)', status: 'added' });
     expect(await store.list('123')).to.have.length(2);
     filtered.steps = filtered.steps.map(step => ({ ...step, hostname: 'www.example.com,example.com' }));
     expect((await store.importDefinitions('123', [filtered]))[0].status).to.equal('existing');

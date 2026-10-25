@@ -66,7 +66,7 @@
   "src/app/[site]/pages/page.tsx": "1cbcb9de7397d2241231ecb716e0785267d48c8a17828f5d307c1575ec854031",
   "src/app/[site]/retention/RetentionCard.tsx": "ccdcb5d23bf0408e2321b714e4a33c111ae1c091946b601ac576fa2f3b5a7369",
   "src/app/[site]/retention/page.tsx": "a59b20866288de9a2e6fff2452f25081122473539523786c7595a8f5e0f5b10f",
-  "src/app/components/Footer.tsx": "97b3c695035ded422553b2715be8373bda09f7b88a0fe461a33ff1376a670e20",
+  "src/app/components/Footer.tsx": "719fb20499a31f78dcb5c76b48967c7a486f53f6ec6a7049e4fad9694aec2ba4",
   "src/app/globals.css": "aee2f8ac1c6fb017b4f261d721d81c9f3e078ad9fc260f82ba81a91ec88de941",
   "src/app/settings/components/MobileSidebar.tsx": "e80c37de120f0fe29b8e82b2a132a08a23abd876a5c12e7d09cbfeb0ce94d702",
   "src/app/settings/layout.tsx": "5409d3eb01338e084a6c1ac4d1ba6f16b719e85af812dba1011f7a7c06ead7d2",

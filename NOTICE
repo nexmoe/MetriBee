@@ -23,6 +23,5 @@ Rybbit
   frontend/third-party/NOTICE.md, frontend/rybbit/upstream.json and
   frontend/rybbit/adaptations.json.
 
-Corresponding source: every running instance serves the complete source of
-the version it runs at /ui-source.tar.gz (linked from the Connection page).
-It is also available at https://github.com/nexmoe/MetriBee.
+Source code is available at https://github.com/nexmoe/MetriBee,
+linked from the Connection page and application footer.
