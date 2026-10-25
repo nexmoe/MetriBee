@@ -12,6 +12,7 @@ import { CommandPalette } from "../rybbit/src/components/command-palette/Command
 import { ErrorState } from "../rybbit/src/components/ErrorState";
 import { Skeleton } from "../rybbit/src/components/ui/skeleton";
 import { Toaster } from "../rybbit/src/components/ui/sonner";
+import { VersionCheck } from "../rybbit/src/components/VersionCheck";
 import messages from "../rybbit/messages/en.json";
 import { getAppPath, getLocale, getSharedRoute, useLocation } from "./navigation";
 import { PrivacyProvider } from "./privacy/Privacy";
@@ -133,6 +134,7 @@ async function boot() {
                   <Boundary>
                     <App />
                     {!shared && !embedded && !widget && <CommandPalette />}
+                    {!shared && !embedded && !widget && <VersionCheck />}
                     <Toaster />
                   </Boundary>
                 </PrivacyProvider>

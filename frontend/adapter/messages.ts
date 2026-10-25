@@ -418,6 +418,23 @@ for (const [locale, labels] of Object.entries(footerLabels)) {
   );
 }
 
+const updateNotices: Record<string, string> = {
+  zh: "MetriBee v{latest} 已发布（当前版本 v{current}）",
+  de: "MetriBee v{latest} ist verfügbar (aktuell v{current})",
+  fr: "MetriBee v{latest} est disponible (version actuelle : v{current})",
+  es: "MetriBee v{latest} está disponible (versión actual: v{current})",
+  pl: "Dostępna jest wersja MetriBee v{latest} (obecna: v{current})",
+  it: "MetriBee v{latest} è disponibile (versione attuale: v{current})",
+  ko: "MetriBee v{latest} 버전을 사용할 수 있습니다 (현재 v{current})",
+  pt: "MetriBee v{latest} está disponível (versão atual: v{current})",
+  ja: "MetriBee v{latest} が利用可能です（現在 v{current}）",
+  cs: "Je dostupná verze MetriBee v{latest} (aktuálně v{current})",
+  uk: "Доступна MetriBee v{latest} (поточна версія: v{current})",
+};
+for (const [locale, message] of Object.entries(updateNotices)) {
+  appMessages[locale]["MetriBee v{latest} is available (you're on v{current})"] = message;
+}
+
 Object.assign(appMessages.zh, {
   "Show low traffic": "显示低流量网站",
   "Hide low traffic": "隐藏低流量网站",

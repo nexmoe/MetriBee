@@ -79,6 +79,7 @@
   "src/components/SiteSessionChart.tsx": "702249e1d401bcdf047ad05f251c903cbe144715533d9ed461cbc21052e7a475",
   "src/components/SiteSettings/SiteSettings.tsx": "890843d2eabae4b14d8b186a6a568faaa8fe0a88a6ba103806c6465f2097ae7e",
   "src/components/StandardPage.tsx": "24169c0319b98a7d74a8c8991f82b37a14b69b7c9195aabd1cd99de8482abbe4",
+  "src/components/VersionCheck.tsx": "08822e678b1ebe11bdeaa1bc46467ceee2663d5bccd32da3343792c8cabfc349",
   "src/components/command-palette/routes.ts": "331d555723abcf9bdffb748903265dd40179f30fa85ac43797c275dd0deb95c2",
   "src/components/command-palette/usePaletteCommands.tsx": "30e05e65af792737b02f2b70172b1b967e9ce1ecf347382ace76cf4b907ea121",
   "src/components/sidebar/NavigationSidebar.tsx": "8ba68af804e11b10bfd018ca818aada05600573d1f4adec8d61ec0188ff6ddfb",

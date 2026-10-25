@@ -109,6 +109,17 @@ describe("Rybbit message runtime", function () {
     }
   });
 
+  it("translates the MetriBee update notice and preserves both version numbers", () => {
+    const message = "MetriBee v{latest} is available (you're on v{current})";
+    for (const locale of locales) {
+      const catalog = require(`../frontend/rybbit/messages/${locale}.json`);
+      const t = createTranslator(locale, { ...english, ...catalog });
+      const notice = t(message, { latest: "2.2.0", current: "2.1.0" });
+      expect(notice).to.include("MetriBee").and.include("2.2.0").and.include("2.1.0");
+      if (locale !== "en") expect(notice).not.to.equal("MetriBee v2.2.0 is available (you're on v2.1.0)");
+    }
+  });
+
   it("falls back to English and preserves substitution for untranslated app messages", () => {
     const t = createTranslator("fr", {});
     expect(t("New report: {name}", { name: "GA4" })).to.equal(

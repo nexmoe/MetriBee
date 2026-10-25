@@ -4,97 +4,64 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useExtracted } from "next-intl";
 import { toast } from "@/components/ui/sonner";
+import { fetchLatestRelease, isNewer, shouldCheckVersion } from "../../../adapter/updates";
 
 import { IS_CLOUD } from "../lib/const";
-import packageJson from "../../package.json";
 import { X } from "lucide-react";
 import { Button } from "./ui/button";
 
-const VERSION_CHECK_DONE_KEY = "version-check-done";
+const CURRENT_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "";
 
 export function VersionCheck() {
   const t = useExtracted();
 
-  const [shouldCheckVersion] = useState(() => {
-    if (IS_CLOUD || typeof window === "undefined") return false;
-    return !sessionStorage.getItem(VERSION_CHECK_DONE_KEY);
-  });
+  const [enabled] = useState(() => !IS_CLOUD && shouldCheckVersion());
 
-  const { data: latestVersion } = useQuery({
-    queryKey: ["version-check"],
-    queryFn: fetchLatestVersion,
-    enabled: shouldCheckVersion,
+  const { data: release } = useQuery({
+    queryKey: ["metribee-version-check"],
+    queryFn: fetchLatestRelease,
+    enabled,
     staleTime: Infinity,
     gcTime: Infinity,
     retry: false,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   useEffect(() => {
-    if (!shouldCheckVersion || !latestVersion) return;
-
-    const current = packageJson.version;
-
-    if (latestVersion !== current && isNewer(latestVersion, current)) {
+    if (!enabled || !release) return;
+    if (isNewer(release.version, CURRENT_VERSION)) {
       toast.custom(
         toastInstance => (
           <div
+            role="status"
             style={{
               opacity: toastInstance.visible ? 1 : 0,
               transform: toastInstance.visible ? "translateY(0)" : "translateY(-8px)",
-              transition: "opacity 200ms ease, transform 200ms ease",
             }}
-            className="flex items-center gap-3 bg-white dark:bg-neutral-850 border border-neutral-150 dark:border-neutral-850 rounded-lg shadow-lg py-2 px-3 text-sm"
+            className="flex max-w-md items-center gap-3 bg-white dark:bg-neutral-850 border border-neutral-150 dark:border-neutral-850 rounded-lg shadow-lg py-2 px-3 text-sm text-neutral-900 dark:text-neutral-100 transition-[opacity,transform] duration-200 motion-reduce:transition-none"
           >
-            <span>{t("Rybbit v{latest} is available (you're on v{current})", { latest: latestVersion, current })}</span>
-            <a
-              href="https://rybbit.com/docs/managing-your-installation#updating-your-installation"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button variant="success" size="sm">
+            <span>{t("MetriBee v{latest} is available (you're on v{current})", { latest: release.version, current: CURRENT_VERSION })}</span>
+            <Button asChild variant="success" size="sm" className="shrink-0">
+              <a href={release.url} target="_blank" rel="noopener noreferrer">
                 {t("Upgrade")}
-              </Button>
-            </a>
-            <button
+              </a>
+            </Button>
+            <Button
+              variant="ghost"
+              size="smIcon"
+              aria-label={t("Close")}
               onClick={() => toast.dismiss(toastInstance.id)}
-              className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+              className="shrink-0 text-neutral-500 dark:text-neutral-400"
             >
               <X size={16} />
-            </button>
+            </Button>
           </div>
         ),
-        { duration: 10000 }
+        { id: "metribee-version-update", duration: 10000 }
       );
     }
-  }, [latestVersion, shouldCheckVersion, t]);
+  }, [release, enabled, t]);
 
   return null;
-}
-
-async function fetchLatestVersion(): Promise<string | null> {
-  if (typeof window === "undefined") return null;
-
-  sessionStorage.setItem(VERSION_CHECK_DONE_KEY, "1");
-
-  try {
-    const res = await fetch("https://app.rybbit.io/api/version");
-    if (!res.ok) return null;
-
-    const data = (await res.json()) as { version?: string };
-    return data.version ?? null;
-  } catch {
-    // Silently ignore - user may be offline or app.rybbit.io unreachable
-    return null;
-  }
-}
-
-function isNewer(latest: string, current: string): boolean {
-  const l = latest.split(".").map(Number);
-  const c = current.split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    if ((l[i] ?? 0) > (c[i] ?? 0)) return true;
-    if ((l[i] ?? 0) < (c[i] ?? 0)) return false;
-  }
-  return false;
 }

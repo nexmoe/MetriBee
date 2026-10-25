@@ -53,6 +53,8 @@ If Docker is not available, ask me before falling back to Node.js 22+ and pnpm (
 
 Want to set it up by hand, run it from source, or put it online behind Cloudflare Access or Tailscale? See [SETUP.md](SETUP.md). Every feature is documented in [docs/features.md](docs/features.md).
 
+The workspace checks [GitHub Releases](https://github.com/nexmoe/MetriBee/releases) once per browser tab session. A newer version shows a dismissible notice linking to that release for a manual upgrade. Unavailable checks are skipped silently.
+
 ---
 
 ## Screenshots
