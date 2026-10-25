@@ -8,11 +8,24 @@ const { version } = require("../../package.json");
 
 const list = (value) => (value || "").split(",").map((item) => item.trim()).filter(Boolean);
 
+function publicHostname(value) {
+	if (!value?.trim()) return [];
+	try {
+		const url = new URL(value.trim());
+		if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) throw new Error();
+		return [url.hostname];
+	} catch {
+		throw new Error("MCP_PUBLIC_URL must be an absolute http:// or https:// URL without credentials.");
+	}
+}
+
 /** Mount at /mcp before the dashboard's body parser and setup/boot gates. */
 function createMcpEndpoint({ env = process.env } = {}) {
+	// Trust only configured addresses, never a request's Host or forwarded headers.
+	const publicHosts = publicHostname(env.MCP_PUBLIC_URL);
 	const app = createMcpExpressApp({
-		allowedHosts: [...localhostAllowedHostnames(), ...list(env.MCP_ALLOWED_HOSTS)],
-		allowedOrigins: [...localhostAllowedOrigins(), ...list(env.MCP_ALLOWED_ORIGINS)],
+		allowedHosts: [...localhostAllowedHostnames(), ...publicHosts, ...list(env.MCP_ALLOWED_HOSTS)],
+		allowedOrigins: [...localhostAllowedOrigins(), ...publicHosts, ...list(env.MCP_ALLOWED_ORIGINS)],
 	});
 	// Origin has already been validated by the SDK before reflecting it for browser clients.
 	app.use(cors({ origin: true, methods: ["GET", "POST", "DELETE"], exposedHeaders: ["Mcp-Session-Id", "MCP-Protocol-Version"] }));

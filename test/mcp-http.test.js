@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const { once } = require("node:events");
 const { spawn } = require("node:child_process");
 const { Client, StreamableHTTPClientTransport } = require("@modelcontextprotocol/client");
-const { startStandalone } = require("../mcp-server/lib/http");
+const { createMcpEndpoint, startStandalone } = require("../mcp-server/lib/http");
 const cache = require("../mcp-server/lib/cache");
 const { NEW_TOOL_NAMES } = require("../mcp-server/lib/tools");
 
@@ -14,6 +14,18 @@ const TOOLS = [
 ];
 const HEADERS = { "Content-Type": "application/json", Accept: "application/json, text/event-stream" };
 const payload = (result) => JSON.parse(result.content[0].text);
+
+// node:http preserves custom Host headers for proxy validation tests.
+function rawPost(url, headers) {
+	return new Promise((resolve, reject) => {
+		const req = require("node:http").request(url, { method: "POST", headers: { ...HEADERS, ...headers } }, (res) => {
+			res.resume();
+			res.on("end", () => resolve(res.statusCode));
+		});
+		req.on("error", reject);
+		req.end(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }));
+	});
+}
 
 describe("MCP Streamable HTTP", function () {
 	this.timeout(10000);
@@ -198,21 +210,57 @@ describe("MCP Streamable HTTP", function () {
 	});
 
 	it("rejects unapproved hosts and origins and admits configured proxy hostnames", async () => {
-		const request = { jsonrpc: "2.0", id: 1, method: "tools/list" };
-		// fetch ignores custom Host headers; node:http sends the actual header under test.
-		const rawPost = (headers) => new Promise((resolve, reject) => {
-			const req = require("node:http").request(mcp.url, { method: "POST", headers: { ...HEADERS, ...headers } }, (res) => {
-				res.resume();
-				res.on("end", () => resolve(res.statusCode));
-			});
-			req.on("error", reject);
-			req.end(JSON.stringify(request));
-		});
 		for (const headers of [{ Host: "unapproved.example" }, { Origin: "https://unapproved.example" }, { Origin: "null" }]) {
-			assert.equal(await rawPost(headers), 403, JSON.stringify(headers));
+			assert.equal(await rawPost(mcp.url, headers), 403, JSON.stringify(headers));
 		}
 		for (const headers of [{ Origin: "http://localhost:5483" }, { Host: "ga4.example.com:443", Origin: "https://client.example.com:8443" }]) {
-			assert.equal(await rawPost(headers), 200, JSON.stringify(headers));
+			assert.equal(await rawPost(mcp.url, headers), 200, JSON.stringify(headers));
+		}
+	});
+
+	for (const extras of [{}, { MCP_ALLOWED_HOSTS: " extra.example, second.example ", MCP_ALLOWED_ORIGINS: "client.example" }]) {
+		it(`allows the public URL hostname with ${Object.keys(extras).length ? "additional allowlists" : "no other proxy configuration"}`, async () => {
+			const proxy = await startStandalone({ env: {
+				MCP_PORT: "0", MCP_PUBLIC_URL: " https://MetriBee.102417.xyz:8443/mcp ", ...extras,
+			} });
+			try {
+				for (const headers of [
+					{ Host: "metribee.102417.xyz" },
+					{ Host: "metribee.102417.xyz:8443", Origin: "https://metribee.102417.xyz:8443" },
+					{ Origin: "http://localhost:5483" },
+					...(extras.MCP_ALLOWED_HOSTS ? [{ Host: "extra.example", Origin: "https://client.example" }, { Host: "second.example" }] : []),
+				]) {
+					assert.equal(await rawPost(proxy.url, headers), 200, JSON.stringify(headers));
+				}
+				for (const headers of [
+					{ Host: "unapproved.example" },
+					{ Host: "metribee.102417.xyz.attacker.example" },
+					{ Host: "metribee.102417.xyz", Origin: "https://unapproved.example" },
+					{ Origin: "null" },
+					{ Host: "unapproved.example", "X-Forwarded-Host": "metribee.102417.xyz" },
+					...(!extras.MCP_ALLOWED_HOSTS ? [{ Host: "extra.example" }, { Origin: "https://client.example" }] : []),
+				]) {
+					assert.equal(await rawPost(proxy.url, headers), 403, JSON.stringify(headers));
+				}
+				const response = await fetch(proxy.url, { method: "OPTIONS", headers: {
+					Origin: "https://metribee.102417.xyz:8443", "Access-Control-Request-Method": "POST",
+				} });
+				assert.equal(response.status, 204);
+				assert.equal(response.headers.get("access-control-allow-origin"), "https://metribee.102417.xyz:8443");
+				await response.text();
+			} finally {
+				await proxy.close();
+			}
+		});
+	}
+
+	it("rejects malformed public URLs before starting the endpoint without exposing their contents", () => {
+		for (const url of ["not-a-url", "//ga4.example.com/mcp", "ftp://ga4.example.com/mcp", "file:///mcp", "https://user:secret@ga4.example.com/mcp"]) {
+			assert.throws(() => createMcpEndpoint({ env: { MCP_PUBLIC_URL: url } }), (error) => {
+				assert.match(error.message, /MCP_PUBLIC_URL must be an absolute http:\/\/ or https:\/\/ URL without credentials/);
+				assert.ok(!error.message.includes(url));
+				return true;
+			});
 		}
 	});
 

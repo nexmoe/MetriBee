@@ -61,17 +61,23 @@ inside Streamable HTTP, with no sticky sessions or `Mcp-Session-Id` required.
 2025 clients can still initialize and call tools. Legacy session GET/DELETE
 requests return 405; no persistent GET event stream is required.
 
-Host and Origin validation allow localhost by default. For a private proxy at
-`ga4.example.com`, set `MCP_ALLOWED_HOSTS=ga4.example.com`. If browser clients
-connect from that hostname, also set `MCP_ALLOWED_ORIGINS=ga4.example.com`.
-These lists add comma-separated hostnames without ports; requests without Origin
-are accepted. The endpoint has the same private-access requirements as the
+Host and Origin validation allow localhost by default. For a private proxy, set
+only `MCP_PUBLIC_URL=https://ga4.example.com/mcp` and restart the server. Its
+hostname is automatically allowed for both request Hosts and browser Origins;
+the setup connection prompt displays the same public URL. With Docker Compose,
+recreate the container with `docker compose up -d --force-recreate dashboard`
+to load changed environment values.
+
+Advanced deployments can use `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS` to add
+extra comma-separated hostnames without ports. They extend the localhost and
+public hostname defaults; other hosts and origins remain blocked. Requests
+without Origin are accepted. The endpoint has the same private-access requirements as the
 dashboard: use your existing authenticated proxy. Preserve request/response
 streaming through the proxy (`X-Accel-Buffering: no` is sent).
 
-Set `MCP_PUBLIC_URL=https://ga4.example.com/mcp` to show the public URL in the
-setup connection prompt when the proxy terminates HTTPS. `MCP_PUBLIC_URL` only
-changes that prompt; it does not change the listening address or path.
+`MCP_PUBLIC_URL` must be an absolute HTTP or HTTPS URL without credentials. It
+does not change the listening address or path. The public hostname is read from
+configuration, never learned from a request's Host or forwarded headers.
 
 References: [HTTP serving](https://ts.sdk.modelcontextprotocol.io/v2/serving/http.html),
 [Express integration](https://ts.sdk.modelcontextprotocol.io/v2/serving/express.html).

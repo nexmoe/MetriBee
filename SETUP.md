@@ -104,7 +104,7 @@ If you cannot run shell commands or a browser, give me these steps one at a time
 
 The dashboard serves Streamable HTTP MCP at `http://localhost:5483/mcp` using the latest stable TypeScript SDK v2. Start it with `pnpm start` (or Docker); no separate MCP process is needed. Paste this prompt into your AI tool, or run its command yourself. Replace `<MCP URL>` with the dashboard's `/mcp` URL (the `/setup` page fills it in).
 
-The setup page provides a copyable URL, project-scoped `.mcp.json` and Claude Code command. Use a URL reachable from the machine running the AI client; `localhost` refers to that machine. When using a reverse proxy, set `MCP_PUBLIC_URL` to its externally reachable `/mcp` URL and restart the dashboard.
+The setup page provides a copyable URL, project-scoped `.mcp.json` and Claude Code command. Use a URL reachable from the machine running the AI client; `localhost` refers to that machine. When using a reverse proxy, set only `MCP_PUBLIC_URL` to its externally reachable `/mcp` URL (for example `https://ga4.example.com/mcp`) and restart the dashboard. Its hostname is automatically allowed for MCP requests and browser origins, and the setup page displays that URL. With Docker Compose, recreate the container with `docker compose up -d --force-recreate dashboard` to load changed environment values.
 
 <!-- mcp-features:start -->
 1. **Analytics.** Overview, pages, events, journeys, retention, acquisition, audience, revenue and traffic diagnostics use the dashboard's reports and caches.
@@ -136,7 +136,7 @@ Then list the tools, run get_setup_status and get_capabilities, and use list_pro
 ```
 <!-- mcp:end -->
 
-For an MCP-only process, run `pnpm mcp` and use `http://127.0.0.1:5484/mcp` instead. `MCP_HOST` and `MCP_PORT` configure only that process. Both entry points share Google authentication, caches and quota guards. For a reverse proxy, add its hostname to `MCP_ALLOWED_HOSTS`; allow browser origins with `MCP_ALLOWED_ORIGINS`. Both lists accept comma-separated hostnames without ports. Set `MCP_PUBLIC_URL` to the externally reachable `/mcp` URL for the setup prompt. Keep the app behind your existing private access proxy.
+For an MCP-only process, run `pnpm mcp` and use `http://127.0.0.1:5484/mcp` instead. `MCP_HOST` and `MCP_PORT` configure only that process. Both entry points share Google authentication, caches and quota guards, and both use `MCP_PUBLIC_URL` to allow the public hostname. Advanced deployments can add extra hostnames with `MCP_ALLOWED_HOSTS` and extra browser origin hostnames with `MCP_ALLOWED_ORIGINS`; these extend the defaults and the public hostname. Both lists accept comma-separated hostnames without ports. Localhost remains allowed, requests without Origin are accepted, and other hosts and origins remain blocked. `MCP_PUBLIC_URL` must be an absolute HTTP or HTTPS URL without credentials; it does not change the listening address or endpoint path. Keep the app behind your existing private access proxy.
 
 ## Hosting publicly
 
