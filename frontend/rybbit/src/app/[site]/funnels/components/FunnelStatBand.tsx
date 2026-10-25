@@ -24,6 +24,7 @@ export interface FunnelStatBandProps {
   /** Whether a comparison period is selected: it decides what the third cell reports. */
   comparisonEnabled: boolean;
   isLoading: boolean;
+  isLoadingComparison?: boolean;
 }
 
 /** How the saved funnels did as a set: how many, how much traffic they see, and the two extremes. */
@@ -33,6 +34,7 @@ export function FunnelStatBand({
   previousSessionsEntered,
   comparisonEnabled,
   isLoading,
+  isLoadingComparison = false,
 }: FunnelStatBandProps) {
   const t = useExtracted();
   const typeLabels = useStepTypeLabels();
@@ -55,6 +57,7 @@ export function FunnelStatBand({
   const thirdCell: StatBandCell = comparisonEnabled
     ? {
         id: "gain",
+        isLoading: isLoading || isLoadingComparison,
         icon: <TrendingUp className="h-3 w-3" />,
         label: t("Biggest gain"),
         value: gain ? gain.row.funnel.name : hasComparison ? t("None") : "—",

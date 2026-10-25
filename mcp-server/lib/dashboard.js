@@ -387,6 +387,10 @@ function createDashboardService(deps = {}) {
 				adminClient: () => admin,
 			});
 			const funnels = createFunnels({ properties: scopedProperties, now, client: () => alpha, store,
+				readEntry: async (namespace, key) => {
+					const data = await observedRead(namespace, key);
+					return data ? { data, cachedAt: data.fetchedAt } : null;
+				}, write, backgroundRefresh: false,
 				events: async (propertyId, dateRange) => {
 					const result = await run({ propertyId, dateRange, dimensions: [{ name: 'eventName' }], metrics: [{ name: 'totalUsers' }],
 						limit: 100, orderBys: [{ metric: { metricName: 'totalUsers' }, desc: true }] });

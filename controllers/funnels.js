@@ -2,12 +2,25 @@ const { createHash } = require('node:crypto');
 const { getGA4DataClient, getGA4AlphaDataClient } = require('./ga4Service');
 const { filtersFor, windowFor } = require('./rybbit');
 const { createFunnelStore } = require('../lib/funnelStore');
+const { cacheGetEntry, cacheSet } = require('./reportCache');
 
 const MAX_STEPS = 10;
 const MAX_VALUE = 500;
 const MAX_SUMMARY_FUNNELS = 50;
 const EVENT_NAME = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
 const failure = (message, status = 400) => Object.assign(new Error(message), { status });
+const publicError = error => /TLS|socket|network|ETIMEDOUT|ECONN|ENOTFOUND|EAI_AGAIN|DEADLINE_EXCEEDED|fetch failed/i.test(error.message || '') || error.code === 4
+  ? 'Could not connect to Google Analytics. Please try again.' : error.message || 'GA4 funnel report unavailable.';
+function reportStatus(reports) {
+  const states = new Set(reports.map(report => report.cached ? 'cached' : 'fresh'));
+  return {
+    fetchedAt: reports.length ? reports.map(report => report.fetchedAt).sort()[0] : null,
+    cacheStatus: states.size > 1 ? 'mixed' : states.values().next().value || 'fresh',
+    ...(reports.some(report => report.revalidating) ? {
+      revalidating: true, revalidateUntil: Math.max(...reports.map(report => report.revalidateUntil || 0)),
+    } : {}),
+  };
+}
 
 // GA4 funnel exploration accepts these dimensions on a funnel step or as the
 // report-level dimensionFilter. Anything else is refused rather than dropped.
@@ -183,7 +196,9 @@ function createFunnels(deps = {}) {
     }, { timeout: 20000, retry: null });
     return (response.rows || []).map(row => ({ eventName: row.dimensionValues?.[0]?.value || '', users: Number(row.metricValues?.[0]?.value) || 0 })).filter(row => row.eventName && row.eventName !== '(not set)');
   });
-  const pending = new Map();
+  const readEntry = deps.readEntry || cacheGetEntry;
+  const write = deps.write || cacheSet;
+  const pending = new Map(), refreshing = new Map(), retryAfter = new Map();
   const store = deps.store || createFunnelStore();
   const waiting = [];
   let active = 0;
@@ -199,35 +214,52 @@ function createFunnels(deps = {}) {
     const dimensionFilter = funnelFilters(query.filters);
     const requestSteps = steps.map(({ filterExpression, name }) => ({ name, filterExpression }));
     const key = createHash('sha256').update(JSON.stringify({ property: property.id, range, steps: requestSteps, dimensionFilter })).digest('hex');
-    if (pending.has(key)) return pending.get(key);
-    const promise = limited(async () => {
-      const [response] = await client().runFunnelReport({
-        property: `properties/${property.id}`,
-        dateRanges: [{ startDate: range.startDate, endDate: range.endDate }],
-        funnel: { isOpenFunnel: false, steps: requestSteps },
-        ...(dimensionFilter ? { dimensionFilter } : {}),
-        limit: steps.length,
-        returnPropertyQuota: true,
-      }, { timeout: 20000, retry: null });
-      const rows = stepsFromTable(response.funnelTable, steps);
-      const metadata = response.funnelTable?.metadata?.samplingMetadatas || [];
-      const payload = {
-        data: rows,
-        source: 'ga4-runFunnelReport',
-        metric: 'activeUsers',
-        ordered: true,
-        openFunnel: false,
-        startDate: range.startDate,
-        endDate: range.endDate,
-        sampled: metadata.length > 0,
-        sampling: metadata.map(item => ({ samplesRead: Number(item.samplesReadCount) || 0, space: Number(item.samplingSpaceSize) || 0 })),
-        cached: false,
-        fetchedAt: now().toISOString(),
+    // Rules, resolved calendar dates, property and audience all participate in the
+    // key. Summaries and expanded/editor analyses reuse the same ordered report.
+    const background = deps.backgroundRefresh !== false;
+    const hit = await readEntry('funnel', key, { allowStale: background });
+    const refresh = () => {
+      if (!refreshing.has(key)) {
+        const promise = limited(async () => {
+          const [response] = await client().runFunnelReport({
+            property: `properties/${property.id}`,
+            dateRanges: [{ startDate: range.startDate, endDate: range.endDate }],
+            funnel: { isOpenFunnel: false, steps: requestSteps },
+            ...(dimensionFilter ? { dimensionFilter } : {}),
+            limit: steps.length,
+            returnPropertyQuota: true,
+          }, { timeout: 20000, retry: null });
+          const rows = stepsFromTable(response.funnelTable, steps);
+          const metadata = response.funnelTable?.metadata?.samplingMetadatas || [];
+          const payload = {
+            data: rows, source: 'ga4-runFunnelReport', metric: 'activeUsers',
+            ordered: true, openFunnel: false, startDate: range.startDate, endDate: range.endDate,
+            sampled: metadata.length > 0,
+            sampling: metadata.map(item => ({ samplesRead: Number(item.samplesReadCount) || 0, space: Number(item.samplingSpaceSize) || 0 })),
+            cached: false, fetchedAt: now().toISOString(),
+          };
+          await write('funnel', key, payload, { cachedAt: payload.fetchedAt });
+          retryAfter.delete(key);
+          return payload;
+        }).catch(error => {
+          for (const [key, until] of retryAfter) if (until <= now().getTime()) retryAfter.delete(key);
+          retryAfter.set(key, now().getTime() + 60_000);
+          throw error;
+        }).finally(() => refreshing.delete(key));
+        refreshing.set(key, { promise, until: now().getTime() + 60_000 });
+      }
+      return refreshing.get(key);
+    };
+    if (hit && (!hit.stale || background)) {
+      const updating = hit.stale && now().getTime() >= (retryAfter.get(key) || 0) ? refresh() : null;
+      // Background failures retain the last successful report and pause refresh
+      // for a minute. Polling never renews the original fetch timestamp.
+      updating?.promise.catch(() => {});
+      return { ...hit.data, cached: true,
+        ...(updating ? { revalidating: true, revalidateUntil: updating.until } : {}),
       };
-      return payload;
-    }).finally(() => pending.delete(key));
-    pending.set(key, promise);
-    return promise;
+    }
+    return refresh().promise;
   }
 
   async function summarize(property, query) {
@@ -242,43 +274,51 @@ function createFunnels(deps = {}) {
         || ids.some(id => !definitions.some(funnel => funnel.id === id))) throw failure('Choose saved funnel IDs belonging to this property.');
     }
     const candidates = ids ? definitions.filter(funnel => ids.includes(funnel.id)) : definitions;
-    const selected = candidates.slice(0, MAX_SUMMARY_FUNNELS).map(funnel => ({ ...funnel, steps: normalizeSteps(funnel.steps) }));
+    const selected = candidates.slice(0, MAX_SUMMARY_FUNNELS);
     const key = 'summary:' + createHash('sha256').update(JSON.stringify({ property: property.id, range, dimensionFilter, selected })).digest('hex');
     if (pending.has(key)) return pending.get(key);
     const promise = (async () => {
-      const reports = [];
-      // Keep each request's work bounded and stop scheduling on the first failed batch.
-      for (let offset = 0; offset < selected.length; offset += 2) {
-        reports.push(...await Promise.all(selected.slice(offset, offset + 2).map(funnel => analyze(property, query, funnel.steps))));
-      }
-      const firstSteps = [...new Map(selected.map(funnel => [JSON.stringify(funnel.steps[0].filterExpression), funnel.steps[0]])).values()];
-      let entries = reports[0]?.data[0]?.users || 0;
-      if (firstSteps.length > 1) {
-        // Count the union in GA4. Adding each funnel's entrants would count people twice.
-        // Only this closed funnel's first step is used; its second step keeps the request
-        // a normal two-step funnel and does not change who entered the first step.
-        const filterExpression = { orGroup: { expressions: firstSteps.map(step => step.filterExpression) } };
-        const union = await analyze(property, query, [
-          { name: 'Any saved funnel', filterExpression },
-          { name: 'Repeat entry', filterExpression },
-        ]);
-        reports.push(union);
-        entries = union.data[0].users;
-      }
-      const fetchedAt = reports.length ? reports.map(report => report.fetchedAt).sort()[0] : now().toISOString();
+      // Each analysis uses the shared three-request limit. A slow or broken
+      // funnel must not discard successful rows or prevent later ones loading.
+      const results = await Promise.allSettled(selected.map(async funnel => analyze(property, query, normalizeSteps(funnel.steps))));
+      const reports = [], funnels = [], errors = [];
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          errors.push({ funnel_id: selected[index].id, error: publicError(result.reason) });
+          return;
+        }
+        reports.push(result.value);
+        funnels.push({ funnel_id: selected[index].id,
+          steps: result.value.data.map(step => ({ sessions: step.users, median_seconds_to_next: null })),
+          median_seconds_to_convert: null,
+        });
+      });
+      // If nothing loaded, preserve the normal HTTP error/retry behavior.
+      if (selected.length && !reports.length) throw results.find(result => result.status === 'rejected').reason;
+      let entries = selected.length ? undefined : 0;
+      try {
+        const firstSteps = [...new Map(selected.map(funnel => {
+          const step = normalizeSteps(funnel.steps)[0];
+          return [JSON.stringify(step.filterExpression), step];
+        })).values()];
+        if (firstSteps.length === 1) entries = reports[0]?.data[0]?.users;
+        if (firstSteps.length > 1) {
+          // Count distinct entrants in GA4; summing each funnel double-counts users.
+          const filterExpression = { orGroup: { expressions: firstSteps.map(step => step.filterExpression) } };
+          const union = await analyze(property, query, [
+            { name: 'Any saved funnel', filterExpression }, { name: 'Repeat entry', filterExpression },
+          ]);
+          reports.push(union);
+          entries = union.data[0].users;
+        }
+      } catch (error) { errors.push({ error: publicError(error) }); }
       return {
         data: {
-          users_entered_any: entries,
-          funnels: selected.map((funnel, index) => ({
-            funnel_id: funnel.id,
-            steps: reports[index].data.map(step => ({ sessions: step.users, median_seconds_to_next: null })),
-            median_seconds_to_convert: null,
-          })),
+          users_entered_any: entries, funnels, errors,
           truncated: candidates.length > selected.length,
-          sampled: reports.some(report => report.sampled),
-          metric: 'activeUsers',
+          sampled: reports.some(report => report.sampled), metric: 'activeUsers',
         },
-        reportStatus: { fetchedAt, cacheStatus: 'fresh' },
+        reportStatus: reportStatus(reports),
       };
     })().finally(() => pending.delete(key));
     pending.set(key, promise);
@@ -334,11 +374,10 @@ function createFunnels(deps = {}) {
       if (req.method !== 'POST' || action !== 'analyze') throw failure('This GA4 funnel endpoint only analyzes ordered steps.', 405);
       const steps = normalizeSteps(req.body?.steps);
       const result = await analyze(property, req.query, steps);
-      return res.json({ ...result, reportStatus: { fetchedAt: result.fetchedAt || null, cacheStatus: result.cached ? 'cached' : 'fresh' } });
+      return res.json({ ...result, reportStatus: reportStatus([result]) });
     } catch (error) {
       const status = error.status || (error.code === 7 ? 403 : error.code === 8 ? 429 : 502);
-      const network = !error.status && (/TLS|socket|network|ETIMEDOUT|ECONN|ENOTFOUND|EAI_AGAIN|DEADLINE_EXCEEDED|fetch failed/i.test(error.message || '') || error.code === 4);
-      return res.status(status).json({ error: network ? 'Could not connect to Google Analytics. Please try again.' : error.message || 'GA4 funnel report unavailable.' });
+      return res.status(status).json({ error: publicError(error) });
     }
   };
 }

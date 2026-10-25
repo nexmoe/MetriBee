@@ -79,7 +79,9 @@ export interface FunnelSummary {
 
 export interface FunnelSummariesResponse {
   // Distinct GA4 active users who reached the first step of any summarized funnel.
-  users_entered_any: number;
+  users_entered_any?: number;
+  // Successful rows remain available when another funnel or the union fails.
+  errors?: { funnel_id?: number; error: string }[];
   sampled?: boolean;
   funnels: FunnelSummary[];
   // The site has more saved funnels than one summary covers

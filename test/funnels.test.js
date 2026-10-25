@@ -66,7 +66,103 @@ describe('GA4 summaries for the native Rybbit funnels page', () => {
     expect(calls).to.equal(1);
     expect(maximum).to.equal(1);
     await invoke(handle, input);
-    expect(calls).to.equal(2); // Completed reports are not persisted or memoized by the server.
+    expect(calls).to.equal(1); // Completed reports are shared across page visits.
+  });
+
+  it('preserves successful funnels and union entrants when one funnel fails', async () => {
+    let calls = 0;
+    const handle = handler({
+      store: { list: async () => [definition(1), definition(2, 'broken'), definition(3, 'session_start')] },
+      client: () => ({ runFunnelReport: async request => {
+        calls++;
+        if (request.funnel.steps[0].filterExpression.funnelEventFilter?.eventName === 'broken') throw new Error('TLS socket disconnected');
+        return [response(request)];
+      } }),
+    });
+    const input = { method: 'GET', action: 'summary', query: dates };
+    const result = await invoke(handle, input);
+    expect(result.status).to.equal(200);
+    expect(result.body.data.funnels.map(funnel => funnel.funnel_id)).to.deep.equal([1, 3]);
+    expect(result.body.data.users_entered_any).to.equal(80);
+    expect(result.body.data.errors.map(item => item.funnel_id)).to.deep.equal([2]);
+    await invoke(handle, input);
+    expect(calls).to.equal(5); // Only the failed analysis is retried.
+  });
+
+  it('keeps row metrics when the distinct entrant union fails, without inventing a total', async () => {
+    const handle = handler({
+      store: { list: async () => [definition(1), definition(2, 'session_start')] },
+      client: () => ({ runFunnelReport: async request => {
+        if (request.funnel.steps[0].filterExpression.orGroup) throw new Error('TLS socket disconnected');
+        return [response(request)];
+      } }),
+    });
+    const result = await invoke(handle, { method: 'GET', action: 'summary', query: dates });
+    expect(result.status).to.equal(200);
+    expect(result.body.data.funnels).to.have.length(2);
+    expect(result.body.data.users_entered_any).to.equal(undefined);
+    expect(result.body.data.errors).to.have.length(1);
+  });
+
+  it('serves stale figures immediately, deduplicates refreshes and preserves fetch time on failures', async () => {
+    let entry, complete, calls = 0;
+    let clock = new Date('2026-10-22T00:00:00Z');
+    const handle = handler({
+      now: () => clock,
+      store: { list: async () => [definition(1)] },
+      readEntry: async () => entry,
+      write: async (_namespace, _key, data) => { entry = { data, cachedAt: data.fetchedAt }; },
+      client: () => ({ runFunnelReport: async request => {
+        calls++;
+        if (calls > 1) await new Promise((resolve, reject) => { complete = { resolve, reject }; });
+        return [response(request, [80 + calls, 20])];
+      } }),
+    });
+    const input = { method: 'GET', action: 'summary', query: dates };
+    const first = await invoke(handle, input);
+    entry.stale = true;
+    clock = new Date('2026-10-22T00:06:00Z');
+    const stale = await invoke(handle, input);
+    expect(stale.body.data.users_entered_any).to.equal(81);
+    expect(stale.body.reportStatus).to.include({ cacheStatus: 'cached', revalidating: true, fetchedAt: first.body.reportStatus.fetchedAt });
+    await invoke(handle, input);
+    expect(calls).to.equal(2);
+    complete.reject(new Error('TLS socket disconnected'));
+    await new Promise(resolve => setImmediate(resolve));
+    const failed = await invoke(handle, input);
+    expect(calls).to.equal(2); // Failed background refresh is in cooldown.
+    expect(failed.body.data.users_entered_any).to.equal(81);
+    expect(failed.body.reportStatus.revalidating).to.equal(undefined);
+    clock = new Date('2026-10-22T00:08:00Z');
+    await invoke(handle, input);
+    expect(calls).to.equal(3);
+    complete.resolve();
+    await new Promise(resolve => setImmediate(resolve));
+    const refreshed = await invoke(handle, input);
+    expect(refreshed.body.data.users_entered_any).to.equal(83);
+    expect(refreshed.body.reportStatus.fetchedAt).to.equal(clock.toISOString());
+    expect(refreshed.body.reportStatus.revalidating).to.equal(undefined);
+  });
+
+  it('shares cached analysis with summaries but isolates dates, filters, properties and edited steps', async () => {
+    let calls = 0;
+    const records = [definition(1)];
+    const handle = handler({
+      properties: async () => ({ properties: [{ id: '123' }, { id: '456' }] }),
+      store: { list: async () => records },
+      client: () => ({ runFunnelReport: async request => { calls++; return [response(request)]; } }),
+    });
+    const input = { method: 'GET', action: 'summary', query: dates };
+    await invoke(handle, input);
+    const analyzed = await invoke(handle, { query: dates, body: { steps: records[0].steps } });
+    expect(analyzed.body.cached).to.equal(true);
+    expect(calls).to.equal(1);
+    await invoke(handle, { ...input, propertyId: '456' });
+    await invoke(handle, { ...input, query: { ...dates, start_date: '2026-10-02' } });
+    await invoke(handle, { ...input, query: { ...dates, filters: JSON.stringify([{ parameter: 'device_type', type: 'equals', value: ['mobile'] }]) } });
+    records[0].steps[1].value = 'refund';
+    await invoke(handle, input);
+    expect(calls).to.equal(5);
   });
 
   it('caps summary work, bounds concurrency, and reports sampling without inventing step times', async () => {
@@ -116,9 +212,12 @@ describe('GA4 summaries for the native Rybbit funnels page', () => {
 });
 
 function handler(overrides = {}) {
+  const cached = new Map();
   return createFunnels({
     properties: async () => ({ properties: [{ id: '123', site: 'Example', timeZone: 'UTC' }] }),
-    read: async () => null, write: async () => {}, now: () => new Date('2026-10-22T00:00:00Z'),
+    readEntry: async (_namespace, key) => cached.get(key) || null,
+    write: async (_namespace, key, data) => { cached.set(key, { data, cachedAt: data.fetchedAt }); },
+    now: () => new Date('2026-10-22T00:00:00Z'),
     client: () => ({ runFunnelReport: async () => [{ funnelTable: table([]) }] }),
     events: async () => [{ eventName: 'session_start', users: 10 }],
     ...overrides,
@@ -204,8 +303,8 @@ describe('GA4 ordered funnels', () => {
   });
 
   it('applies the selected dates and audience, deduplicating identical analyses', async () => {
-    let calls = 0, writes = 0, request;
-    const handle = handler({ write: async () => { writes++; }, client: () => ({ runFunnelReport: async value => {
+    let calls = 0, request;
+    const handle = handler({ client: () => ({ runFunnelReport: async value => {
       calls++; request = value;
       await new Promise(resolve => setTimeout(resolve, 5));
       return [{ funnelTable: table([
@@ -217,12 +316,12 @@ describe('GA4 ordered funnels', () => {
       body: { steps: [{ type: 'event', value: 'session_start' }, { type: 'event', value: 'purchase' }] } };
     const results = await Promise.all([invoke(handle, input), invoke(handle, input)]);
     expect(results.map(result => result.status)).to.deep.equal([200, 200]);
-    expect(calls).to.equal(1); expect(writes).to.equal(0);
+    expect(calls).to.equal(1);
     expect(request.dateRanges).to.deep.equal([{ startDate: '2026-10-01', endDate: '2026-10-22' }]);
     expect(request.dimensionFilter.filter).to.deep.include({ fieldName: 'sessionDefaultChannelGroup' });
     expect(request.dimensionFilter.filter.stringFilter.value).to.equal('AI Assistant');
     await invoke(handle, input);
-    expect(calls).to.equal(2);
+    expect(calls).to.equal(1);
     expect(results[0].headers['Cache-Control']).to.equal('no-store');
   });
 

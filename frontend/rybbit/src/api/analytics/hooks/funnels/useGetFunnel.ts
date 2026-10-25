@@ -22,6 +22,7 @@ export function useGetFunnel(config?: FunnelRequest, debounce?: boolean) {
     customFilters: filteredFilters,
     body: () => ({ steps: configToUse?.steps ?? [], name: configToUse?.name }),
     enabled: !!configToUse,
+    staleTime: 5 * 60_000,
   });
 }
 

@@ -1,6 +1,7 @@
 // MetriBee-specific strings supplement Rybbit's original 12 message catalogs.
 export const appMessages: Record<string, Record<string, string>> = {
   zh: {
+    "Some funnel data could not be loaded. Available results are shown.": "部分漏斗数据加载失败，已显示可用结果。",
     "MetriBee home": "MetriBee 首页",
     "Your Google Analytics 4 reports, in one workspace.":
       "在一个工作空间查看所有 Google Analytics 4 报告。",

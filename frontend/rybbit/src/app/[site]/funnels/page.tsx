@@ -15,6 +15,7 @@ import { NothingFound } from "@/components/NothingFound";
 import { AnalysisBar } from "@/components/site/AnalysisBar";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCanOnSite } from "@/hooks/usePermissions";
 import { useSetPageTitle } from "@/hooks/useSetPageTitle";
@@ -60,16 +61,19 @@ export default function FunnelsPage() {
   const search = useSearchParams().toString();
 
   const { data: funnels, isLoading, error } = useGetFunnels(site);
-  const current = useGetFunnelSummaries();
-  const previous = useGetFunnelSummaries({ periodTime: "previous" });
+  const hasFunnels = !!funnels?.length;
+  const current = useGetFunnelSummaries({ enabled: hasFunnels });
+  // Give current-period GA4 work priority over the comparison. Cached current
+  // figures can render immediately while the comparison loads independently.
+  const previous = useGetFunnelSummaries({ periodTime: "previous", enabled: hasFunnels && !current.isLoading });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<FunnelSort>("entered");
   // Null until someone opens or closes a row: until then the first funnel is open.
   const [openIds, setOpenIds] = useState<number[] | null>(null);
 
-  const isLoadingSummary = current.isLoading;
-  const isLoadingComparison = comparisonEnabled && previous.isLoading;
+  const isLoadingSummary = hasFunnels && current.isLoading;
+  const isLoadingComparison = comparisonEnabled && hasFunnels && previous.isPending;
   // A comparison that is switched off may still be in the cache.
   const previousData = comparisonEnabled ? previous.data : undefined;
 
@@ -119,8 +123,6 @@ export default function FunnelsPage() {
 
   const comparisonLabel = comparisonEnabled ? describeComparisonWindow(previousTime, time, zone) : null;
 
-  const hasFunnels = !!funnels?.length;
-
   return (
     <DisabledOverlay message="Funnels" featurePath="funnels">
       <div className="p-2 md:p-4 max-w-[1300px] mx-auto space-y-3">
@@ -133,7 +135,8 @@ export default function FunnelsPage() {
               sessionsEntered={current.data?.users_entered_any}
               previousSessionsEntered={previousData?.users_entered_any}
               comparisonEnabled={comparisonEnabled}
-              isLoading={isLoading || isLoadingSummary || isLoadingComparison}
+              isLoading={isLoading || isLoadingSummary}
+              isLoadingComparison={isLoadingComparison}
             />
             <AnalysisBar
               end={
@@ -154,6 +157,12 @@ export default function FunnelsPage() {
             </AnalysisBar>
             {current.data?.sampled && <p className="text-xs text-neutral-500 dark:text-neutral-400">{t("GA4 sampled this funnel report.")}</p>}
             {previous.isError && comparisonEnabled && <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("Failed to load comparison data")}</p>}
+            {!!current.data?.errors?.length && (
+              <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400" role="status">
+                <span>{t("Some funnel data could not be loaded. Available results are shown.")}</span>
+                <Button variant="ghost" size="sm" disabled={current.isFetching} onClick={() => current.refetch()}>{t("Retry")}</Button>
+              </div>
+            )}
             {current.isError && (
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 {t("The funnels' figures could not be loaded. Open a funnel to analyze it on its own.")}

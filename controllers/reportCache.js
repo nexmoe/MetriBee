@@ -20,6 +20,7 @@ const TTL_DEFAULTS = {
   'gsc-sites': 15 * 60 * 1000,
   embed: 60 * 1000,        // Public visitor widgets share one minute of GA4 reports
   widget: 5 * 60 * 1000,   // Saved metric widgets share historical reports and preserve fetch times
+  funnel: 5 * 60 * 1000,   // Ordered funnel reports shared across summaries, editors and viewers
   events: 15 * 60 * 1000,   // Event overview and hourly activity, shared across viewers
   home: 5 * 60 * 1000,     // 5 minutes for homepage historical cards
   card: 60 * 60 * 1000,     // 1 hour for analytics cards

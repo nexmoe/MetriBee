@@ -9,7 +9,7 @@ export function useGetFunnels(siteId?: string | number) {
     // The saved funnel list is not scoped to the selected period.
     useTime: false,
     useFilters: false,
-    staleTime: 0,
+    staleTime: 5 * 60_000,
     placeholder: false,
   });
 }

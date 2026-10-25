@@ -9,7 +9,7 @@ import { useAnalyticsQuery } from "../../useAnalyticsQuery";
  * one request per period. `periodTime: "previous"` asks about the comparison
  * period and stays idle while the comparison is off.
  */
-export function useGetFunnelSummaries({ periodTime }: { periodTime?: "current" | "previous" } = {}) {
+export function useGetFunnelSummaries({ periodTime, enabled = true }: { periodTime?: "current" | "previous"; enabled?: boolean } = {}) {
   // Only the funnel page's filter parameters apply; an empty subset means no
   // filters at all (not the store's full filter list).
   const filteredFilters = getFilteredFilters(FUNNEL_PAGE_FILTERS);
@@ -22,5 +22,7 @@ export function useGetFunnelSummaries({ periodTime }: { periodTime?: "current" |
     periodTime,
     useFilters: filteredFilters.length > 0,
     customFilters: filteredFilters,
+    enabled,
+    staleTime: 5 * 60_000,
   });
 }
