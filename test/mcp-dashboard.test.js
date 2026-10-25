@@ -291,6 +291,25 @@ describe("MCP native dashboard integration", function () {
 			assert.ok(calls.every((call) => call.property === "properties/123"));
 		});
 	}
+	it("exposes ordered Journey paths and exact session membership without aggregate queries or quota reads", async () => {
+		const records = Array.from({ length: 5 }, (_, i) => ({ session_id: `session-${i}`, user_id: `visitor-${i}`, country: "US",
+			events: ["/", "/docs", "/pricing", "/signup", "/done"].map((pathname, index) => ({ type: "pageview", pathname, timestamp: `2026-10-20 10:00:0${index}` })) }));
+		const { service, calls } = harness({ deps: { journeySessions: async () => records }, ledger: { status: () => { throw new Error("Ordered journeys must not read GA4 quota"); } } });
+		const args = { propertyId: "123", range: "7d", mode: "sessions", steps: 4, limit: 2 };
+		const result = await service.execute("get_journeys_report", args);
+		assert.equal(result.error, undefined, JSON.stringify(result));
+		assert.equal(result.metric, "sessions");
+		assert.deepEqual(result.journeys[0].path, ["/", "/docs", "/pricing", "/signup"]);
+		assert.equal(result.summary.avgPathLength, 5);
+		assert.equal(result.summary.topExit.page, "/done");
+		assert.equal(result.apiCalls, 0);
+		assert.deepEqual(result.quota, {});
+		const drawer = await service.execute("get_journeys_report", { ...args, path: result.journeys[0].path, offset: 1 });
+		assert.equal(drawer.returned, 2);
+		assert.equal(drawer.truncated, true);
+		assert.equal(drawer.data[0].session_id, "session-1");
+		assert.equal(calls.length, 0);
+	});
 
 	it("preserves GA4 truncation and privacy observations on native report cache hits", async () => {
 		const { service } = harness({

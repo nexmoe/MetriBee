@@ -142,7 +142,7 @@ function SidebarContent() {
         {!privateKey && <>
           <SidebarComponents.SectionHeader>GA4</SidebarComponents.SectionHeader>
           {!embed && <SidebarComponents.Item label={t("Widgets")} active={isActiveTab("widgets")} href={getTabPath("widgets")} icon={<PanelsTopLeft className="w-4 h-4" />} />}
-          <SidebarComponents.Item label="API quota" href="/quota" icon={<Gauge className="w-4 h-4"/>}/>
+          <SidebarComponents.Item label={t("API quota")} href="/quota" icon={<Gauge className="w-4 h-4"/>}/>
         </>}
         {/* {!privateKey && (
           <SidebarComponents.Item

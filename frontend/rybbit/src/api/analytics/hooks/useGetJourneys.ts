@@ -3,7 +3,6 @@ import { Time } from "../../../components/DateSelector/types";
 import { JOURNEY_PAGE_FILTERS } from "../../../lib/filterGroups";
 import { useStore } from "../../../lib/store";
 import {
-  GetOverviewResponse,
   GetSessionsResponse,
   JourneyGrouping,
   JourneysResponse,
@@ -75,7 +74,7 @@ export const useJourneys = ({
     overrideTime: time,
     periodTime,
     ...useJourneyFilters(additionalFilters),
-    params: { ...journeyShapeParams(shape), limit, goalId },
+    params: { mode: "sessions", ...journeyShapeParams(shape), limit, goalId },
     enabled: enabled && siteId !== undefined,
   });
 };
@@ -95,7 +94,7 @@ export const useJourneySummary = ({
     path: "journeys/summary",
     periodTime,
     ...useJourneyFilters(),
-    params: { goalId },
+    params: { mode: "sessions", goalId },
     enabled,
   });
 };
@@ -123,6 +122,7 @@ export const useJourneySessions = ({
     placeholder: false,
     ...useJourneyFilters(),
     params: {
+      mode: "sessions",
       ...journeyShapeParams(shape),
       path: JSON.stringify(path),
       replays_only: replaysOnly ? "true" : undefined,
@@ -133,24 +133,19 @@ export const useJourneySessions = ({
   });
 };
 
-/**
- * All sessions and the most common entry page, from the endpoints the main
- * dashboard reads, under the journeys page's filters, so the figures the stat
- * band borrows match the ones shown there.
- */
-export const useJourneyContext = () => {
-  const filters = useJourneyFilters();
-  const overview = useAnalyticsQuery<GetOverviewResponse>({ key: "overview", path: "overview", ...filters });
-  const entryPages = useAnalyticsQuery<{ data: MetricResponse[]; totalCount: number }>({
-    key: "entry_page",
-    path: "metric",
-    ...filters,
-    params: { parameter: "entry_page", limit: 1 },
+/** Use the same ordered-session population as the paths, never GA4 aggregates. */
+export const useJourneyContext = (enabled = true) => {
+  const context = useAnalyticsQuery<{ sessions: number; topEntry: MetricResponse | null }>({
+    key: "journey-context",
+    path: "journeys/context",
+    ...useJourneyFilters(),
+    params: { mode: "sessions" },
+    enabled,
   });
 
   return {
-    sessions: overview.data?.pageviews,
-    topEntry: entryPages.data?.data[0],
-    isLoading: overview.isLoading || entryPages.isLoading,
+    sessions: context.data?.sessions,
+    topEntry: context.data?.topEntry,
+    isLoading: context.isLoading,
   };
 };

@@ -94,6 +94,17 @@ function capabilities() {
 			"Inspect returned quota, apiCalls, warnings and truncation. Stop on quota_low or rate_limited; never loop reports over properties.",
 		],
 		limitations: LIMITATIONS,
+		journeys: {
+			tool: "get_journeys_report",
+			steps: 2,
+			metric: "screenPageViews",
+			filters: "from and to filter the two aggregate columns. * matches one nonempty path segment; ** matches any number. Section grouping uses patterns such as /docs/**.",
+			nativeParity: "Full Rybbit multi-step journeys, ordered session lists and exit counts require an ordered event-level source. Aggregate pair reports do not provide native journey semantics.",
+			orderedSessions: { mode: "sessions", minSteps: 2, maxSteps: 10, defaultSteps: 4,
+				available: require("../../controllers/demoData").enabled(),
+				source: require("../../controllers/demoData").enabled() ? "synthetic demo session events" : "not connected",
+				pathDetails: "Pass path to list its matching sessions. The same step filters, grouping and end-page truncation apply." },
+		},
 		funnels: {
 			minSteps: 2,
 			maxSteps: 10,
@@ -364,6 +375,7 @@ function createDashboardService(deps = {}) {
 				retention,
 				funnels,
 				...(deps.gsc ? { gsc: deps.gsc } : {}),
+				...(deps.journeySessions ? { journeySessions: deps.journeySessions } : {}),
 				realtime: (query) => ga4.runSafeRealtimeReport({ ...query, client: beta }),
 				client: () => beta,
 				admin: () => admin,
@@ -456,18 +468,41 @@ function createDashboardService(deps = {}) {
 					query: { range: args.range || "7d", offset: String(args.offset || 0), event: args.eventName },
 				});
 			} else if (operation === "get_journeys_report") {
-				result = await request("journeys", {
-					query: {
-						...query,
-						groupBy: args.groupBy || "page",
-						stepFilters: JSON.stringify({ 0: args.from, 1: args.to }),
-						endsAt: args.endsAt,
-						limit: args.limit || 20,
-					},
-				});
-				const { totalSessions, ...native } = result;
-				result = { ...native, totalPageviews: totalSessions, metric: "screenPageViews" };
-				result.limitations = [LIMITATIONS[1]];
+				if (args.mode === "sessions") {
+					const limit = args.limit || 20;
+					const sessionQuery = { ...query, mode: "sessions", steps: args.steps || 4,
+						groupBy: args.groupBy === "section" ? "section" : "path", goalId: args.goalId,
+						stepFilters: JSON.stringify({ ...args.stepFilters, ...(args.from ? { 0: args.from } : {}), ...(args.to ? { 1: args.to } : {}) }), endsAt: args.endsAt };
+					if (args.path) {
+						result = await request("journeys/sessions", { query: { ...sessionQuery, path: JSON.stringify(args.path), offset: args.offset || 0,
+							limit: Math.min(limit + 1, 100), replays_only: args.replaysOnly ? "true" : undefined } });
+						const extraRow = limit === 100 && result.data.length === 100 ? await request("journeys/sessions", {
+							query: { ...sessionQuery, path: JSON.stringify(args.path), offset: (args.offset || 0) + 100, limit: 1, replays_only: args.replaysOnly ? "true" : undefined },
+						}) : null;
+						result = { ...result, returned: Math.min(limit, result.data.length), truncated: result.data.length > limit || !!extraRow?.data.length,
+							data: result.data.slice(0, limit), metric: "sessions" };
+					} else {
+						const paths = await request("journeys", { query: { ...sessionQuery, limit: limit + 1 } });
+						const summary = await request("journeys/summary", { query: sessionQuery });
+						const context = await request("journeys/context", { query: sessionQuery });
+						result = { ...paths, journeys: paths.journeys.slice(0, limit), truncated: paths.journeys.length > limit,
+							summary: summary.data, context: context.data, metric: "sessions" };
+					}
+					result.limitations = require("../../controllers/demoData").enabled() ? ["Synthetic demo session events; not live GA4 session data."] : [];
+				} else {
+					result = await request("journeys", {
+						query: {
+							...query,
+							groupBy: args.groupBy || "page",
+							stepFilters: JSON.stringify({ 0: args.from, 1: args.to }),
+							endsAt: args.endsAt,
+							limit: args.limit || 20,
+						},
+					});
+					const { totalSessions, ...native } = result;
+					result = { ...native, totalPageviews: totalSessions, metric: "screenPageViews" };
+					result.limitations = [LIMITATIONS[1]];
+				}
 			} else if (operation === "get_retention_report") {
 				if (args.filters?.length) throw new Error("GA4 cohort reports cannot apply audience filters.");
 				result = await invoke(retention, {
@@ -582,7 +617,8 @@ function createDashboardService(deps = {}) {
 				};
 			}
 			if (context.refusal) result = context.refusal;
-			if (!definitionOnly && !context.pools.size) context.pools.add(args.report === "live-users" ? "realtime" : operation === "analyze_funnel" ? "funnel" : "core");
+			context.quality.truncated ||= !!result.truncated;
+			if (!definitionOnly && !(operation === "get_journeys_report" && args.mode === "sessions") && !context.pools.size) context.pools.add(args.report === "live-users" ? "realtime" : operation === "analyze_funnel" ? "funnel" : "core");
 			return {
 				...result,
 				propertyId: args.propertyId,

@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const demo = require('./demoData');
+const { getLocale } = require('../lib/uiLocale');
 const { getAnalyticsCatalog } = require('./analyticsRecipes');
 const { runSafeHistoricalReport } = require('./ga4Service');
 const { cacheGet, cacheSet, shouldBypass } = require('./reportCache');
@@ -14,9 +15,10 @@ async function workspaceView(req, res, next) {
     if (!fs.existsSync(manifestPath)) return res.status(503).send('Build the analytics UI with pnpm build:ui, then reload this page.');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const entry = manifest['index.html'];
+    const setupPage = /\/setup\/?$/.test(req.path);
     const { properties } = req.metricWidget ? { properties: [] } : req.sharedProperty ? { properties: [req.sharedProperty] }
-      : req.path.endsWith('/setup') ? { properties: [] } : await require('./apiController').ensureProperties();
-    res.render('workspace', { layout: false, title: 'MetriBee', setup: req.path.endsWith('/setup'),
+      : setupPage ? { properties: [] } : await require('./apiController').ensureProperties();
+    res.render('workspace', { layout: false, title: 'MetriBee', locale: getLocale(req.path), setup: setupPage,
       bootstrap: { properties, catalog: getAnalyticsCatalog(), demo: demo.enabled(),
         ...(req.sharedProperty ? { sharedSiteId: String(req.sharedProperty.id) } : {}),
         ...(req.metricWidget ? { metricWidget: req.metricWidget } : {}) },

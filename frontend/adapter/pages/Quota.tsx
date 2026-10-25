@@ -61,6 +61,7 @@ function QuotaRemaining({
   reserve: number;
   label: string;
 }) {
+  const t = useExtracted();
   const ratio =
     remaining != null &&
     Number.isFinite(remaining) &&
@@ -87,8 +88,10 @@ function QuotaRemaining({
         </span>
         <span className="text-xs text-neutral-500 dark:text-neutral-400">
           {percent == null
-            ? "Unknown"
-            : `${fmt(Math.round(percent * 10) / 10)}% left`}
+            ? t("Unknown")
+            : t("{percent}% left", {
+                percent: fmt(Math.round(percent * 10) / 10),
+              })}
         </span>
       </div>
       {percent == null ? (
@@ -99,9 +102,12 @@ function QuotaRemaining({
       ) : (
         <Progress
           value={percent}
-          aria-label={label}
+          aria-label={t(label)}
           getValueLabel={() =>
-            `${fmt(remaining)} of ${fmt(limit)} tokens remaining`
+            t("{remaining} of {limit} tokens remaining", {
+              remaining: fmt(remaining),
+              limit: fmt(limit),
+            })
           }
           className={`h-1.5 rounded-sm motion-reduce:[&>div]:transition-none ${fillClass}`}
         />
@@ -265,13 +271,13 @@ export function QuotaPanel({ compact = false }: { compact?: boolean }) {
             </div>
           ))}
           <Table
-            aria-label="API quota by property and pool"
+            aria-label={t("API quota by property and pool")}
             className="min-w-[720px] [&_th]:px-3 [&_td]:px-3 [&_th:first-child]:rounded-l-none [&_th:last-child]:rounded-r-none"
           >
             <TableHeader>
               <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
                 <TableHead scope="col" className="whitespace-nowrap">
-                  Pool
+                  {t("Pool")}
                 </TableHead>
                 {quotaMetrics.map(({ limit, label }) => (
                   <TableHead
@@ -279,7 +285,7 @@ export function QuotaPanel({ compact = false }: { compact?: boolean }) {
                     scope="col"
                     className="whitespace-nowrap"
                   >
-                    {label}
+                    {t(label)}
                   </TableHead>
                 ))}
                 {!compact && (
@@ -288,12 +294,12 @@ export function QuotaPanel({ compact = false }: { compact?: boolean }) {
                       scope="col"
                       className="whitespace-nowrap text-right"
                     >
-                      Last request cost
+                      {t("Last request cost")}
                     </TableHead>
-                    <TableHead scope="col">Observed</TableHead>
+                    <TableHead scope="col">{t("Observed")}</TableHead>
                   </>
                 )}
-                <TableHead scope="col">Status</TableHead>
+                <TableHead scope="col">{t("Status")}</TableHead>
               </TableRow>
             </TableHeader>
             {visibleGroups.map((group) => (
@@ -350,7 +356,7 @@ export function QuotaPanel({ compact = false }: { compact?: boolean }) {
                         scope="row"
                         className="h-auto whitespace-nowrap text-left font-normal text-neutral-600 dark:text-neutral-300"
                       >
-                        {poolLabels[e.pool] || e.pool}
+                        {t(poolLabels[e.pool] || e.pool)}
                       </TableHead>
                       {quotaMetrics.map(({ remaining, limit, label }) => (
                         <TableCell key={remaining}>
@@ -383,7 +389,7 @@ export function QuotaPanel({ compact = false }: { compact?: boolean }) {
                               : "outline"
                           }
                         >
-                          {e.status}
+                          {t(e.status)}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -412,7 +418,7 @@ export default function Quota() {
   return (
     <Workspace>
       <SettingsPageHeader
-        title="API quota"
+        title={t("API quota")}
         description={t(
           "GA4 token budgets and Google Search Console request usage."
         )}

@@ -83,7 +83,7 @@ export function TopPaths({
         <div className="min-w-0">
           <h2 className="font-semibold leading-none tracking-tight">{t("Top paths")}</h2>
           <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-            {t("GA4 referrer transitions, {steps} pages", { steps: String(steps) })}
+            {t("Exact page sequences from session start, up to {steps} steps", { steps: String(steps) })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -119,7 +119,7 @@ export function TopPaths({
             <tr>
               <th className={cn(TH, "w-9 pl-4")}>#</th>
               <th className={TH}>{t("Path")}</th>
-              <th className={cn(TH, "w-40 text-right")}>{t("Page views")}</th>
+              <th className={cn(TH, "w-40 text-right")}>{t("Sessions")}</th>
               <th className={cn(TH, "w-[72px] text-right")} title={t("Share of sessions with two or more pages")}>
                 {t("Share")}
               </th>

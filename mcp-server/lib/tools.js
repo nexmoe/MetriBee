@@ -157,11 +157,18 @@ function registerDashboardTools(server, { registerTool, asText, service = getDas
 	);
 	add(
 		"get_journeys_report",
-		"Read same-site referrer-to-page transitions, optionally grouped by directory and filtered at either end (* wildcard supported). Counts pageviews for two-page pairs; cannot reconstruct complete sessions or identify exits. Usually one core report on a shared-cache miss.",
+		"Read the Journeys page for one property. Default mode=transitions reports GA4 same-site referrer pairs as pageviews. mode=sessions uses native 2–10-step Rybbit semantics with ordered events, summary and exits; pass path for its session list. Ordered events are currently available in DEMO=1 as explicitly synthetic data; live connections without an event source return an unavailable error. * matches one segment; ** matches multiple. Aggregate mode usually uses one core report on a shared-cache miss.",
 		{
 			...rollingPeriod,
 			...audience,
 			groupBy: z.enum(["page", "section"]).default("page"),
+			mode: z.enum(["transitions", "sessions"]).default("transitions"),
+			steps: z.number().int().min(2).max(10).default(4).describe("Maximum depth for mode=sessions."),
+			stepFilters: z.record(z.string().regex(/^\d+$/), z.string().max(2048)).optional().describe("Zero-based step index to a page pattern, for mode=sessions."),
+			goalId: z.number().int().positive().optional(),
+			path: z.array(z.string().max(2048)).min(1).max(10).optional().describe("List sessions counted in this exact shaped path, for mode=sessions."),
+			offset: z.number().int().min(0).max(100000).default(0),
+			replaysOnly: z.boolean().default(false),
 			from: z.string().max(500).optional(),
 			to: z.string().max(500).optional(),
 			endsAt: z.string().max(500).optional(),

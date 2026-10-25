@@ -803,5 +803,6 @@ module.exports = {
     dataClient,
     adminClient,
     PROPERTIES: PROPS.map(({ id, site, domain, url, currency }) => ({ id, site, domain, url, currencyCode: currency })),
-    _internal: { realtimeUsers, cohorts, runReport, runRealtimeReport, localParts },
+    _internal: { realtimeUsers, cohorts, runReport, runRealtimeReport, localParts,
+        journeyPages: id => (PROP_BY_ID.get(String(id))?.pages || []).map(page => page.path) },
 };

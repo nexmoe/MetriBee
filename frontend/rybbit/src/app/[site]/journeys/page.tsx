@@ -3,7 +3,7 @@
 import { FolderTree, LogIn, LogOut, Route, Target } from "lucide-react";
 import { useExtracted } from "next-intl";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import { useGetSite } from "@/api/admin/hooks/useSites";
 import { JourneyGrouping } from "@/api/analytics/endpoints";
 import { useGetGoals } from "@/api/analytics/hooks/goals/useGetGoals";
@@ -34,12 +34,13 @@ import { PathActionHandlers, PathActions } from "./components/PathActions";
 import { PathSessionsSheet, PathSessionsTarget } from "./components/PathSessionsSheet";
 import { PinnedPath } from "./components/PinnedPath";
 import { SankeyDiagram } from "./components/SankeyDiagram";
+import { SaveAsFunnelDialog } from "./components/SaveAsFunnelDialog";
 import { TopPaths } from "./components/TopPaths";
 import { usePagesHref, useSiteHref } from "./components/useJourneyLinks";
 
 // The server takes 2 to 10 steps and up to 500 paths.
 const MIN_STEPS = 2;
-const MAX_STEPS = 2;
+const MAX_STEPS = 10;
 const PATH_LIMITS = [10, 15, 25, 50, 100, 200, 500];
 // The comparison period is asked for as many paths as the server gives, so a
 // path that ranked lower then is still found.
@@ -70,11 +71,19 @@ function SankeySkeleton() {
   );
 }
 
-export default function JourneysPage() {
+export default function JourneysPage({
+  sourceAvailable = true,
+  sourceNotice,
+  unavailableState,
+}: {
+  sourceAvailable?: boolean;
+  sourceNotice?: ReactNode;
+  unavailableState?: ReactNode;
+}) {
   const t = useExtracted();
   useSetPageTitle("Journeys");
 
-  const [steps, setSteps] = useState(2);
+  const [steps, setSteps] = useState(4);
   const [limit, setLimit] = useState(15);
   const [stepFilters, setStepFilters] = useState<Record<number, string>>({});
   const [endsAt, setEndsAt] = useState("");
@@ -117,7 +126,7 @@ export default function JourneysPage() {
   const shape: JourneyShape = { steps, stepFilters: activeStepFilters, endsAt, groupBy };
   const hasPathFilters = Object.keys(activeStepFilters).length > 0 || !!endsAt;
   // Paths cut at an end page stop where the page is reached, not where the session ended.
-  const exitsKnown = false;
+  const exitsKnown = !endsAt;
 
   // The goal is part of the request: wait for the goal list rather than ask twice.
   const journeysQuery = useJourneys({
@@ -125,20 +134,20 @@ export default function JourneysPage() {
     ...shape,
     limit,
     goalId: goal?.goalId,
-    enabled: !isLoadingGoals,
+    enabled: sourceAvailable && !isLoadingGoals,
   });
   const previousJourneysQuery = useJourneys({
     siteId: siteMetadata?.siteId,
     ...shape,
     limit: COMPARISON_LIMIT,
     periodTime: "previous",
-    enabled: !isLoadingGoals,
+    enabled: sourceAvailable && !isLoadingGoals,
   });
-  const summaryQuery = useJourneySummary({ goalId: goal?.goalId, enabled: !isLoadingGoals });
+  const summaryQuery = useJourneySummary({ goalId: goal?.goalId, enabled: sourceAvailable && !isLoadingGoals });
   const previousSummaryQuery = useJourneySummary({
     goalId: goal?.goalId,
     periodTime: "previous",
-    enabled: !isLoadingGoals,
+    enabled: sourceAvailable && !isLoadingGoals,
   });
 
   const { data: pathsData } = useMetric({ parameter: "pathname", limit: 1000, useFilters: false });
@@ -199,12 +208,14 @@ export default function JourneysPage() {
     <DisabledOverlay message="User Journeys" featurePath="journeys">
       <div className="mx-auto max-w-[1300px] space-y-3 p-2 md:p-4">
         <SubHeader availableFilters={JOURNEY_PAGE_FILTERS} />
+        {sourceNotice}
 
         <JourneyStats
           summary={summary}
           previous={comparisonEnabled ? previousSummaryQuery.data : undefined}
           isLoading={isLoadingGoals || summaryQuery.isLoading}
           goalName={goalName}
+          sourceAvailable={sourceAvailable}
         />
 
         <AnalysisBar>
@@ -240,10 +251,10 @@ export default function JourneysPage() {
           {journeysQuery.isFetching && !isLoading && <CardLoader />}
           <div className="flex flex-col gap-3 border-b border-neutral-100 px-4 py-3 xl:flex-row xl:items-center xl:justify-between dark:border-neutral-850">
             <div className="min-w-0">
-              <h2 className="font-semibold leading-none tracking-tight">{t("Page transitions")}</h2>
+              <h2 className="font-semibold leading-none tracking-tight">{t("Paths from session start")}</h2>
               <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
                 {journeys.length > 0 && totalSessions > 0
-                  ? t.rich("Top {count} paths cover <b>{covered}</b> of {total} internal page views ({percent})", {
+                  ? t.rich("Top {count} paths cover <b>{covered}</b> of {total} multi-page sessions ({percent})", {
                       count: String(journeys.length),
                       covered: covered.toLocaleString(),
                       total: totalSessions.toLocaleString(),
@@ -252,7 +263,7 @@ export default function JourneysPage() {
                         <span className="tabular-nums text-neutral-700 dark:text-neutral-200">{chunks}</span>
                       ),
                     })
-                  : t("Two-page transitions reported by GA4 referrers")}
+                  : t("The most common page sequences, from the first page of a session")}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -284,7 +295,9 @@ export default function JourneysPage() {
           </div>
 
           <div className="px-4 pb-3 pt-3">
-            {isLoading ? (
+            {!sourceAvailable && unavailableState ? (
+              unavailableState
+            ) : isLoading ? (
               <SankeySkeleton />
             ) : journeysQuery.error && !journeysQuery.data ? (
               <ErrorState
@@ -307,7 +320,7 @@ export default function JourneysPage() {
                     <>
                       <span className="whitespace-nowrap text-xs font-medium text-neutral-900 dark:text-neutral-100">
                         {index === 0
-                          ? t("Step {number}", { number: "1" })
+                          ? t("Step {number} · entry", { number: "1" })
                           : t("Step {number}", { number: String(index + 1) })}
                       </span>
                       <span className="whitespace-nowrap text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
@@ -319,7 +332,7 @@ export default function JourneysPage() {
                                 percent: formatShare(sessions / previousSessions),
                                 step: String(index),
                               })
-                            : t("{count} page views", { count: sessions.toLocaleString() })}
+                            : t("{count} sessions", { count: sessions.toLocaleString() })}
                       </span>
                       <StepFilterButton
                         step={index + 1}
@@ -351,12 +364,12 @@ export default function JourneysPage() {
                             { id: "continued", label: t("Continued to the next step"), color: "hsl(var(--dataviz))" },
                             { id: "ended", label: t("Ended the session there"), color: "var(--journey-exit)" },
                           ]
-                        : [{ id: "sessions", label: t("Page views on the transition"), color: "hsl(var(--dataviz))" }]
+                        : [{ id: "sessions", label: t("Sessions on the path"), color: "hsl(var(--dataviz))" }]
                     }
                   />
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
                     {t.rich(
-                      "Bar height is page views on the transitions shown. Click a path to pin it; a page name opens it in <link>Pages</link>.",
+                      "Bar height is sessions on the paths shown. Click a path to pin it; a page name opens it in <link>Pages</link>.",
                       {
                         link: chunks => (
                           <Link
@@ -418,8 +431,8 @@ export default function JourneysPage() {
         )}
       </div>
 
-      <></>
-      <></>
+      <PathSessionsSheet target={sessionsTarget} shape={shape} onClose={() => setSessionsTarget(null)} />
+      <SaveAsFunnelDialog path={funnelPath} onClose={() => setFunnelPath(null)} />
     </DisabledOverlay>
   );
 }

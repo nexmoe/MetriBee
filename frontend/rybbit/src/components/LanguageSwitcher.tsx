@@ -1,8 +1,8 @@
-import { switchLocale } from "../../../adapter/navigation";
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { switchLocale, locales } from "../../../adapter/navigation";
+
+import { useLocale, useExtracted } from "next-intl";
 import { CountryFlag } from "../app/[site]/components/shared/icons/CountryFlag";
 import {
   Select,
@@ -28,8 +28,13 @@ const LOCALE_OPTIONS = [
 ] as const;
 
 export function LanguageSwitcher() {
-  const router = useRouter();
+  const t = useExtracted();
   const currentLocale = useLocale();
+
+  const options = LOCALE_OPTIONS.filter((option) =>
+    locales.includes(option.value)
+  );
+  if (options.length < 2) return null;
 
   function handleLocaleChange(locale: string) {
     switchLocale(locale);
@@ -37,11 +42,14 @@ export function LanguageSwitcher() {
 
   return (
     <Select value={currentLocale} onValueChange={handleLocaleChange}>
-      <SelectTrigger className="w-auto text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white focus:ring-0">
+      <SelectTrigger
+        aria-label={t("Language")}
+        className="w-auto text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {LOCALE_OPTIONS.map((option) => (
+        {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             <span className="flex items-center gap-2">
               <CountryFlag country={option.country} className="w-4" />

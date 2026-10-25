@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
+import { version } from '../package.json';
 
 export default defineConfig({
   base: '/ui/',
@@ -31,7 +32,7 @@ export default defineConfig({
       }
     },
   }, tailwindcss()],
-  define: { 'process.env.NEXT_PUBLIC_APP_VERSION': '"2.9.1"', 'process.env.NEXT_PUBLIC_BACKEND_URL': '""', 'process.env.NEXT_PUBLIC_CLOUD': '"false"', 'process.env.NEXT_PUBLIC_DEPLOYMENT': '""', 'process.env.NEXT_PUBLIC_LITE_DASHBOARD': '"false"' },
+  define: { 'process.env.NEXT_PUBLIC_APP_VERSION': JSON.stringify(version), 'process.env.NEXT_PUBLIC_BACKEND_URL': '""', 'process.env.NEXT_PUBLIC_CLOUD': '"false"', 'process.env.NEXT_PUBLIC_DEPLOYMENT': '""', 'process.env.NEXT_PUBLIC_LITE_DASHBOARD': '"false"' },
   resolve: { alias: {
     'next/font/google': fileURLToPath(new URL('./adapter/font.ts', import.meta.url)),
     '@rybbit/shared/dist/filters': fileURLToPath(new URL('./rybbit/shared/filters.ts', import.meta.url)),
@@ -43,6 +44,6 @@ export default defineConfig({
     '@': fileURLToPath(new URL('./rybbit/src', import.meta.url))
   } },
   build: { outDir: '../public/ui', emptyOutDir: true, manifest: true, sourcemap: false,
-    commonjsOptions: { include: [/node_modules/, /lib\/homeViews\.js$/, /public\/js\/homeAccounts\.js$/] },
+    commonjsOptions: { include: [/node_modules/, /lib\/(?:homeViews|uiLocale)\.js$/, /public\/js\/homeAccounts\.js$/] },
     rollupOptions: { onwarn(warning, defaultHandler) { if (warning.code === "MODULE_LEVEL_DIRECTIVE" && warning.message.includes("use client")) return; defaultHandler(warning); } } },
 });

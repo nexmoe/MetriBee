@@ -86,10 +86,20 @@ export default function SiteReports({
       ? sites.reduce((n: number, s: any) => n + (s[key] || 0), 0)
       : null;
   const period = (range: any) =>
-    range ? range.startDateTime ? `${new Date(range.startDateTime).toLocaleString(undefined, { timeZone: range.timeZone })} – ${new Date(range.endDateTime).toLocaleString(undefined, { timeZone: range.timeZone })}` : `${range.startDate} – ${range.endDate}` : t("None");
+    range
+      ? range.startDateTime
+        ? `${new Date(range.startDateTime).toLocaleString(undefined, {
+            timeZone: range.timeZone,
+          })} – ${new Date(range.endDateTime).toLocaleString(undefined, {
+            timeZone: range.timeZone,
+          })}`
+        : `${range.startDate} – ${range.endDate}`
+      : t("None");
   const timeLabel = (time: string) =>
     data?.range.startDateTime && ["minute", "hour"].includes(data.bucket)
-      ? DateTime.fromSQL(time, { zone: "UTC" }).setZone(data.range.timeZone || "UTC").toFormat("MM-dd HH:mm")
+      ? DateTime.fromSQL(time, { zone: "UTC" })
+          .setZone(data.range.timeZone || "UTC")
+          .toFormat("MM-dd HH:mm")
       : ["minute", "hour"].includes(data?.bucket || "")
       ? `${time.slice(5, 10)} ${time.slice(11, 16)}`
       : data?.bucket === "month"
@@ -128,7 +138,7 @@ export default function SiteReports({
               : "hover:text-neutral-900 dark:hover:text-neutral-200"
           )}
         >
-          {label}
+          {t(label)}
           {active && <Arrow className="h-3 w-3" aria-hidden="true" />}
         </button>
       </TableHead>
@@ -148,15 +158,17 @@ export default function SiteReports({
           <StatBand
             cells={[
               {
-                label: "Sessions",
+                label: t("Sessions"),
                 value: fmt(total("last")),
               },
-              { label: "Comparison", value: fmt(total("prev")) },
-              { label: "Properties", value: fmt(sites.length) },
+              { label: t("Comparison"), value: fmt(total("prev")) },
+              { label: t("Properties"), value: fmt(sites.length) },
               data.adsense && {
-                label: "AdSense",
+                label: t("AdSense"),
                 value: money(total("earnLast")),
-                sub: `${data.adsense.matched} matched sites`,
+                sub: t("{count} matched sites", {
+                  count: data.adsense.matched,
+                }),
               },
             ]}
           />
@@ -167,7 +179,7 @@ export default function SiteReports({
               aria-pressed={low}
               onClick={() => setLow(!low)}
             >
-              {low ? "Show" : "Hide"} low traffic
+              {low ? t("Show low traffic") : t("Hide low traffic")}
             </Button>
             <Button
               size="sm"
@@ -198,7 +210,8 @@ export default function SiteReports({
                     s.name,
                     data.range.startDateTime || data.range.startDate,
                     data.range.endDateTime || data.range.endDate,
-                    data.comparison?.startDateTime || data.comparison?.startDate,
+                    data.comparison?.startDateTime ||
+                      data.comparison?.startDate,
                     data.comparison?.endDateTime || data.comparison?.endDate,
                     s.last,
                     s.prev,
@@ -212,14 +225,15 @@ export default function SiteReports({
                 )
               }
             >
-              Export CSV
+              {t("Export CSV")}
             </Button>
           </div>
           <div className="text-xs text-neutral-500">
             {period(data.range)} · {t("Comparison")}: {period(data.comparison)}
             {data.adsense && (
               <span className="ml-2">
-                · AdSense <RelativeTime value={data.adsense.generatedAt} />
+                {t("· AdSense")}
+                <RelativeTime value={data.adsense.generatedAt} />
                 {data.adsense.matched < data.sites.length && (
                   <>
                     {" "}
@@ -253,7 +267,7 @@ export default function SiteReports({
                   groups.map(([label, test]) => (
                     <section className="space-y-3" key={label}>
                       <h2 className="text-sm font-medium">
-                        {label}{" "}
+                        {t(label)}{" "}
                         <span className="text-neutral-500">
                           {account.properties.filter(test).length}
                         </span>
@@ -269,7 +283,7 @@ export default function SiteReports({
                                 >
                                   {s.name}
                                 </Link>
-                                <Badge variant="outline">{s.st.label}</Badge>
+                                <Badge variant="outline">{t(s.st.label)}</Badge>
                               </div>
                             </CardHeader>
                             <CardContent>
@@ -279,7 +293,7 @@ export default function SiteReports({
                                     {fmt(s.last)}
                                   </span>
                                   <span className="ml-2 text-xs text-neutral-500">
-                                    sessions ·{" "}
+                                    {t("sessions ·")}{" "}
                                     {s.prev == null ? "—" : change(s.change)}
                                   </span>
                                 </div>
@@ -288,7 +302,9 @@ export default function SiteReports({
                                 ) : (
                                   <EventSparkline
                                     values={s.vals}
-                                    label="Sessions over the selected period"
+                                    label={t(
+                                      "Sessions over the selected period"
+                                    )}
                                     className="w-24"
                                   />
                                 )}
@@ -296,7 +312,9 @@ export default function SiteReports({
                               <p className="mt-2 text-xs text-neutral-500">
                                 {s.error ||
                                   s.st.why ||
-                                  "Traffic is within its usual range for the selected comparison."}
+                                  t(
+                                    "Traffic is within its usual range for the selected comparison."
+                                  )}
                               </p>
                               {s.earn && (
                                 <p className="mt-2 text-xs">
@@ -304,7 +322,8 @@ export default function SiteReports({
                                   {s.earn.prev == null
                                     ? "—"
                                     : change(s.earnChange)}{" "}
-                                  · RPM {money(s.rpm)}
+                                  {t("· RPM")}
+                                  {money(s.rpm)}
                                 </p>
                               )}
                             </CardContent>
@@ -348,7 +367,7 @@ export default function SiteReports({
                               scope="col"
                               className="whitespace-nowrap"
                             >
-                              Trend
+                              {t("Trend")}
                             </TableHead>
                           )}
                           {data.adsense && (
@@ -358,7 +377,7 @@ export default function SiteReports({
                               {heading("rpm", "Page RPM")}
                             </>
                           )}
-                          <TableHead scope="col">Status</TableHead>
+                          <TableHead scope="col">{t("Status")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -419,7 +438,7 @@ export default function SiteReports({
                             <TableCell className="text-right">
                               {s.change == null ? (
                                 <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                                  {s.prev == null ? "—" : "New"}
+                                  {s.prev == null ? "—" : t("New")}
                                 </span>
                               ) : (
                                 <Delta
@@ -436,7 +455,9 @@ export default function SiteReports({
                                 ) : (
                                   <EventSparkline
                                     values={s.vals}
-                                    label="Sessions over the selected period"
+                                    label={t(
+                                      "Sessions over the selected period"
+                                    )}
                                     className="w-24"
                                   />
                                 )}
@@ -454,7 +475,7 @@ export default function SiteReports({
                                         {s.earn.prev == null ||
                                         s.earn.last == null
                                           ? "—"
-                                          : "New"}
+                                          : t("New")}
                                       </span>
                                     ) : (
                                       <Delta
@@ -477,10 +498,10 @@ export default function SiteReports({
                             <TableCell>
                               <Badge
                                 variant="outline"
-                                title={s.st.why}
+                                title={t(s.st.why)}
                                 className="whitespace-nowrap"
                               >
-                                {s.st.label}
+                                {t(s.st.label)}
                               </Badge>
                             </TableCell>
                           </TableRow>
@@ -489,7 +510,7 @@ export default function SiteReports({
                     </Table>
                     {!account.properties.length && (
                       <p className="p-8 text-center text-sm text-neutral-500">
-                        No matching sites.
+                        {t("No matching sites.")}
                       </p>
                     )}
                   </Card>

@@ -1,3 +1,5 @@
+import { getLocale } from "../navigation";
+import { useExtracted } from "../extracted";
 import { ReactNode, useState } from "react";
 import { ArrowDownUp, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -50,7 +52,10 @@ export {
   TabsTrigger,
   TabsContent,
 } from "../../rybbit/src/components/ui/tabs";
-export async function get<T = any>(url: string, signal?: AbortSignal): Promise<T> {
+export async function get<T = any>(
+  url: string,
+  signal?: AbortSignal
+): Promise<T> {
   const res = await fetch(url, { signal });
   const data = await res.json();
   if (!res.ok || data.ok === false)
@@ -70,9 +75,9 @@ export function useData<T = any>(
 export const fmt = (v: unknown) =>
   v == null
     ? "—"
-    : Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    : Number(v).toLocaleString(getLocale(), { maximumFractionDigits: 2 });
 export const when = (v: any) =>
-  v ? new Date(v).toLocaleString() : "Not available";
+  v ? new Date(v).toLocaleString(getLocale()) : "—";
 export const properties = () =>
   ((window as any).__GA4_CONTEXT__?.properties || []) as {
     id: string;
@@ -154,6 +159,7 @@ export function DataTable({
   rows: unknown[][];
   name?: string;
 }) {
+  const t = useExtracted();
   const [sort, setSort] = useState<{ i: number; desc: boolean } | null>(null);
   const sorted = sort
     ? [...rows].sort((a, b) => {
@@ -214,7 +220,7 @@ export function DataTable({
       </Table>
       {!rows.length && (
         <p className="p-8 text-center text-sm text-neutral-500">
-          No data for this period.
+          {t("No data for this period.")}
         </p>
       )}
     </div>

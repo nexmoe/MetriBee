@@ -26,7 +26,7 @@ export default function Overview() {
   const { data } = useGetLiveUserCount(5);
   const t = useExtracted();
   const search = useSearchIntegration();
-  useSetPageTitle(`${data?.count ?? "…"} users online`);
+  useSetPageTitle(t("{count} users online", { count: data?.count ?? "…" }));
   if (!site) return null;
   return <StandardSectionRenderer.Provider value={search.sectionRenderer}><div className="mx-auto max-w-[1100px] space-y-3 p-2 md:p-4">
     <SubHeader />

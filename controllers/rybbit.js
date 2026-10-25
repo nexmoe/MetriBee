@@ -266,6 +266,45 @@ function createRybbitHandler(deps = {}) {
       }
       if (action === 'has-data') return res.json({ hasData: true });
       if (action === 'is-public') return res.json({ isPublic: false });
+      const demoJourneys = require('./demoData').enabled();
+      const sessionSource = demoJourneys ? 'demo-sessions' : deps.journeySessions ? 'ordered-sessions' : null;
+      if (action === 'journeys/capabilities') return res.json({ data: {
+        available: !!sessionSource, source: sessionSource, minSteps: 2, maxSteps: 10,
+        transitionsAvailable: true,
+      } });
+      if (demoJourneys && /^sessions\/demo-/.test(action)) {
+        const { demoJourneySession, journeySessionDetails } = require('./sessionJourneys');
+        const session = demoJourneySession(property, action.slice('sessions/'.length));
+        if (!session) throw failure('Session not found.', 404);
+        return res.json({ data: journeySessionDetails(session, q), source: 'demo-sessions' });
+      }
+      const sessionJourneyAction = ['journeys', 'journeys/summary', 'journeys/sessions', 'journeys/context'].includes(action)
+        && (q.mode === 'sessions' || action === 'journeys/context');
+      if (sessionJourneyAction || (demoJourneys && action === 'goals')) {
+        if (!sessionSource) return res.status(422).json({
+          error: 'Connect ordered session events to view multi-step journeys, session lists and exits. GA4 referrer data remains available in Page transitions.',
+          code: 'journey_source_required',
+        });
+        if (demoJourneys && Number.isSafeInteger(Number(q.goalId)) && Number(q.goalId) > 1) throw failure('Goal not found.', 404);
+        const timeZone = property.timeZone || (demoJourneys ? q.time_zone || 'UTC' : (await metadataFor(property)).timeZone);
+        const dateRange = windowFor(q, timeZone, asOf);
+        const { journeyReport, demoJourneySessions } = require('./sessionJourneys');
+        // The provider receives one authorized property and one window. Aggregate
+        // referrer pairs and the GA4 report cache never enter this session engine.
+        const sessions = demoJourneys ? demoJourneySessions(property, dateRange, timeZone)
+          : await deps.journeySessions({ property, dateRange, timeZone });
+        if (action === 'goals') {
+          const context = journeyReport(sessions, { ...q, goalId: '1' }, 'context');
+          const path = require('./demoData')._internal.journeyPages(propertyId)[3];
+          const conversions = context.conversions;
+          const goal = { goalId: 1, name: `Visit ${path}`, goalType: 'path', config: { pathPattern: path },
+            createdAt: '2026-01-01T00:00:00Z', total_conversions: conversions, total_sessions: context.sessions,
+            conversion_rate: context.sessions ? conversions * 100 / context.sessions : 0 };
+          return res.json({ data: [goal], meta: { total: 1, page: 1, pageSize: 100, totalPages: 1 }, source: sessionSource });
+        }
+        const report = journeyReport(sessions, q, action === 'journeys' ? 'paths' : action.slice('journeys/'.length));
+        return res.json(action === 'journeys' ? { ...report, source: sessionSource } : { data: report, source: sessionSource });
+      }
       if (action.startsWith('gsc/')) {
         if (shared) return res.json({ connected: false, gscPropertyUrl: null, reason: 'private_workspace_only', data: null });
         require('../lib/setupCheck').syncEnvFile();
@@ -435,14 +474,30 @@ function createRybbitHandler(deps = {}) {
         const limit = Math.min(100, Math.max(1, Number(q.limit) || 25)), offset = Math.max(0, (Number(q.page) || 1) - 1) * limit;
         return send({ data: items.slice(offset, offset + limit), totalCount: items.length, ...(searchConsole ? { searchConsole } : {}) });
       }
+      if (action === 'journeys/sessions' || (action === 'journeys' && Number(q.steps || 2) > 2)) {
+        throw failure('Full Rybbit journeys and session details require ordered event-level data, such as a GA4 BigQuery export. This connection only provides aggregated referrer-to-page views.', 422);
+      }
       if (action === 'journeys' || action === 'journeys/summary') {
         const transition = buildTransitions(await report(['hostName', 'pageReferrer', 'pagePath'], ['screenPageViews'], exact('eventName', 'page_view')));
-        if (action.endsWith('/summary')) return send({ sessions: transition.internalViews, avgPathLength: 2, conversions: null, topExit: transition.topDestination ? { page: transition.topDestination.path, sessions: transition.topDestination.views } : null });
+        if (action.endsWith('/summary')) return send({
+          sessions: transition.internalViews, avgPathLength: 2, conversions: null,
+          topReferrer: transition.topReferrer ? { page: transition.topReferrer.path, pageviews: transition.topReferrer.views } : null,
+          topDestination: transition.topDestination ? { page: transition.topDestination.path, pageviews: transition.topDestination.views } : null,
+          // Retain the upstream response fields for existing clients.
+          topExit: transition.topDestination ? { page: transition.topDestination.path, sessions: transition.topDestination.views } : null,
+        });
         let stepFilters; try { stepFilters = JSON.parse(q.stepFilters || '{}'); } catch { throw failure('Invalid step filters.'); }
-        const matches = (value, pattern) => { if (!pattern) return true; const escaped = String(pattern).replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*'); return new RegExp(`^${escaped}$`).test(value); };
+        const matches = (value, pattern) => {
+          if (!pattern) return true;
+          return require('./sessionJourneys').patternOf(String(pattern)).test(value);
+        };
+        const journeySection = page => {
+          const match = /^(\/[^/]+)\/.+/.exec(page);
+          return match ? `${match[1]}/**` : page;
+        };
         const grouped = new Map();
         for (const row of transition.rows) {
-          const path = [row.from, row.to].map(path => q.groupBy === 'section' ? sectionOf(path) : path);
+          const path = [row.from, row.to].map(path => q.groupBy === 'section' ? journeySection(path) : path);
           if (!matches(path[0], stepFilters[0]) || !matches(path[1], stepFilters[1]) || !matches(path[1], q.endsAt)) continue;
           const key = JSON.stringify(path); const item = grouped.get(key) || { path, count: 0, percentage: 0 }; item.count += row.views; grouped.set(key, item);
         }

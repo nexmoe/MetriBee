@@ -50,6 +50,9 @@ export interface JourneySummary {
   /** Null when no goal was requested. */
   conversions: number | null;
   topExit: { page: string; sessions: number } | null;
+  /** GA4 same-site referrer pairs are counted as page views. */
+  topReferrer?: { page: string; pageviews: number } | null;
+  topDestination?: { page: string; pageviews: number } | null;
 }
 
 // Page title types

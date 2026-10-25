@@ -10,6 +10,8 @@ const express = require('express');
 const exphbs = require('express-handlebars');
 const cors = require('cors');
 const path = require('path');
+const { getLocale, localeHref } = require('./lib/uiLocale');
+const { sitesHomeUrl } = require('./lib/homeViews');
 
 require('dotenv').config();
 const log = require('./lib/log');
@@ -135,6 +137,8 @@ app.get('/api/setup/status', async (req, res) => {
 	}
 });
 
+// English uses the unprefixed URL, including during initial setup.
+app.get(/^\/en(?:\/|$)/, (req, res) => res.redirect(308, /^\/en\/sites\/?$/.test(req.path) ? sitesHomeUrl(req.originalUrl) : localeHref(req.originalUrl, 'en')));
 app.get(['/setup', /^\/(?:de|fr|zh|es|pl|it|ko|pt|ja|cs|uk)\/setup\/?$/], require('./controllers/workspace').workspaceView);
 app.get('/api/setup/instructions', (req, res) => {
 	// Docker: the host folder is unknown and pnpm is not there, so show docker commands
@@ -173,7 +177,7 @@ app.use((req, res, next) => {
 	setup.syncEnvFile(); // .env may have been written since startup
 	if (isConfigured()) return next();
 	if (req.path.startsWith('/api/') || req.method !== 'GET') return res.status(503).json({ error: 'not_configured' });
-	res.redirect('/setup');
+	res.redirect(localeHref('/setup', getLocale(req.path)));
 });
 
 // First boot: pages show a live progress page, API requests wait (max 30 s) until the warm step ends.

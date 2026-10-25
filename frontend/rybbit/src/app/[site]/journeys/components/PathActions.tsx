@@ -46,13 +46,13 @@ export function PathActions({
   return (
     // No standard pivots: the wrapper is used for its layout and for keeping clicks from a clickable row.
     <PivotActions actions={[]} className={className}>
-      {false && <PivotButton
+      <PivotButton
         icon={<Rewind />}
         label={t("Sessions")}
         showLabel={showLabels}
         onClick={() => handlers.openSessions(path, false)}
-      />}
-      {false && replayAvailable && (
+      />
+      {replayAvailable && (
         // Desktop only, like the sidebar's Replay item.
         <PivotButton
           icon={<Video />}

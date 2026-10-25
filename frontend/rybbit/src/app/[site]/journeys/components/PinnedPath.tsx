@@ -14,7 +14,7 @@ export interface PinnedPathProps {
   journey: JourneyRow;
   /** The shown paths: the step-by-step figures are sums over them. */
   journeys: JourneyRow[];
-  /** The selected goal and how many of all internal page views reach it (0–1); null without a goal. */
+  /** The selected goal and how many of all multi-page sessions reach it (0–1); null without a goal. */
   goal: { name: string; overallRate: number | null; href: string } | null;
   pageHref: (page: string) => string | undefined;
   handlers: PathActionHandlers;
@@ -75,7 +75,7 @@ export function PinnedPath({ journey, journeys, goal, pageHref, handlers, onUnpi
           <div className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-50">
             {`${journey.percentage.toFixed(1)}%`}
           </div>
-          <div>{t("of internal page views")}</div>
+          <div>{t("of multi-page sessions")}</div>
         </div>
         {goal && reach !== null && (
           <div className="min-w-0">
@@ -128,7 +128,7 @@ export function PinnedPath({ journey, journeys, goal, pageHref, handlers, onUnpi
           </div>
         ))}
         <p className="pt-1 text-[11px] text-neutral-500 dark:text-neutral-400">
-          {t("Page views on the transitions shown that got this far along the path.")}
+          {t("Sessions on the paths shown that got this far along the path.")}
         </p>
       </div>
 

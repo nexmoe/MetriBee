@@ -1,19 +1,20 @@
 import { useSyncExternalStore } from 'react';
 import { sitesHomeUrl } from '../../lib/homeViews';
+import { locales, getLocale as pathLocale, stripLocale, localeHref } from '../../lib/uiLocale';
 
 const routes: Record<string, string> = { main: '/analytics', pages: '/analytics/pages', events: '/events', journeys: '/journeys', retention: '/retention', funnels: '/funnels', widgets: '/widgets', globe: '/globe', reports: '/analytics/reports' };
-export const locales = ['en', 'de', 'fr', 'zh', 'es', 'pl', 'it', 'ko', 'pt', 'ja', 'cs', 'uk'];
-export function getLocale(path = location.pathname) { const first = path.split('/')[1]; return locales.includes(first) ? first : 'en'; }
-function unlocalized(path: string) { return getLocale(path) === 'en' ? path : path.replace(/^\/[^/]+/, '') || '/'; }
+export { locales };
+export function getLocale(path = location.pathname) { return pathLocale(path); }
+const unlocalized = stripLocale;
 export function getSharedRoute(path = location.pathname) {
   const match = unlocalized(path).match(/^\/(\d+)\/([a-f0-9]{12})\/(main|pages|events|journeys|retention|funnels)\/?$/);
   return match ? { siteId: match[1], privateKey: match[2], route: match[3] } : null;
 }
 export function getAppPath(path = location.pathname) {
   const shared = getSharedRoute(path);
-  return shared ? routes[shared.route] : unlocalized(path);
+  return shared ? routes[shared.route] : unlocalized(path).replace(/\/+$/, '') || '/';
 }
-export function switchLocale(locale: string) { if (locales.includes(locale)) location.assign(`${locale === 'en' ? '' : '/' + locale}${getAppPath()}${location.search}${location.hash}`); }
+export function switchLocale(locale: string) { if (locales.includes(locale)) location.assign(localeHref(location.href, locale)); }
 export function useLocation() {
   return useSyncExternalStore(callback => {
     window.addEventListener('popstate', callback);

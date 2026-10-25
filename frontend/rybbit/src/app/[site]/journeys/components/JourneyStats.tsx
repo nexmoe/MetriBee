@@ -16,12 +16,13 @@ export interface JourneyStatsProps {
   isLoading: boolean;
   /** The selected goal's name; null leaves the reach cell out. */
   goalName: string | null;
+  sourceAvailable?: boolean;
 }
 
 /** The figures that open the journeys page: how many sessions have a path at all, and where paths start, end and convert. */
-export function JourneyStats({ summary, previous, isLoading, goalName }: JourneyStatsProps) {
+export function JourneyStats({ summary, previous, isLoading, goalName, sourceAvailable = true }: JourneyStatsProps) {
   const t = useExtracted();
-  const context = useJourneyContext();
+  const context = useJourneyContext(sourceAvailable);
 
   const sessions = summary?.sessions ?? 0;
   const reach = summary && summary.conversions !== null && sessions > 0 ? (summary.conversions / sessions) * 100 : null;
@@ -37,12 +38,12 @@ export function JourneyStats({ summary, previous, isLoading, goalName }: Journey
         {
           id: "multi-page",
           icon: <Split className="h-3 w-3" />,
-          label: t("Internal page views"),
-          value: sessions.toLocaleString(),
+          label: t("Multi-page sessions"),
+          value: summary ? sessions.toLocaleString() : "–",
           delta: percentDelta(summary?.sessions, previous?.sessions),
           sub:
             context.sessions && sessions <= context.sessions
-              ? t("{percent} of {total} page views", {
+              ? t("{percent} of {total} sessions", {
                   percent: share(sessions, context.sessions),
                   total: context.sessions.toLocaleString(),
                 })
@@ -51,7 +52,7 @@ export function JourneyStats({ summary, previous, isLoading, goalName }: Journey
         {
           id: "path-length",
           icon: <Footprints className="h-3 w-3" />,
-          label: t("Transition length"),
+          label: t("Avg path length"),
           value: sessions > 0 ? t("{count} pages", { count: (summary?.avgPathLength ?? 0).toFixed(1) }) : "–",
           sub:
             previous && previous.sessions > 0
@@ -75,11 +76,11 @@ export function JourneyStats({ summary, previous, isLoading, goalName }: Journey
         {
           id: "top-exit",
           icon: <LogOut className="h-3 w-3" />,
-          label: t("Top destination"),
+          label: t("Top exit after 2+ pages"),
           value: summary?.topExit?.page ?? "–",
           title: summary?.topExit?.page,
           sub: summary?.topExit
-            ? t("{percent} of internal page views arrive here", { percent: share(summary.topExit.sessions, sessions) })
+            ? t("{percent} of these sessions end here", { percent: share(summary.topExit.sessions, sessions) })
             : "",
         },
         goalName !== null && {

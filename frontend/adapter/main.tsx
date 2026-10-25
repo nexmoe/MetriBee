@@ -15,6 +15,7 @@ import { Toaster } from "../rybbit/src/components/ui/sonner";
 import messages from "../rybbit/messages/en.json";
 import { getAppPath, getLocale, getSharedRoute, useLocation } from "./navigation";
 import { PrivacyProvider } from "./privacy/Privacy";
+import { useExtracted } from "./extracted";
 import { QueryProvider } from "./QueryProvider";
 import "./urlState";
 import "../rybbit/src/app/globals.css";
@@ -24,7 +25,7 @@ const pages: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   "/analytics": lazy(() => import("./pages/Overview")),
   "/analytics/pages": lazy(() => import("./pages/Pages")),
   "/events": lazy(() => import("../rybbit/src/app/[site]/events/page")),
-  "/journeys": lazy(() => import("../rybbit/src/app/[site]/journeys/page")),
+  "/journeys": lazy(() => import("./pages/Journeys")),
   "/retention": lazy(() => import("../rybbit/src/app/[site]/retention/page")),
   "/funnels": lazy(() => import("./pages/Funnels")),
   "/widgets": lazy(() => import("./pages/Widgets")),
@@ -36,6 +37,10 @@ const pages: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   "/setup": lazy(() => import("./Setup")),
 };
 const WidgetFrame = lazy(() => import("./embeds/WidgetFrame"));
+function ReportError({ error }: { error: Error }) {
+  const t = useExtracted();
+  return <ErrorState title={t("Report unavailable")} message={error.message} refetch={() => location.reload()} />;
+}
 class Boundary extends React.Component<
   { children: React.ReactNode },
   { error: Error | null }
@@ -46,11 +51,7 @@ class Boundary extends React.Component<
   }
   render() {
     return this.state.error ? (
-      <ErrorState
-        title="Report unavailable"
-        message={this.state.error.message}
-        refetch={() => location.reload()}
-      />
+      <ReportError error={this.state.error} />
     ) : (
       this.props.children
     );
@@ -58,6 +59,7 @@ class Boundary extends React.Component<
 }
 function App() {
   useLocation();
+  const t = useExtracted();
   const pathname = getAppPath();
   useEffect(() => {
     const titles: Record<string, string> = {
@@ -67,8 +69,8 @@ function App() {
       "/quota": "API quota",
       "/setup": "GA4 connection",
     };
-    if (titles[pathname]) document.title = titles[pathname];
-  }, [pathname]);
+    if (titles[pathname]) document.title = `${t(titles[pathname])} · MetriBee`;
+  }, [pathname, t]);
   const widget = (window as any).__GA4_CONTEXT__?.metricWidget;
   const Page = widget ? WidgetFrame : pages[pathname] || pages["/analytics"];
   const content = (
@@ -114,7 +116,7 @@ async function boot() {
       : (await catalogs[`../rybbit/messages/${locale}.json`]()).default;
   document.documentElement.lang = locale;
   createRoot(document.getElementById("root")!).render(
-    <NextIntlClientProvider locale={locale} messages={catalog} timeZone="UTC">
+    <NextIntlClientProvider locale={locale} messages={{ ...messages, ...catalog }} timeZone="UTC">
       <MotionConfig reducedMotion="user">
         <ThemeProvider
           attribute="class"

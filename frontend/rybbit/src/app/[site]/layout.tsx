@@ -6,6 +6,7 @@ import { AppSidebar } from "../../components/AppSidebar";
 import { getMainDashboardPath, getSiteRouteContext } from "../../lib/siteRoute";
 import { useStore } from "../../lib/store";
 import { useSyncStateWithUrl } from "../../lib/urlParams";
+import { Footer } from "../components/Footer";
 import { Header } from "./components/Header/Header";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import { useEmbedPageOptions } from "./utils";
@@ -47,6 +48,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <div>
         <Header />
         <div>{children}</div>
+        <Footer disabled={embed} />
       </div>
     );
   }
@@ -65,7 +67,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             {/* <div className="px-4 py-2 max-w-[1400px] mx-auto w-full mb-4"> */}
             <Header />
             <div className="flex-1">{children}</div>
-
+            <Footer disabled={embed} />
           </div>
         </div>
       </div>

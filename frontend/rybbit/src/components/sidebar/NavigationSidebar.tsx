@@ -13,7 +13,7 @@ export function NavigationSidebar() {
         <OrganizationSelector />
       </div>
       <Sidebar.Items>
-        <Sidebar.SectionHeader>Workspace</Sidebar.SectionHeader>
+        <Sidebar.SectionHeader>{t("Workspace")}</Sidebar.SectionHeader>
         <Sidebar.Item
           label={t("Properties")}
           href="/"
@@ -21,32 +21,32 @@ export function NavigationSidebar() {
           icon={<AppWindow className="w-4 h-4" />}
         />
         <Sidebar.Item
-          label="Realtime overview"
+          label={t("Realtime overview")}
           href="/realtime"
           active={pathname === "/realtime"}
           icon={<Activity className="w-4 h-4" />}
         />
         <Sidebar.Item
-          label="Sites"
+          label={t("Sites")}
           href="/sites"
           active={pathname === "/sites"}
           icon={<AppWindow className="w-4 h-4" />}
         />
         <Sidebar.Item
-          label="Globe"
+          label={t("Globe")}
           href="/globe"
           active={pathname.endsWith("/globe")}
           icon={<Globe className="w-4 h-4" />}
         />
         <Sidebar.SectionHeader>GA4</Sidebar.SectionHeader>
         <Sidebar.Item
-          label="API quota"
+          label={t("API quota")}
           href="/quota"
           active={pathname === "/quota"}
           icon={<Gauge className="w-4 h-4" />}
         />
         <Sidebar.Item
-          label="Connection"
+          label={t("Connection")}
           href="/setup"
           active={pathname === "/setup"}
           icon={<Plug className="w-4 h-4" />}

@@ -25,7 +25,6 @@ router.get(/^\/(?:de\/|fr\/|zh\/|es\/|pl\/|it\/|ko\/|pt\/|ja\/|cs\/|uk\/)?(\d+)\
 });
 router.get(/^\/(?:en\/|de\/|fr\/|zh\/|es\/|pl\/|it\/|ko\/|pt\/|ja\/|cs\/|uk\/)?sites\/?$/, (req, res) => res.redirect(308, sitesHomeUrl(req.originalUrl)));
 router.get(['/', '/realtime', '/analytics', '/analytics/pages', '/events', '/journeys', '/retention', '/funnels', '/widgets', '/globe', '/quota', '/analytics/reports'], workspace.workspaceView);
-router.get(/^\/en(?:\/|$)/, (req, res) => res.redirect(308, req.originalUrl.replace(/^\/en(?=\/|\?|$)/, '') || '/'));
 router.get(/^\/(?:de|fr|zh|es|pl|it|ko|pt|ja|cs|uk)(?:\/(?:realtime|analytics(?:\/(?:pages|reports))?|events|journeys|retention|funnels|widgets|globe|quota))?\/?$/, workspace.workspaceView);
 router.get('/api/sites-snapshot', require('../controllers/dashboardModels').sitesSnapshot);
 const quota = require('../controllers/quota').createQuotaHandlers();

@@ -1,25 +1,21 @@
 # Changelog
 
+All notable changes to this project are listed here.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
+
+## [Unreleased]
+
+### Added
+
+- Run MetriBee from its own ready-made Docker image on Intel/AMD or ARM computers.
+
 - Main integrates its four GSC metrics into the top clickable metric card, switching the existing line chart with period comparison, saved metric selection and weighted daily/week/month/year search trends.
 
 - Restores the four GSC summary metrics on Main and Pages while retaining the integrated search tables and whole-period shares.
 
 - Pages adds GSC clicks, impressions, whole-period click/impression shares, CTR and weighted position to the native page and directory rows, with global search sorting, pagination, missing-value handling and matching MCP support.
 
-All notable changes to this project are listed here.
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
-
-## [Unreleased]
-
-### Changed
-
-- Data pages use TanStack Query cache-first loading with 30-minute cache retention and session restoration for historical reports. Stale results refresh in the background and remain visible if a refresh fails; shared pages and public embeds keep server-side access checks.
-
-- Primary buttons use bee yellow with dark text in both themes.
-
-- The project as a whole is now declared AGPL-3.0-only, matching the Rybbit code it includes. The original GA4-Dashboard-MCP MIT license moves to `LICENSES/`, and a root `NOTICE` lists both sources. The Docker image and `/ui-source.tar.gz` now include `LICENSE`, `NOTICE` and `LICENSES/`.
-
-### Added
+- Rybbit’s 12-language interface, with URL-based language switching, additional Chinese GA4 labels and a MetriBee footer linking to releases, source, feedback and upstream attribution. Language changes preserve report parameters and private sharing paths.
 
 - The live-user drawer shows five-minute GA4 totals and country, device and page breakdowns, sharing cached totals with the toolbar and exposing the same aggregates through MCP.
 
@@ -49,6 +45,37 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Home property cards can show the last 30 minutes, today, the last 7 days or the last 28 days. The browser remembers the selected range.
 - Home groups active, quiet and failed properties by their GA4 account across all time ranges.
 
+### Changed
+
+- The dashboard now uses the MetriBee name throughout the interface.
+
+- Data pages use TanStack Query cache-first loading with 30-minute cache retention and session restoration for historical reports. Stale results refresh in the background and remain visible if a refresh fails; shared pages and public embeds keep server-side access checks.
+
+- Primary buttons use bee yellow with dark text in both themes.
+
+- The project as a whole is now declared AGPL-3.0-only, matching the Rybbit code it includes. The original GA4-Dashboard-MCP MIT license moves to `LICENSES/`, and a root `NOTICE` lists both sources. The Docker image and `/ui-source.tar.gz` now include `LICENSE`, `NOTICE` and `LICENSES/`.
+
+- Setup exposes the Streamable HTTP MCP URL, project client configuration, Claude Code command, verification steps and current report capabilities. Optional Search Console and supplemental OAuth instructions now appear alongside GA4 setup, sourced from SETUP.md.
+
+- MCP moves from stdio and the v1 SDK to the latest stable v2 SDK and Streamable HTTP. The dashboard serves all 11 existing tools at `/mcp`; `pnpm mcp` provides a standalone HTTP endpoint. Client setup, Docker and connection prompts use HTTP URLs, with shared authentication, caching and quota protection.
+
+- Account grouping moves from Realtime to an optional Home control shared by Cards, Status, Table and Heatmap.
+
+- Home combines the original site cards with Status, Table and Heatmap views sharing search, date filters and comparison periods. View tabs, update time and date controls share one toolbar row. Reports, status thresholds, trends and CSV exports follow the selected dates; optional AdSense values require full period coverage. Existing Sites links open the matching homepage view.
+
+- API quota groups Core, Realtime and Funnel rows under each site, with collapsible groups and no repeated site names.
+
+- Globe restores the original full-viewport map, floating live summary and event feed, stacked city avatars, and floating city details, alongside the existing icon sidebar. Complete city, country, device and platform reports remain available from All summaries.
+
+- Workspace pages show only the primary navigation; secondary report navigation is reserved for property details.
+
+- Default Home directly reuses the original Rybbit Home and SiteCards. The GA4 realtime overview remains at `/realtime`; Sites, Globe, API quota, connection and the complete GA4 report catalog use the same copied components. User and Documentation menus are removed. Per-property homepage failures do not hide successful cards.
+
+- Main, Pages, Events, Journeys and Retention now directly reuse the Rybbit React theme, Radix controls, stat bands, Sankey and cohort visualizations in one analytics workspace. GA4 APIs remain on the Express server; original UI source licenses are preserved and downloadable.
+- Analytics date windows are inclusive and consistent across the workspace, with 30-day and 90-day support.
+
+- Analytics layout: property and page sidebar with a Main entry, a full-width overview, and six groups of tabbed reports. Card headers contain only tabs and export actions. Mobile stacks navigation above the reports. Report links, CSV exports and keyboard navigation remain available.
+
 ### Fixed
 
 - Entering Home or a property report no longer waits for the five-minute GA4 property metadata refresh. Historical report caches remain available during background revalidation, with shared requests, failure backoff and bounded refresh polling.
@@ -71,29 +98,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - GA4 clients use REST on networks that cannot establish gRPC connections. Local TLS and DNS failures no longer count toward the GA4 server-error cooldown.
 - Home offers retry when every property report fails.
-
-### Changed
-
-- Setup exposes the Streamable HTTP MCP URL, project client configuration, Claude Code command, verification steps and current report capabilities. Optional Search Console and supplemental OAuth instructions now appear alongside GA4 setup, sourced from SETUP.md.
-
-- MCP moves from stdio and the v1 SDK to the latest stable v2 SDK and Streamable HTTP. The dashboard serves all 11 existing tools at `/mcp`; `pnpm mcp` provides a standalone HTTP endpoint. Client setup, Docker and connection prompts use HTTP URLs, with shared authentication, caching and quota protection.
-
-- Account grouping moves from Realtime to an optional Home control shared by Cards, Status, Table and Heatmap.
-
-- Home combines the original site cards with Status, Table and Heatmap views sharing search, date filters and comparison periods. View tabs, update time and date controls share one toolbar row. Reports, status thresholds, trends and CSV exports follow the selected dates; optional AdSense values require full period coverage. Existing Sites links open the matching homepage view.
-
-- API quota groups Core, Realtime and Funnel rows under each site, with collapsible groups and no repeated site names.
-
-- Globe restores the original full-viewport map, floating live summary and event feed, stacked city avatars, and floating city details, alongside the existing icon sidebar. Complete city, country, device and platform reports remain available from All summaries.
-
-- Workspace pages show only the primary navigation; secondary report navigation is reserved for property details.
-
-- Default Home directly reuses the original Rybbit Home and SiteCards. The GA4 realtime overview remains at `/realtime`; Sites, Globe, API quota, connection and the complete GA4 report catalog use the same copied components. User and Documentation menus are removed. Per-property homepage failures do not hide successful cards.
-
-- Main, Pages, Events, Journeys and Retention now directly reuse the Rybbit React theme, Radix controls, stat bands, Sankey and cohort visualizations in one analytics workspace. GA4 APIs remain on the Express server; original UI source licenses are preserved and downloadable.
-- Analytics date windows are inclusive and consistent across the workspace, with 30-day and 90-day support.
-
-- Analytics layout: property and page sidebar with a Main entry, a full-width overview, and six groups of tabbed reports. Card headers contain only tabs and export actions. Mobile stacks navigation above the reports. Report links, CSV exports and keyboard navigation remain available.
 
 ### Removed
 

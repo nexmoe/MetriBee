@@ -57,6 +57,8 @@ interface SankeyDiagramProps {
   pageHref?: (page: string) => string | undefined;
   /** Docked under the right-hand columns, or below the diagram when it is narrow. */
   overlay?: ReactNode;
+  /** GA4's separate aggregate report reuses the renderer with page-view units. */
+  measurement?: "sessions" | "pageviews";
 }
 
 type Hover = { kind: "node"; id: string } | { kind: "link"; id: string };
@@ -90,6 +92,7 @@ export function SankeyDiagram({
   renderStepHeader,
   pageHref,
   overlay,
+  measurement = "sessions",
 }: SankeyDiagramProps) {
   const t = useExtracted();
   const router = useRouter();
@@ -183,7 +186,7 @@ export function SankeyDiagram({
   const nodeMeta = (node: LaidOutNode) => {
     const count = node.count.toLocaleString();
     // The entry column says what the figures count; the others repeat only the number.
-    if (node.step === 0 && !node.exits) return t("{count} page views", { count });
+    if (node.step === 0 && !node.exits) return t(measurement === "pageviews" ? "{count} page views" : "{count} sessions", { count });
     if (node.exits === null) return count;
     if (node.exits === 0) return t("{count} · all continue", { count });
     return t("{count} · {percent} end here", { count, percent: formatShare(node.exits / node.count, 0) });
@@ -214,7 +217,9 @@ export function SankeyDiagram({
                 height={svgHeight}
                 className="block"
                 role="img"
-                aria-label={t("Sankey diagram of the top {count} paths from session start, {steps} steps deep", {
+                aria-label={t(measurement === "pageviews"
+                  ? "Sankey diagram of the top {count} referring-page to current-page transitions"
+                  : "Sankey diagram of the top {count} paths from session start, {steps} steps deep", {
                   count: String(shown.length),
                   steps: String(steps),
                 })}
@@ -422,7 +427,9 @@ export function SankeyDiagram({
                 <>
                   <div className="break-all font-medium">{hoveredNode.name}</div>
                   <div className="mt-1 tabular-nums text-neutral-600 dark:text-neutral-300">
-                    {t("{count} page views · {percent} of sessions with 2+ pages", {
+                    {t(measurement === "pageviews"
+                      ? "{count} page views · {percent} of internal page views"
+                      : "{count} sessions · {percent} of sessions with 2+ pages", {
                       count: hoveredNode.count.toLocaleString(),
                       percent: `${hoveredNode.percentage.toFixed(1)}%`,
                     })}
@@ -448,7 +455,9 @@ export function SankeyDiagram({
                     {hoveredLinkTarget.name}
                   </div>
                   <div className="mt-1 tabular-nums text-neutral-600 dark:text-neutral-300">
-                    {t("{count} page views · {percent} of those on {page} at step {step}", {
+                    {t(measurement === "pageviews"
+                      ? "{count} page views · {percent} of shown traffic from {page}"
+                      : "{count} sessions · {percent} of those on {page} at step {step}", {
                       count: hoveredLink.value.toLocaleString(),
                       percent: formatShare(hoveredLink.value / hoveredLinkSource.count),
                       page: hoveredLinkSource.name,

@@ -41,6 +41,81 @@ async function invoke(h, path, query = {}, method = "GET", body = {}, headers = 
   return out;
 }
 const dates = { start_date: "2026-10-01", end_date: "2026-10-22" };
+describe("ordered-session Journey adapter", () => {
+  let originalDemo;
+  beforeEach(() => { originalDemo = process.env.DEMO; delete process.env.DEMO; });
+  afterEach(() => { if (originalDemo === undefined) delete process.env.DEMO; else process.env.DEMO = originalDemo; });
+  const noGA4 = {
+    run: async () => { throw new Error("Session journeys must not query GA4 aggregates"); },
+    read: async () => { throw new Error("Session journeys must not read live report caches"); },
+    write: async () => { throw new Error("Session journeys must not write live report caches"); },
+    admin: () => { throw new Error("Session journeys must not resolve GA4 metadata"); },
+  };
+  const sourceRecords = [{ session_id: "session-a", user_id: "visitor-a", hostname: "example.com", country: "US",
+    events: ["/", "/docs", "/pricing", "/signup", "/done"].map((pathname, index) => ({ type: "pageview", pathname, timestamp: `2026-10-20 10:00:0${index}` })) }];
+  it("reports source capabilities without GA4 calls and keeps missing data distinct from an empty population", async () => {
+    const h = handler(noGA4);
+    const capability = await invoke(h, "/sites/123/journeys/capabilities");
+    expect(capability.body.data).to.deep.equal({ available: false, source: null, minSteps: 2, maxSteps: 10, transitionsAvailable: true });
+    for (const action of ["journeys", "journeys/summary", "journeys/sessions", "journeys/context"]) {
+      const result = await invoke(h, `/sites/123/${action}`, { ...dates, mode: "sessions", steps: "4" });
+      expect(result.status).to.equal(422);
+      expect(result.body.code).to.equal("journey_source_required");
+    }
+  });
+  it("serves native paths, summary, context and drawer membership from one property-scoped ordered source", async () => {
+    const calls = [];
+    const h = handler({ ...noGA4, properties: async () => ({ properties: [{ id: "123", domain: "example.com", timeZone: "UTC" }] }),
+      journeySessions: async args => { calls.push(args); return sourceRecords; } });
+    const params = { ...dates, mode: "sessions", steps: "4" };
+    const paths = await invoke(h, "/sites/123/journeys", params);
+    expect(paths.status).to.equal(200);
+    expect(paths.body).to.include({ source: "ordered-sessions", totalSessions: 1 });
+    expect(paths.body.journeys[0]).to.deep.equal({ path: ["/", "/docs", "/pricing", "/signup"], count: 1, percentage: 100 });
+    const summary = await invoke(h, "/sites/123/journeys/summary", params);
+    expect(summary.body.data).to.include({ sessions: 1, avgPathLength: 5 });
+    expect(summary.body.data.topExit).to.deep.equal({ page: "/done", sessions: 1 });
+    const context = await invoke(h, "/sites/123/journeys/context", params);
+    expect(context.body.data.sessions).to.equal(1);
+    const drawer = await invoke(h, "/sites/123/journeys/sessions", { ...params, path: JSON.stringify(paths.body.journeys[0].path) });
+    expect(drawer.body.data.map(session => session.session_id)).to.deep.equal(["session-a"]);
+    expect(calls.every(args => args.property.id === "123" && JSON.stringify(args.dateRange) === JSON.stringify({ startDate: dates.start_date, endDate: dates.end_date }))).to.equal(true);
+  });
+  it("validates property ownership and private-link scope before touching ordered events", async () => {
+    let calls = 0;
+    const h = handler({ ...noGA4, journeySessions: async () => { calls++; return sourceRecords; },
+      embeds: { store: { validate: async () => true } } });
+    expect((await invoke(h, "/sites/999/journeys/capabilities")).status).to.equal(404);
+    const shared = { "x-private-site": "123", "x-private-key": "valid" };
+    expect((await invoke(h, "/sites/999/journeys", { ...dates, mode: "sessions" }, "GET", {}, shared)).status).to.equal(403);
+    expect(calls).to.equal(0);
+  });
+  it("isolates demo session events and expands exactly the sessions counted by the diagram", async () => {
+    process.env.DEMO = "1";
+    const properties = [{ id: "311000101", domain: "northwind-store.example" }, { id: "311000102", domain: "lumen-notes.example" }];
+    const h = handler({ ...noGA4, properties: async () => ({ properties }) });
+    const base = "/sites/311000101", params = { ...dates, mode: "sessions", steps: "4" };
+    expect((await invoke(h, `${base}/journeys/capabilities`)).body.data.source).to.equal("demo-sessions");
+    const paths = await invoke(h, `${base}/journeys`, params);
+    expect(paths.status).to.equal(200);
+    expect(paths.body.source).to.equal("demo-sessions");
+    const path = paths.body.journeys[0];
+    const drawer = await invoke(h, `${base}/journeys/sessions`, { ...params, path: JSON.stringify(path.path), limit: "100" });
+    expect(drawer.body.data.length).to.equal(path.count);
+    const first = drawer.body.data[0];
+    const detail = await invoke(h, `${base}/sessions/${first.session_id}`);
+    expect(detail.status).to.equal(200);
+    expect(detail.body.data.session.session_id).to.equal(first.session_id);
+    const rawPages = detail.body.data.events.map(event => event.pathname);
+    expect(rawPages.filter((page, index) => index === 0 || page !== rawPages[index - 1]).slice(0, 4)).to.deep.equal(path.path);
+    expect((await invoke(h, `/sites/311000102/sessions/${first.session_id}`)).status).to.equal(404);
+    const summary = await invoke(h, `${base}/journeys/summary`, { ...params, goalId: "1" });
+    expect(summary.body.data.sessions).to.equal(paths.body.totalSessions);
+    expect(summary.body.data.avgPathLength).to.be.greaterThan(4);
+    const goals = await invoke(h, `${base}/goals`, { ...dates, filters: JSON.stringify([{ parameter: "country", type: "equals", value: ["missing"] }]) });
+    expect(goals.body.data[0]).to.include({ total_sessions: 0, total_conversions: 0 });
+  });
+});
 describe("GA4 live user drawer", () => {
   function liveHandler(overrides = {}) {
     const calls = [];
@@ -256,6 +331,69 @@ describe("Rybbit GA4 data adapter", () => {
     const result = await invoke(handler({ run: async () => reports([row(["example.com", "https://example.com/one", "/two"], [7])]) }), "/sites/123/journeys", dates);
     expect(result.body.journeys).to.have.length(1);
     expect(result.body.reportStatus).to.deep.equal({ fetchedAt: "2026-10-22T10:00:00.000Z", cacheStatus: "fresh" });
+  });
+  it("summarizes the actual referring and destination pages for GA4 transitions", async () => {
+    const result = await invoke(handler({ run: async () => reports([
+      row(["example.com", "https://example.com/start", "/docs"], [8]),
+      row(["example.com", "https://example.com/start", "/pricing"], [5]),
+      row(["example.com", "https://example.com/docs", "/pricing"], [4]),
+    ]) }), "/sites/123/journeys/summary", dates);
+    expect(result.body.data.sessions).to.equal(17);
+    expect(result.body.data.topReferrer).to.deep.equal({ page: "/start", pageviews: 13 });
+    expect(result.body.data.topDestination).to.deep.equal({ page: "/pricing", pageviews: 9 });
+    const empty = await invoke(handler({ run: async () => reports([]) }), "/sites/123/journeys/summary", dates);
+    expect(empty.body.data.topReferrer).to.equal(null);
+    expect(empty.body.data.topDestination).to.equal(null);
+  });
+  it("explores adjacent pages from cached pairs without inventing a session sequence", async () => {
+    const cache = new Map();
+    let calls = 0;
+    const h = handler({
+      read: async (namespace, key) => cache.get(`${namespace}:${key}`),
+      write: async (namespace, key, data) => cache.set(`${namespace}:${key}`, data),
+      run: async () => {
+        calls++;
+        return reports([
+          row(["example.com", "https://example.com/start", "/docs"], [8]),
+          row(["example.com", "https://example.com/start", "/pricing"], [5]),
+          row(["example.com", "https://example.com/docs", "/pricing"], [12]),
+        ]);
+      },
+    });
+    const initial = await invoke(h, "/sites/123/journeys", { ...dates, limit: 1 });
+    const next = await invoke(h, "/sites/123/journeys", { ...dates, stepFilters: JSON.stringify({ 0: "/docs" }) });
+    const previous = await invoke(h, "/sites/123/journeys", { ...dates, endsAt: "/docs" });
+    expect(initial.body.journeys).to.have.length(1);
+    expect(next.body.journeys).to.deep.equal([{ path: ["/docs", "/pricing"], count: 12, percentage: 48 }]);
+    expect(previous.body.journeys).to.deep.equal([{ path: ["/start", "/docs"], count: 8, percentage: 32 }]);
+    expect(next.body.totalSessions).to.equal(25);
+    expect(calls).to.equal(1);
+  });
+  it("uses Rybbit section names and the same per-step wildcard grammar", async () => {
+    const h = handler({ run: async () => reports([
+      row(["example.com", "https://example.com/docs/start", "/blog/one"], [8]),
+      row(["example.com", "https://example.com/docs/deep/start", "/blog/deep/two"], [5]),
+      row(["example.com", "https://example.com/docs", "/blog/three"], [3]),
+    ]) });
+    const section = await invoke(h, "/sites/123/journeys", { ...dates, groupBy: "section", stepFilters: JSON.stringify({ 0: "/docs/**" }) });
+    expect(section.body.journeys).to.deep.equal([{ path: ["/docs/**", "/blog/**"], count: 13, percentage: 81.25 }]);
+    const singleSegment = await invoke(h, "/sites/123/journeys", { ...dates, stepFilters: JSON.stringify({ 0: "/docs/*" }) });
+    expect(singleSegment.body.journeys.map(item => item.count)).to.deep.equal([8]);
+    const nested = await invoke(h, "/sites/123/journeys", { ...dates, stepFilters: JSON.stringify({ 0: "/docs/**" }) });
+    expect(nested.body.journeys.map(item => item.count)).to.deep.equal([8, 5]);
+  });
+  it("does not silently replace native multi-step journeys or session details with aggregate pairs", async () => {
+    let calls = 0;
+    const h = handler({ run: async () => { calls++; return reports([]); } });
+    for (const [path, query] of [
+      ["/sites/123/journeys", { ...dates, steps: "4" }],
+      ["/sites/123/journeys/sessions", { ...dates, path: JSON.stringify(["/", "/docs"]) }],
+    ]) {
+      const result = await invoke(h, path, query);
+      expect(result.status).to.equal(422);
+      expect(result.body.error).to.include("ordered event-level data");
+    }
+    expect(calls).to.equal(0);
   });
   it("uses the original cohort fetch time and cache state for retention", async () => {
     const result = await invoke(handler({ retention: async (_req, res) => res.json({ cohorts: [], periods: 4, bucket: "week", fetchedAt: "2026-10-22T09:00:00Z", cached: true }) }), "/sites/123/retention", dates);
