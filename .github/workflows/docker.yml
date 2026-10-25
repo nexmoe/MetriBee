@@ -11,6 +11,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to rebuild (empty builds the selected ref)
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -20,7 +26,7 @@ env:
   IMAGE_NAME: metribee
 
 concurrency:
-  group: docker-${{ github.ref }}
+  group: docker-${{ github.ref }}-${{ inputs.release_tag }}
   cancel-in-progress: true
 
 jobs:
@@ -28,6 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -40,15 +48,25 @@ jobs:
 
   image:
     needs: test
-    runs-on: ubuntu-latest
+    # Build each architecture natively: QEMU can crash Node during pnpm installs.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
 
       - name: Image name (lowercase owner)
         id: img
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
       - if: github.event_name != 'pull_request'
@@ -58,23 +76,76 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/${{ matrix.arch }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          outputs: type=image,name=${{ steps.img.outputs.name }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha,scope=metribee-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=metribee-${{ matrix.arch }}
+
+      - name: Export image digest
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: image
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Image name (lowercase owner)
+        id: img
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.img.outputs.name }}
+          flavor: latest=false
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ inputs.release_tag == '' && github.ref == 'refs/heads/main' }}
+            type=sha,enable=${{ inputs.release_tag == '' && github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}},value=${{ inputs.release_tag || github.ref_name }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.release_tag || github.ref_name }}
 
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          # PRs only check that the image builds, so skip the slow arm64 emulation there.
-          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Publish and verify both architectures
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ${{ steps.img.outputs.name }}
+          METADATA: ${{ steps.meta.outputs.json }}
+        run: |
+          mapfile -t tags < <(jq -r '.tags[]' <<< "$METADATA")
+          args=()
+          for tag in "${tags[@]}"; do args+=(--tag "$tag"); done
+          sources=()
+          for digest in *; do sources+=("$IMAGE@sha256:$digest"); done
+          docker buildx imagetools create "${args[@]}" "${sources[@]}"
+          docker buildx imagetools inspect "${tags[0]}" --raw |
+            jq -e '[.manifests[].platform | select(.os == "linux") | .architecture] | contains(["amd64", "arm64"])'
