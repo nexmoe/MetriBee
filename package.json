@@ -1,6 +1,6 @@
 {
   "name": "metribee",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "MetriBee: real-time Google Analytics 4 dashboard featuring 3D globe visualization, traffic spike detection, visitor insights, and an embedded MCP server.",
   "main": "app.js",
   "scripts": {
