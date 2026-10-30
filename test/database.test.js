@@ -10,7 +10,7 @@ const {
   migrateLegacyDocuments,
   documentStore,
   readDocumentSnapshot,
-} = require("../lib/database");
+} = require("./helpers/database");
 
 describe("SQLite application data migration", function () {
   this.timeout(15000);

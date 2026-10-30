@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const { generateKeyPairSync, sign } = require("node:crypto");
 const { verifyWebhook } = require("@waffo/pancake-ts");
-const { openDatabase } = require("../lib/database");
+const { openDatabase } = require("./helpers/database");
 const { createBilling } = require("../lib/billing");
 const fs = require("node:fs/promises");
 const path = require("node:path");

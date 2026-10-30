@@ -40,7 +40,7 @@ WORKDIR /app
 ENV NODE_ENV=production PORT=5483 HOST=0.0.0.0 IN_DOCKER=1 CLOUD=false PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 COPY --from=deps /app/node_modules ./node_modules
 # Runtime files only: no docs, screenshots, tests or dev config.
-COPY package.json app.js SETUP.md LICENSE NOTICE ./
+COPY package.json app.js SETUP.md LICENSE NOTICE drizzle.config.js docker-entrypoint.sh ./
 COPY LICENSES LICENSES
 COPY lib lib
 COPY drizzle drizzle
@@ -55,9 +55,11 @@ COPY controllers controllers
 COPY --from=build /app/controllers/*.js controllers/
 # Writable data: .cache (reports), .data (durable funnel definitions, flags, favicons).
 RUN mkdir -p .cache .data mcp-server/.cache && chown -R node:node .cache .data mcp-server/.cache
+RUN chmod +x ./docker-entrypoint.sh
 USER node
 VOLUME ["/app/.data"]
 EXPOSE 5483
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://127.0.0.1:5483/healthz || exit 1
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "app.js"]

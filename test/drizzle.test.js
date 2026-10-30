@@ -255,7 +255,7 @@ describe("Drizzle SQLite upgrades", function () {
   it("serializes simultaneous dashboard/MCP startup against one database", async () => {
     const filename = path.join(directory, "parallel.sqlite");
     const script = `const {openDatabase}=require(${JSON.stringify(
-      require.resolve("../lib/database")
+      require.resolve("./helpers/database")
     )}); const db=openDatabase(process.argv[1]); db.close();`;
     await Promise.all(
       Array.from({ length: 4 }, () =>

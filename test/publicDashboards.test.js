@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { openDatabase } = require('../lib/database');
+const { openDatabase } = require('./helpers/database');
 const { publicPageSite, publicApiSite } = require('../lib/publicDashboard');
 
 function integrationTests() {

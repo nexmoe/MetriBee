@@ -36,7 +36,7 @@ describe("MCP Streamable HTTP", function () {
 	let clients;
 	let originals;
 	before(async () => {
-        database = require('../lib/database').openDatabase(':memory:');
+        database = require('./helpers/database').openDatabase(':memory:');
         authRuntime = await (await import('../lib/auth.mjs')).createAuthentication({db:database,env:{PORT:'5483'}});
         const signed = await authRuntime.auth.api.signUpEmail({body:{email:'mcp@example.com',password:'mcp-password',name:'MCP'}});
         const key = await authRuntime.auth.api.createApiKey({body:{userId:signed.user.id,name:'HTTP tests'}});transportToken=key.key;
@@ -301,7 +301,7 @@ describe("MCP HTTP command", function () {
 	this.timeout(10000);
 	it("starts from another working directory and stops on SIGTERM", async () => {
 		const directory = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'metribee-mcp-cli-'));
-		const child = spawn(process.execPath, [require.resolve("../mcp-server/index")], {
+		const child = spawn("sh", [require.resolve("../docker-entrypoint.sh"), process.execPath, require.resolve("../mcp-server/index")], {
 			cwd: require("node:os").tmpdir(), env: { ...process.env, DEMO: '1', DATABASE_PATH: require('node:path').join(directory, 'users.sqlite'), MCP_HOST: "127.0.0.1", MCP_PORT: "0" }, stdio: ["ignore", "pipe", "pipe"],
 		});
 		try {

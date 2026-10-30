@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
-const { openDatabase } = require("../lib/database");
+const { openDatabase } = require("./helpers/database");
 
 // Exercise actual Better Auth endpoints and Fastify hooks against an isolated SQLite file.
 function integrationTests() {

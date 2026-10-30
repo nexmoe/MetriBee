@@ -3,12 +3,12 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mkdir, chmod } from "node:fs/promises";
-import { createAuthentication } from "../lib/auth.mjs";
 const require = createRequire(import.meta.url);
 require("dotenv").config({
   path: fileURLToPath(new URL("../.env", import.meta.url)),
 });
-const { db } = await createAuthentication();
+const database = require("../lib/database");
+const db = database.openDatabase();
 try {
   const command = process.argv[2] || "migrate";
   if (command === "backup") {
@@ -32,9 +32,12 @@ try {
       throw new Error(`SQLite integrity check failed: ${integrity}`);
     console.log("SQLite integrity: ok");
   } else if (command === "migrate") {
+    database.migrateWithKit(db);
+    database.migrateLegacyDocuments(db);
     console.log(
       `Drizzle SQLite migrations applied: ${
-        db.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count
+        db.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get()
+          .count
       }`
     );
     console.log(

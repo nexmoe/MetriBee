@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Run automatic migrations through a Rybbit-style Docker entrypoint: Drizzle Kit and legacy imports complete before the application is executed, and failures prevent startup. Regular database/auth initialization no longer migrates application tables.
 - Manage all SQLite application and authentication tables through Drizzle schema and versioned migrations, automatically adopting existing databases and preserving legacy JSON imports, sessions and sharing links.
 - Replace Express with Fastify for the dashboard and standalone MCP server while preserving GA4 report caches and quota safeguards.
 - Preserve native Rybbit account, organization, administrator and authentication layouts, restore Site Settings property moves, and retain previous UI assets with a startup/reload fallback for open tabs.

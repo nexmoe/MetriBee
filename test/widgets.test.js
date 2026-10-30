@@ -140,7 +140,7 @@ describe('saved generic widgets', () => {
     await fs.writeFile(path.join(directory, '123.json'), JSON.stringify({ embedEnabled: true, privateLinkKey: null }));
     expect(await store.listWidgets('123')).to.deep.equal([]);
     const raw = JSON.stringify({ embedEnabled: true, privateLinkKey: null, widgets: [{ id: 'abcdef123456', createdAt: 'date', updatedAt: 'date', config: { metrics: [] } }] });
-    const db = require('../lib/database').openDatabase(path.join(directory, 'store.sqlite'));
+    const db = require('./helpers/database').openDatabase(path.join(directory, 'store.sqlite'));
     db.prepare("UPDATE app_document SET payload=? WHERE kind='embeds' AND propertyId='123'").run(raw);
     try { await store.saveWidget('123', defaultWidgetConfig()); throw new Error('Expected failure.'); } catch (error) { expect(error.status).to.equal(503); }
     expect(db.prepare("SELECT payload FROM app_document WHERE kind='embeds' AND propertyId='123'").get().payload).to.equal(raw);

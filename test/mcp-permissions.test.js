@@ -65,7 +65,7 @@ function integrationTests() {
       directory = await fs.mkdtemp(
         path.join(os.tmpdir(), "metribee-mcp-permissions-")
       );
-      db = require("../lib/database").openDatabase(
+      db = require("./helpers/database").openDatabase(
         path.join(directory, "auth.sqlite")
       );
       runtime = await (

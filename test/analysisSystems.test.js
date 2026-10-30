@@ -4,7 +4,7 @@ function integrationTests() {
   const os = require("node:os");
   const path = require("node:path");
   const { storage } = require("../lib/requestContext");
-  const { openDatabase } = require("../lib/database");
+  const { openDatabase } = require("./helpers/database");
   const { createAnalysisStore } = require("../lib/analysisStore");
   const { createRybbitHandler } = require("../controllers/rybbit");
   const {

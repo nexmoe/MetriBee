@@ -18,7 +18,7 @@ describe("demo mode", function () {
 
     before(async () => {
         temporary = await require('node:fs/promises').mkdtemp(path.join(require('node:os').tmpdir(),'metribee-demo-http-'));
-        app = spawn(process.execPath, ["app.js"], {
+        app = spawn("sh", ["docker-entrypoint.sh", process.execPath, "app.js"], {
             cwd: path.join(__dirname, ".."),
             env: { ...process.env, DEMO: "1", DATABASE_PATH:path.join(temporary,"demo.sqlite"), BASE_URL:base, PORT: String(port) },
             stdio: "ignore",
