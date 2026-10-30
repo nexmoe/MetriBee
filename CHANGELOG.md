@@ -5,27 +5,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-### Added
+## [2.3.0] - 2026-10-30
 
-- Add optional GA4 BigQuery export support for real two-to-ten-step Journeys, path sessions, event timelines and MCP reports, with property-scoped configuration and scan/daily budgets.
-- Add Rybbit's Public Analytics switch, shareable public dashboard URLs and property-scoped anonymous reports, with immediate revocation and existing private links preserved.
-- Align saved segments, chart annotations, Goals, custom Dashboards, PDF exports and weekly email reports with Rybbit’s native UI, with SQLite persistence, GA4 adapters, scoped permissions and MCP tools.
-- Add Better Auth accounts, sessions, email verification and recovery, optional Google/GitHub sign-in, organizations, invitations, teams, five access roles, property grants, administrator tools and scoped personal/organization API keys.
-- Connect MCP clients through OAuth with PKCE and explicit consent; enforce the same property permissions across dashboard and MCP requests.
-- Store accounts and saved definitions in SQLite, automatically import legacy JSON without changing existing share/widget links, and provide online backup and integrity checks.
-- Add opt-in Cloud organization subscriptions through Waffo Pancake, with hosted checkout, plan changes, cancellation and invoices; self-hosted deployments keep billing disabled by default.
+### What's New
 
-### Changed
+- Sign in with an email address or a configured Google/GitHub account, recover access by email, and manage your account from the native settings pages.
+- Create organizations, invite people, organize teams and choose which properties each person can access. Move properties between organizations or transfer them to another person.
+- Connect AI assistants through a consent screen or scoped access keys, with the same property access rules as the dashboard.
+- Enable Public Analytics for individual properties and share a read-only dashboard, with immediate revocation and existing private links preserved.
+- Save segments and chart annotations, track Goals, and arrange custom Dashboards using your GA4 reports.
+- Export analytics as PDF reports and receive weekly summaries by email for the properties you can access.
+- Connect a GA4 BigQuery export to explore real journeys of up to ten steps, inspect matching visits and event timelines, and set query spending limits.
+- Use optional Cloud organization subscriptions with hosted checkout, plan changes, cancellation and invoices. Self-hosted installations keep billing disabled by default.
 
-- Run automatic migrations through a Rybbit-style Docker entrypoint: Drizzle Kit and legacy imports complete before the application is executed, and failures prevent startup. Regular database/auth initialization no longer migrates application tables.
-- Manage all SQLite application and authentication tables through Drizzle schema and versioned migrations, automatically adopting existing databases and preserving legacy JSON imports, sessions and sharing links.
-- Replace Express with Fastify for the dashboard and standalone MCP server while preserving GA4 report caches and quota safeguards.
-- Preserve native Rybbit account, organization, administrator and authentication layouts, restore Site Settings property moves, and retain previous UI assets with a startup/reload fallback for open tabs.
+### Improvements
 
-### Fixed
+- Existing funnels, widgets and private links are retained when upgrading, with online backups available for accounts and saved settings.
+- Open Journeys on GA4-only connections without encountering unavailable session controls.
+- Continue using open tabs when the interface updates, with a reload option if startup fails.
+- Updates follow published stable versions so routine development changes do not replace the current release.
 
-- Include MCP attribution sources during Docker UI builds so the native Rybbit source verification can complete.
-- Open the available GA4 page-transitions report directly on Journeys instead of showing unavailable session controls and a source-required screen.
+### Important Changes
+
+- Signing in is now required to access private analytics. When upgrading an installation without accounts, create the first account privately to become its administrator. Existing properties and saved definitions are retained.
 
 ## [2.2.1] - 2026-10-25
 
