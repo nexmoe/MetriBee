@@ -4,7 +4,7 @@ on:
   push:
     tags: ["v*"]
 
-# The Docker image for the tag is published by docker.yml.
+# Publish the release first, then build its images through the reusable workflow.
 permissions:
   contents: write
 
@@ -31,3 +31,14 @@ jobs:
         with:
           name: ${{ github.ref_name }}
           body_path: release-notes.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ !contains(github.ref_name, '-') }}
+
+  docker:
+    needs: release
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker.yml
+    with:
+      release_tag: ${{ github.ref_name }}

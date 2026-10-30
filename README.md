@@ -60,6 +60,8 @@ Self-hosted needs no payment credentials. Optional MetriBee Cloud uses Waffo Pan
 
 The workspace checks [GitHub Releases](https://github.com/nexmoe/MetriBee/releases) once per browser tab session. A newer version shows a dismissible notice linking to that release for a manual upgrade. Unavailable checks are skipped silently.
 
+Container images are built only for published releases. `ghcr.io/nexmoe/metribee:latest` follows the latest stable release; use a version tag such as `:2.3.0` to pin a deployment. Ordinary commits and pull requests do not build or publish images.
+
 ---
 
 ## Screenshots
