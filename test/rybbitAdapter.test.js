@@ -19,6 +19,7 @@ function handler(overrides = {}) {
     read: async () => null,
     write: async () => {},
     now: () => new Date("2026-10-22T10:00:00Z"),
+    embeds: { store: { isPublic: async () => false, get: async () => ({ embedEnabled: false, privateLinkKey: null }) } },
     run: async () => reports([row([], [7, 20, 5, 2.85, 0.2, 30])]),
     ...overrides,
   });
