@@ -17,11 +17,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Manage all SQLite application and authentication tables through Drizzle schema and versioned migrations, automatically adopting existing databases and preserving legacy JSON imports, sessions and sharing links.
 - Replace Express with Fastify for the dashboard and standalone MCP server while preserving GA4 report caches and quota safeguards.
 - Preserve native Rybbit account, organization, administrator and authentication layouts, restore Site Settings property moves, and retain previous UI assets with a startup/reload fallback for open tabs.
 
 ### Fixed
 
+- Include MCP attribution sources during Docker UI builds so the native Rybbit source verification can complete.
 - Open the available GA4 page-transitions report directly on Journeys instead of showing unavailable session controls and a source-required screen.
 
 ## [2.2.1] - 2026-10-25

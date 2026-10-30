@@ -13,7 +13,7 @@ Every report comes from your GA4 properties through the GA4 Data and Admin APIs,
 What that saves you:
 
 - **No analytics server to pay for.** Self-hosted Rybbit or Plausible run ClickHouse and PostgreSQL, which grow to hundreds of GB, then TBs, over the years. GA4 stores and queries events for free, with no event cap on standard properties. MetriBee is one small Fastify process that runs on your laptop, a Raspberry Pi or the cheapest VPS you already have.
-- **Small application database.** SQLite stores accounts, organizations, access grants, funnels and widgets in one local file. Analytics events remain in GA4; back up the application database with `pnpm db:backup`.
+- **Small application database.** SQLite stores accounts, organizations, access grants, funnels and widgets in one local file, with Drizzle schema management and automatic versioned migrations. Analytics events remain in GA4; back up the application database with `pnpm db:backup`.
 - **Depth without the weight.** Lighter tools like Umami are easy to host but have fewer features, and their PostgreSQL row store slows down as years of events pile up. MetriBee gives you funnels, journeys, retention and a live globe on Google's warehouse.
 - **No migration.** Years of GA4 history show up on day one. If you stop using MetriBee, your data is still in GA4.
 

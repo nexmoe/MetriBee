@@ -42,6 +42,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:check-migrations
       # Several route tests need the built UI in public/ui, which is not committed.
       - run: pnpm build:ui
       - run: pnpm test

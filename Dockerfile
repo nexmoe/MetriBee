@@ -24,6 +24,7 @@ COPY frontend frontend
 COPY scripts/rybbit-source.js scripts/
 COPY controllers controllers
 COPY lib lib
+COPY mcp-server/lib mcp-server/lib
 COPY public public
 RUN pnpm build:ui
 
@@ -42,6 +43,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json app.js SETUP.md LICENSE NOTICE ./
 COPY LICENSES LICENSES
 COPY lib lib
+COPY drizzle drizzle
 COPY scripts/setup-check.js scripts/database.mjs scripts/
 COPY routes routes
 COPY views views

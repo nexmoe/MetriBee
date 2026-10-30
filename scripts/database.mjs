@@ -33,8 +33,8 @@ try {
     console.log("SQLite integrity: ok");
   } else if (command === "migrate") {
     console.log(
-      `SQLite migrations applied: ${
-        db.prepare("SELECT count(*) AS count FROM app_migration").get().count
+      `Drizzle SQLite migrations applied: ${
+        db.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count
       }`
     );
     console.log(
