@@ -25,7 +25,7 @@ function handler(overrides = {}) {
 }
 async function invoke(handle, query = {}, propertyId = '123') {
   const result = { status: 200 };
-  const res = { status(code) { result.status = code; return this; }, json(body) { result.body = body; return this; } };
+  const res = { status(code) { result.status = code; return this; }, send(body) { result.body = body; return this; } };
   await handle({ params: { propertyId }, query }, res);
   return result;
 }
@@ -117,7 +117,7 @@ describe('Pages report', () => {
       } }) });
     const result = { status: 200 };
     await handle({ params: { propertyId: '123' }, query: { start: '2026-10-22', end: '2026-10-22', section: '/docs/' } },
-      { status(code) { result.status = code; return this; }, json(body) { result.body = body; } });
+      { status(code) { result.status = code; return this; }, send(body) { result.body = body; } });
     expect(result.body.summary).to.include({ users: 8, sessions: 10 });
     expect(result.body.previousSummary).to.include({ users: 7, views: 20 });
     expect(result.body.series).to.deep.equal([30]);
@@ -126,7 +126,7 @@ describe('Pages report', () => {
     const handle = createSectionReportHandler({ getClient: () => { throw new Error('must not run'); } });
     const result = {};
     await handle({ params: { propertyId: '123' }, query: { section: '/docs/nested/' } },
-      { status(code) { result.status = code; return this; }, json(body) { result.body = body; } });
+      { status(code) { result.status = code; return this; }, send(body) { result.body = body; } });
     expect(result.status).to.equal(400);
   });
 });

@@ -336,6 +336,8 @@ function resolveDate(s, todayNum) {
 const DIM_GROUP = {
     country: "geo", countryId: "geo", city: "geo", region: "geo", continent: "geo", languageCode: "geo",
     sessionSource: "src", sessionMedium: "src", sessionSourceMedium: "src", sessionDefaultChannelGroup: "src",
+    sessionManualSource: "src", sessionManualMedium: "src", sessionManualCampaignName: "src", sessionManualAdContent: "src", sessionManualTerm: "src",
+    pageLocation: "page",
     firstUserDefaultChannelGroup: "src", firstUserSource: "src", firstUserMedium: "src", source: "src", medium: "src", pageReferrer: "src",
     pagePath: "page", pagePathPlusQueryString: "page", landingPagePlusQueryString: "page", landingPage: "page",
     pageTitle: "page", unifiedScreenName: "page", unifiedPagePathScreen: "page",
@@ -356,10 +358,16 @@ function dimValue(name, a, p) {
         case "sessionSource": case "firstUserSource": case "source": return a.src.source;
         case "sessionMedium": case "firstUserMedium": case "medium": return a.src.medium;
         case "sessionSourceMedium": return `${a.src.source} / ${a.src.medium}`;
+        case "sessionManualSource": return a.src.source;
+        case "sessionManualMedium": return a.src.medium;
+        case "sessionManualCampaignName": return a.src.medium === 'email' ? 'monthly_newsletter' : '(not set)';
+        case "sessionManualAdContent": return a.src.medium === 'email' ? 'header_link' : '(not set)';
+        case "sessionManualTerm": return '(not set)';
         case "sessionDefaultChannelGroup": case "firstUserDefaultChannelGroup": return a.src.channel;
         case "pageReferrer": return a.src.referrer;
         case "pagePath": case "pagePathPlusQueryString": case "landingPage": case "unifiedPagePathScreen": return a.page.path;
-        case "landingPagePlusQueryString": return a.page.path + (a.src?.medium === "email" ? "?utm_source=newsletter" : "");
+        case "landingPagePlusQueryString": return a.page.path;
+        case "pageLocation": return `https://${p.domain}${a.page.path}` + (a.src?.medium === 'email' ? '?utm_source=newsletter&utm_medium=email&utm_campaign=monthly_newsletter&utm_content=header_link' : '');
         case "pageTitle": case "unifiedScreenName": return a.page.title;
         case "deviceCategory": return a.dev.category;
         case "operatingSystem": return a.dev.os;

@@ -1,4 +1,4 @@
-// Rybbit's original iframe markup, styles and renderer, adapted to Express.
+// Rybbit's original iframe markup, styles and renderer, adapted to Fastify.
 // See frontend/third-party/NOTICE.md and RYBBIT-LICENSE.md (AGPL-3.0).
 
 const ALLOWED_MINUTES = new Set([30, 1440, 10080]);
@@ -29,7 +29,7 @@ function colors(theme: "dark" | "light") {
 
 function renderCardHTML(c: Config) {
   const col = colors(c.theme);
-  const logo = c.theme === "dark" ? "/rybbit/horizontal_white.svg" : "/rybbit/horizontal_black.svg";
+  const logo = c.theme === "dark" ? "/metribee/wordmark_light.svg" : "/metribee/wordmark.svg";
   return `
 <div class="w card">
   <div class="header">
@@ -39,8 +39,8 @@ function renderCardHTML(c: Config) {
   ${c.chart ? `<div class="chart" id="chart"></div>` : ""}
   <div class="window-label">${c.windowLabel}</div>
   ${c.countries ? `<div class="countries" id="countries"></div>` : ""}
-  <a class="footer" href="https://rybbit.com" target="_blank" rel="noopener noreferrer">
-    Powered by <img src="${logo}" alt="Rybbit web analytics" width="60" height="12" />
+  <a class="footer" href="https://github.com/nexmoe/MetriBee" target="_blank" rel="noopener noreferrer">
+    Powered by <img src="${logo}" alt="MetriBee web analytics" width="72" height="12" />
   </a>
 </div>
 <style>
@@ -109,15 +109,15 @@ function renderCardHTML(c: Config) {
 
 function renderInlineHTML(c: Config) {
   const col = colors(c.theme);
-  const logo = c.theme === "dark" ? "/rybbit/frog_white.svg" : "/rybbit/frog_black.svg";
+  const logo = c.theme === "dark" ? "/metribee/wordmark_light.svg" : "/metribee/wordmark.svg";
   return `
 <div class="w inline">
   <span class="pulse pulse-sm"></span>
   <span class="count" id="count">—</span>
   <span class="muted">online</span>
   <span class="sep">·</span>
-  <a href="https://rybbit.com" target="_blank" rel="noopener noreferrer">
-    <img src="${logo}" alt="Rybbit web analytics" width="50" height="10" />
+  <a href="https://github.com/nexmoe/MetriBee" target="_blank" rel="noopener noreferrer">
+    <img src="${logo}" alt="MetriBee web analytics" width="60" height="10" />
   </a>
 </div>
 <style>
@@ -159,7 +159,7 @@ function renderHTML(c: Config) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Rybbit live visitors</title>
+<title>MetriBee live visitors</title>
 <style>
   html { color-scheme: ${c.theme}; }
   html, body { background: transparent; margin: 0; padding: 0; }

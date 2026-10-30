@@ -9,11 +9,11 @@ export interface AdminOrganizationData {
   overMonthlyLimit: boolean;
   subscription: {
     id: string | null;
-    source: "custom" | "override" | "stripe" | "appsumo" | "free";
+    source: "custom" | "override" | "stripe" | "appsumo" | "free" | "waffo";
     planName: string;
     status: string;
     eventLimit: number;
-    currentPeriodEnd: Date;
+    currentPeriodEnd: Date | null;
     cancelAtPeriodEnd?: boolean;
     interval?: string;
     memberLimit?: number | null;

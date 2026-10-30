@@ -22,16 +22,16 @@ export function createQueryClient() {
 }
 
 export function queryCacheScope(
-  context: { demo?: boolean; properties?: { id: string | number }[] },
+  context: { demo?: boolean; publicSiteId?: string; authScope?: string | null; properties?: { id: string | number }[] },
   restricted = false
 ) {
   const ids = [
     ...new Set(context.properties?.map((property) => String(property.id))),
   ].sort();
   // Sharing/permission checks and public embeds must always start from the server.
-  return restricted || !ids.length
+  return restricted || context.publicSiteId || !ids.length
     ? null
-    : JSON.stringify([context.demo ? "demo" : "live", ids]);
+    : JSON.stringify([context.demo ? "demo" : "live", context.authScope || null, ids]);
 }
 
 export function createQueryPersistence(

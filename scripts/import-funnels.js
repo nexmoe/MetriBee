@@ -3,6 +3,7 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { createFunnelStore, funnelDefinitionKey } = require('../lib/funnelStore');
 const { normalizeSteps } = require('../controllers/funnels');
+const { readDocumentSnapshot } = require('../lib/database');
 
 const root = path.resolve(__dirname, '..');
 const defaultCatalog = path.join(root, '.data/imports/funnels.json');
@@ -51,9 +52,7 @@ async function importFunnels({
   const originals = new Map();
   const plans = [];
   for (const group of groups.values()) {
-    let original = null;
-    try { original = await fs.readFile(path.join(directory, `${group.propertyId}.json`)); }
-    catch (error) { if (error.code !== 'ENOENT') throw error; }
+    const original = readDocumentSnapshot('funnels', group.propertyId, directory, path.join(root, '.data/funnels'));
     originals.set(group.propertyId, original);
     const existing = original ? JSON.parse(original).funnels : [];
     if (!Array.isArray(existing)) throw new Error(`Invalid funnel file for property ${group.propertyId}`);

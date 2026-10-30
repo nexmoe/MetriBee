@@ -18,6 +18,8 @@ const rateLimit = require("./lib/rateLimit");
 const guard = require("./lib/guard");
 const ledger = require("./lib/ledger");
 const { registerDashboardTools, WRITE_TOOL_NAMES } = require("./lib/tools");
+const { registerAccountTools, ACCOUNT_TOOL_NAMES } = require('./lib/accountTools');
+const { permissionForTool, toolAvailable, CONTEXT_TOOLS, ADMIN_TOOLS } = require('./lib/authorization');
 const setup = require("../lib/setupCheck");
 setup.onCredentialsChange(require("../controllers/ga4Service").resetClients);
 
@@ -40,15 +42,42 @@ const DASHBOARD_INSTRUCTIONS = `Prefer the focused dashboard tools for pages, ev
 Journeys are referrer pageview pairs, never complete session paths. Events are aggregates, never individual logs. Retention uses first-visit cohorts and cannot apply audience filters. Funnel/widget definitions are local application data; saving and deleting them requires explicit user intent. Widget previews never enable sharing or generate keys. Do not claim a download click is an installation. Never add currencies across properties without conversion. Use get_setup_status to diagnose configuration without exposing credentials.`;
 
 function createServer(options = {}) {
-	const server = new McpServer({ name: "ga4-mcp-server", version }, { instructions: `${INSTRUCTIONS}\n\n${DASHBOARD_INSTRUCTIONS}` });
+	const server = new McpServer({ name: "metribee", version }, { instructions: `Start with list_sites to discover your organizations and accessible site IDs. Every connection acts as its own user (OAuth/personal key) or organization key. Organization roles, direct grants and team grants are checked live. Credential scopes only narrow access; missing tools indicate missing scopes, not new authority. Browser organization selection does not change MCP access. Organization/member/team tools reuse the dashboard API and require its roles. Confirm destructive actions with the user.\n\n${INSTRUCTIONS}\n\n${DASHBOARD_INSTRUCTIONS}` });
 	function registerTool(name, config, callback) {
-		const write = WRITE_TOOL_NAMES.includes(name);
+		if (!toolAvailable(name, options.identity, options.access)) return;
+        const write = WRITE_TOOL_NAMES.includes(name);
 		return server.registerTool(name, { ...config, annotations: {
-			readOnlyHint: !write, destructiveHint: ["delete_funnel", "delete_widget", "request_indexing"].includes(name),
-			idempotentHint: !write || ['delete_funnel', 'delete_widget', 'import_funnels'].includes(name), openWorldHint: !["get_capabilities", "get_cache_status", "get_rate_limit_status", "list_saved_funnels", "save_funnel", "delete_funnel", 'get_funnel', 'validate_funnel', 'duplicate_funnel', 'import_funnels', "list_saved_widgets", "delete_widget"].includes(name),
+			readOnlyHint: !write, destructiveHint: ["delete_team", "delete_funnel", "delete_widget", "delete_analysis_definition", "request_indexing"].includes(name),
+			idempotentHint: !write || ['delete_analysis_definition', 'delete_funnel', 'delete_widget', 'import_funnels'].includes(name), openWorldHint: !["list_analysis_definitions", "save_analysis_definition", "delete_analysis_definition", "get_capabilities", "get_cache_status", "get_rate_limit_status", "list_saved_funnels", "save_funnel", "delete_funnel", 'get_funnel', 'validate_funnel', 'duplicate_funnel', 'import_funnels', "list_saved_widgets", "delete_widget"].includes(name),
 			...config.annotations,
 		} }, async (...args) => {
-			try { setup.syncEnvFile(); return await callback(...args); }
+			try {
+				if (options.access) {
+					const identity = options.identity;
+					if (!identity) throw new Error('Authentication is required.');
+					const propertyId = args[0]?.propertyId;
+                    const permission = permissionForTool(name, args[0]);
+                    if (permission && !options.access.scopeAllows(identity, permission))
+                        throw new Error('This credential does not grant the required scope.');
+                    if (propertyId) options.access.requireSite(identity, propertyId, permission);
+                    else if (args[0]?.organization_id)
+                        options.access.requireOrg(identity, args[0].organization_id, permission);
+                    else if (ADMIN_TOOLS.has(name) && (!identity.systemAdmin || (identity.bearer && identity.statements !== null)))
+                        throw new Error('This tool requires unrestricted administrator access.');
+                    else if (!CONTEXT_TOOLS.has(name) && !ACCOUNT_TOOL_NAMES.includes(name) && !['list_properties', 'get_account_summaries', 'get_cached_sites_report'].includes(name) && !ADMIN_TOOLS.has(name))
+                        throw new Error('A property or organization is required.');
+				}
+				setup.syncEnvFile();
+				const result = await callback(...args);
+				if (options.access && name === 'get_account_summaries') {
+					const body = result.structuredContent;
+					if (body?.accounts) body.accounts = body.accounts.map(account => ({ ...account,
+						properties: account.properties.filter(p => options.access.siteRole(options.identity, String(p.property).split('/').pop())),
+					})).filter(account => account.properties.length);
+					return asText(body);
+				}
+				return result;
+			}
 			catch (error) { return asText({ error: "tool_failed", message: error.message }); }
 		});
 	}
@@ -584,6 +613,7 @@ function createServer(options = {}) {
 	// ---------------------------------------------------------------------------
 
 	registerDashboardTools(server, { registerTool, asText, service: options.dashboardService, instructions: DASHBOARD_INSTRUCTIONS });
+    registerAccountTools({ registerTool, asText, api: options.accountApi });
 	return server;
 }
 

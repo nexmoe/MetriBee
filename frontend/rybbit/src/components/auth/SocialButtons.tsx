@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { SiGithub } from "@icons-pack/react-simple-icons";
 import { authClient } from "@/lib/auth";
-import { IS_CLOUD } from "@/lib/const";
+import { useQuery } from "@tanstack/react-query";
+import { authedFetch } from "@/api/utils";
 import { useExtracted } from "next-intl";
 import Image from "next/image";
 
@@ -17,7 +18,9 @@ interface SocialButtonsProps {
 export function SocialButtons({ onError, callbackURL, mode = "signin", className = "" }: SocialButtonsProps) {
   const t = useExtracted();
 
-  if (!IS_CLOUD) return null;
+  const { data: configs } = useQuery({ queryKey: ["configs"], queryFn: () => authedFetch<{ socialProviders?: string[] }>("/config") });
+  const providers = configs?.socialProviders || [];
+  if (!providers.length) return null;
 
   const handleSocialAuth = async (provider: "google" | "github" | "twitter") => {
     try {
@@ -35,14 +38,14 @@ export function SocialButtons({ onError, callbackURL, mode = "signin", className
   return (
     <>
       <div className={`flex flex-col gap-2 ${className}`}>
-        <Button type="button" onClick={() => handleSocialAuth("google")} className="h-11">
+        {providers.includes("google") && <Button type="button" onClick={() => handleSocialAuth("google")} className="h-11">
           <Image src="/crawlers/Google.svg" alt="Google" width={16} height={16} />
           {t("Continue with Google")}
-        </Button>
-        <Button type="button" onClick={() => handleSocialAuth("github")} className="h-11">
+        </Button>}
+        {providers.includes("github") && <Button type="button" onClick={() => handleSocialAuth("github")} className="h-11">
           <SiGithub />
           {t("Continue with GitHub")}
-        </Button>
+        </Button>}
       </div>
       <div className="relative flex items-center text-xs uppercase">
         <div className="flex-1 border-t border-neutral-200 dark:border-neutral-800" />

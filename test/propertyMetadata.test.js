@@ -148,7 +148,7 @@ describe("property metadata synchronization", () => {
     await f.api.refreshCache(
       {},
       {
-        json(value) {
+        send(value) {
           body = value;
         },
       }
@@ -167,7 +167,7 @@ describe("property metadata synchronization", () => {
           result.status = value;
           return this;
         },
-        json(value) {
+        send(value) {
           result.body = value;
         },
       }

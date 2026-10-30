@@ -168,6 +168,7 @@ describe("workspace stale-while-revalidate cache", function () {
     expect(queryCacheScope({ properties: [{ id: "456" }, { id: 123 }, { id: "123" }] })).to.equal(live);
     expect(queryCacheScope({ properties: [{ id: "123" }, { id: "456" }], demo: true })).not.to.equal(live);
     expect(queryCacheScope({ properties: [{ id: "123" }] }, true)).to.equal(null);
+    expect(queryCacheScope({ properties: [{ id: "123" }], publicSiteId: "123" })).to.equal(null);
     expect(queryCacheScope({ properties: [] })).to.equal(null);
     expect(createQueryPersistence(client(), memoryStorage(), null)).to.equal(undefined);
     expect(createQueryPersistence(client(), undefined, live)).to.equal(undefined);

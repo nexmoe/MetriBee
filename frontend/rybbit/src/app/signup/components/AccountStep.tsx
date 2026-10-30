@@ -1,12 +1,10 @@
 import { AuthButton } from "@/components/auth/AuthButton";
 import { AuthInput } from "@/components/auth/AuthInput";
 import { SocialButtons } from "@/components/auth/SocialButtons";
-import { Turnstile } from "@/components/auth/Turnstile";
 import { ArrowRight } from "lucide-react";
 import { useExtracted } from "next-intl";
 import Link from "next/link";
 
-import { IS_CLOUD } from "../../../lib/const";
 
 interface AccountStepProps {
   email: string;
@@ -71,19 +69,10 @@ export function AccountStep({
             value={password}
             onChange={e => setPassword(e.target.value)}
           />
-          {IS_CLOUD && (
-            <Turnstile
-              onSuccess={token => setTurnstileToken(token)}
-              onError={() => setTurnstileToken("")}
-              onExpire={() => setTurnstileToken("")}
-              className="flex justify-center"
-            />
-          )}
           <AuthButton
             isLoading={isLoading}
             loadingText={t("Creating account...")}
             className="mt-6 transition-all duration-300 h-11"
-            disabled={IS_CLOUD && !turnstileToken}
           >
             {t("Continue")}
             <ArrowRight className="ml-2 h-4 w-4" />

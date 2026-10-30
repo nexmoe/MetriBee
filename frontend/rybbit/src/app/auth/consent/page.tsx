@@ -80,9 +80,9 @@ function Consent() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold">{t("Connect to Rybbit")}</h1>
+        <h1 className="text-xl font-semibold">{t("Connect to MetriBee")}</h1>
         <p className="break-words text-neutral-600 dark:text-neutral-300">
-          {t("{application} is requesting access to your Rybbit account.", {
+          {t("{application} is requesting access to your MetriBee account.", {
             application: client.data.client_name || clientId!,
           })}
         </p>

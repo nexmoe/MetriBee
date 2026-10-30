@@ -186,4 +186,4 @@ function demoJourneySession(property, id) {
   return demoJourneySessions(property, { startDateTime: DateTime.fromMillis(start).toISO(), endDateTime: DateTime.fromMillis(end).toISO() })[Number(match[4])] || null;
 }
 
-module.exports = { journeyReport, journeySessionDetails, demoJourneySessions, demoJourneySession, patternOf };
+module.exports = { journeyReport, journeySessionDetails, demoJourneySessions, demoJourneySession, patternOf, optionsFor };

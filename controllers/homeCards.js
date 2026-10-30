@@ -70,7 +70,7 @@ function createHomeCardsHandler(deps = {}) {
   return async (req, res) => {
     const range = req.query.range;
     if (typeof range !== "string" || !Object.prototype.hasOwnProperty.call(RANGES, range)) {
-      return res.status(400).json({ ok: false, error: "Choose today, 7d or 28d" });
+      return res.status(400).send({ ok: false, error: "Choose today, 7d or 28d" });
     }
     try {
       const { properties } = await loadProperties();
@@ -98,13 +98,13 @@ function createHomeCardsHandler(deps = {}) {
       }));
       const timestamps = data.filter(row => !row.error).map(row => row.fetchedAt);
       if (data.length && !timestamps.length) {
-        return res.status(502).json({ ok: false, range, data, error: "Property reports unavailable" });
+        return res.status(502).send({ ok: false, range, data, error: "Property reports unavailable" });
       }
       const cacheStates = new Set(data.filter(row => !row.error).map(row => row.cached));
-      return res.json({ ok: true, range, data, fetchedAt: timestamps.length ? Math.min(...timestamps) : null,
+      return res.send({ ok: true, range, data, fetchedAt: timestamps.length ? Math.min(...timestamps) : null,
         cacheStatus: cacheStates.size > 1 ? "mixed" : cacheStates.has(true) ? "cached" : "fresh" });
     } catch (err) {
-      return res.status(500).json({ ok: false, error: err.message });
+      return res.status(500).send({ ok: false, error: err.message });
     }
   };
 }

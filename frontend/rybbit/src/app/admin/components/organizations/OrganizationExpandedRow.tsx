@@ -58,6 +58,7 @@ export function OrganizationExpandedRow({ organization }: OrganizationExpandedRo
     custom: t("Custom override"),
     override: t("Plan override"),
     stripe: "Stripe",
+    waffo: "Waffo Pancake",
     appsumo: "AppSumo",
     free: t("Free"),
   }[subscription.source];
@@ -94,7 +95,7 @@ export function OrganizationExpandedRow({ organization }: OrganizationExpandedRo
                   </a>
                 </Button>
               )}
-              <Button
+              {['custom','override'].includes(organization.subscription.source) && <Button
                 size="sm"
                 variant="outline"
                 className="h-7 px-2 text-xs"
@@ -102,7 +103,7 @@ export function OrganizationExpandedRow({ organization }: OrganizationExpandedRo
               >
                 <Pencil className="h-3.5 w-3.5" />
                 {t("Edit")}
-              </Button>
+              </Button>}
             </div>
           </div>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 lg:grid-cols-1">
@@ -123,11 +124,11 @@ export function OrganizationExpandedRow({ organization }: OrganizationExpandedRo
                 </div>
               )}
             </Fact>
-            <Fact label={t("Event limit")}>
+            {subscription.source !== 'waffo' && <Fact label={t("Event limit")}>
               <span className="tabular-nums">
                 {subscription.eventLimit ? formatter(subscription.eventLimit) : t("Unlimited")}
               </span>
-            </Fact>
+            </Fact>}
             {subscription.source === "custom" && (
               <>
                 <Fact label={t("Member limit")}>

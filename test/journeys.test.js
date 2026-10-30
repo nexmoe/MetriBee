@@ -6,7 +6,7 @@ const row = (host, from, to, views) => ({ dimensionValues: [host, from, to].map(
 const report = rows => ({ ok: true, rows, rowCount: rows.length, metadata: { timeZone: 'Asia/Shanghai' } });
 const summary = { ok: true, rows: [{ metricValues: [{ value: '100' }, { value: '240' }] }] };
 const request = (query = {}, propertyId = '123') => ({ params: { propertyId }, query });
-const response = () => ({ statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } });
+const response = () => ({ statusCode: 200, status(code) { this.statusCode = code; return this; }, send(body) { this.body = body; return this; } });
 
 describe('GA4 page journeys', () => {
   it('uses inclusive equal-length date ranges with no overlap', () => {

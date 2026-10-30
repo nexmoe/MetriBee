@@ -1,4 +1,4 @@
-import { Tag, PanelsTopLeft } from "lucide-react";
+import { Tag, PanelsTopLeft, Settings } from "lucide-react";
 import { useExtracted } from "next-intl";
 import Link from "next/link";
 import { Ref, useRef } from "react";
@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { Favicon } from "@/components/Favicon";
 import { SiteSessionChart } from "@/components/SiteSessionChart";
 import { WidgetManagerLink } from "../../../../adapter/embeds/WidgetManagerLink";
+import { SiteSettings } from "@/components/SiteSettings/SiteSettings";
 import { TagEditor } from "@/components/TagEditor";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -167,6 +168,18 @@ function SiteCardView({
             <div className="flex gap-2 items-center">
               <Favicon domain={domain} className="w-6 h-6" />
               <span className="text-lg font-medium truncate group-hover:underline transition-all">{name}</span>
+              <div onClick={e => e.preventDefault()}>
+                <Tooltip>
+                  <SiteSettings siteId={siteId} lazy trigger={
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label={t("Site Settings")} className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                        <Settings className="h-4 w-4 text-neutral-400" />
+                      </button>
+                    </TooltipTrigger>
+                  } />
+                  <TooltipContent>{t("Site Settings")}</TooltipContent>
+                </Tooltip>
+              </div>
               <div onClick={e => e.preventDefault()}>
                 <Tooltip>
                   <WidgetManagerLink siteId={siteId} trigger={

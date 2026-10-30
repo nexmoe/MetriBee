@@ -15,10 +15,10 @@ const properties = async () => ({ properties: [
 async function invoke(handler, overrides = {}) {
   const out = { status: 200, headers: {} };
   const res = {
-    set(name, value) { Object.assign(out.headers, typeof name === 'string' ? { [name]: value } : name); return this; },
+    headers(values) { for (const [key, value] of Object.entries(values)) this.header(key, value); return this; },
+    header(name, value) { Object.assign(out.headers, typeof name === 'string' ? { [name]: value } : name); return this; },
     status(code) { out.status = code; return this; },
     type(value) { out.type = value; return this; },
-    json(value) { out.body = value; return this; },
     send(value) { out.body = value; return this; },
   };
   await handler({ method: 'GET', params: { siteId: '123' }, query: {}, headers: {}, ...overrides }, res);
@@ -41,7 +41,7 @@ describe('Rybbit embed settings', () => {
     expect(await restarted.get('123')).to.deep.equal({ embedEnabled: true, ...generated });
     expect(await restarted.validate('123', generated.privateLinkKey)).to.equal(true);
     expect(await restarted.validate('456', generated.privateLinkKey)).to.equal(false);
-    expect((await fs.stat(path.join(directory, '123.json'))).mode & 0o777).to.equal(0o600);
+    expect((await fs.stat(path.join(directory, 'store.sqlite'))).mode & 0o777).to.equal(0o600);
   });
   it('rotates private links and immediately revokes the previous key', async () => {
     const first = await store.privateLink('123', 'generate_private_link_key');
@@ -50,6 +50,17 @@ describe('Rybbit embed settings', () => {
     expect(await store.validate('123', second.privateLinkKey)).to.equal(true);
     await store.privateLink('123', 'revoke_private_link_key');
     expect(await store.validate('123', second.privateLinkKey)).to.equal(false);
+  });
+  it('persists public access independently of widgets and private links', async () => {
+    expect(await store.isPublic('123')).to.equal(false);
+    await store.setPublic('123', true);
+    const key = await store.privateLink('123', 'generate_private_link_key');
+    await store.setEnabled('123', true);
+    const restarted = createEmbedStore({ directory });
+    expect(await restarted.isPublic('123')).to.equal(true);
+    await restarted.setPublic('123', false);
+    expect(await restarted.get('123')).to.deep.equal({ embedEnabled: true, ...key });
+    expect(await restarted.validate('123', key.privateLinkKey)).to.equal(true);
   });
   it('preserves corrupt settings instead of silently replacing private keys', async () => {
     const file = path.join(directory, '123.json');
@@ -180,7 +191,7 @@ describe('private dashboard GA4 scope', () => {
     return createRybbitHandler({ properties, now: () => date,
       read: async namespace => namespace === 'retention-meta' ? { timeZone: 'UTC' } : null,
       write: async () => {},
-      embeds: { store: { validate: async (id, key) => id === '123' && key === 'abcdef123456' } },
+      embeds: { store: { isPublic: async () => false, validate: async (id, key) => id === '123' && key === 'abcdef123456' } },
     });
   }
   const headers = { 'x-private-key': 'abcdef123456', 'x-private-site': '123' };

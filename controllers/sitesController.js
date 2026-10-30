@@ -42,7 +42,7 @@ async function loadSitesSnapshot({ properties: cachedProperties } = {}) {
     }
     const keys = adDomains ? Object.keys(adDomains) : [];
     let matched = 0;
-    const properties = snap.properties.map((p) => {
+    const properties = require('../lib/requestContext').filterProperties(snap.properties).map((p) => {
         const out = { id: String(p.id), name: p.name, daily: p.daily || {}, error: p.error || undefined };
         if (!adDomains) return out;
         const prop = props.find((x) => String(x.id) === String(p.id));
@@ -75,7 +75,7 @@ exports.loadSitesSnapshot = loadSitesSnapshot;
 exports.sitesView = async (req, res) => {
     try {
         const data = await loadSitesSnapshot();
-        res.set("Cache-Control", "no-store").render("sites", {
+        res.header("Cache-Control", "no-store").view("sites", {
             hasSnapshot: !!data.snapshot,
             sitesData: data,
             head: { title: "MetriBee · Sites", description: "Every GA4 property, last 14 days", image: "", url: "" },

@@ -10,7 +10,6 @@ import {
   LedgerRow,
 } from "../rybbit/src/app/settings/components/Ledger";
 import { CodeSnippet } from "../rybbit/src/components/CodeSnippet";
-import { CopyButton } from "../rybbit/src/components/interior/copy-button";
 import { Button } from "../rybbit/src/components/ui/button";
 import { Badge } from "../rybbit/src/components/ui/badge";
 import { ErrorState } from "../rybbit/src/components/ErrorState";
@@ -37,15 +36,6 @@ type ConnectionStatus = {
 type Instructions = {
   prompt: string;
   manual: { html: string }[];
-  mcpPrompt: string;
-  mcp?: {
-    url: string;
-    transport: string;
-    clientConfig: string;
-    claudeCommand: string;
-    features: string[];
-    verify: string[];
-  };
   gsc?: string[];
   oauth?: string[];
 };
@@ -106,7 +96,7 @@ export default function Setup() {
         <SettingsPageHeader
           title={t("GA4 connection")}
           description={t(
-            "Connect Google Analytics, optional data sources and your AI tools."
+            "Connect Google Analytics and optional data sources."
           )}
           actions={
             <>
@@ -215,103 +205,6 @@ export default function Setup() {
         ) : (
           data && (
             <>
-              <div id="mcp">
-                <LedgerSection
-                  title={t("Connect your AI tool")}
-                  description={t(
-                    "Use the running dashboard as your MCP server. Google credentials stay in the server’s .env."
-                  )}
-                >
-                  {data.mcp ? (
-                    <>
-                      <LedgerRows>
-                        <LedgerRow label={t("Transport")}>
-                          <Badge variant="outline">{data.mcp.transport}</Badge>
-                        </LedgerRow>
-                        <LedgerRow label={t("Server URL")}>
-                          <div className="flex items-start justify-between gap-3">
-                            <code className="min-w-0 break-all pt-1 text-xs">
-                              {data.mcp.url}
-                            </code>
-                            <CopyButton
-                              value={data.mcp.url}
-                              label={t("Copy URL")}
-                              size="sm"
-                              variant="outline"
-                            />
-                          </div>
-                        </LedgerRow>
-                      </LedgerRows>
-                      <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                        {t(
-                          "Use an address reachable from your AI client. For a remote connection, set MCP_PUBLIC_URL on the server and restart it."
-                        )}
-                      </p>
-                      <Tabs defaultValue="json" className="mt-5">
-                        <TabsList
-                          aria-label={t("MCP client setup")}
-                          className="max-w-full"
-                        >
-                          <TabsTrigger value="json">.mcp.json</TabsTrigger>
-                          <TabsTrigger value="claude">Claude Code</TabsTrigger>
-                          <TabsTrigger value="agent">
-                            {t("AI prompt")}
-                          </TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="json" className="space-y-3">
-                          <p className="text-xs leading-5 text-muted-foreground">
-                            {t(
-                              "Merge this ga4 entry into .mcp.json in your client project. Keep any other servers already configured there."
-                            )}
-                          </p>
-                          <CodeSnippet
-                            code={data.mcp.clientConfig}
-                            language="json"
-                          />
-                        </TabsContent>
-                        <TabsContent value="claude" className="space-y-3">
-                          <p className="text-xs leading-5 text-muted-foreground">
-                            {t(
-                              "Run this in your client project to add the HTTP server for that project."
-                            )}
-                          </p>
-                          <CodeSnippet
-                            code={data.mcp.claudeCommand}
-                            language="bash"
-                          />
-                        </TabsContent>
-                        <TabsContent value="agent">
-                          <CodeSnippet code={data.mcpPrompt} />
-                        </TabsContent>
-                      </Tabs>
-                      <div className="mt-6 space-y-3">
-                        <h3 className="text-sm font-medium">
-                          {t("Verify in your AI client")}
-                        </h3>
-                        <InstructionList items={data.mcp.verify} />
-                      </div>
-                      <div className="mt-5">
-                        <InstructionDetails
-                          title={t("Available tools and reports")}
-                          items={data.mcp.features}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="space-y-3">
-                      <p
-                        role="status"
-                        className="text-sm text-muted-foreground"
-                      >
-                        {t(
-                          "Restart the dashboard server to load the updated MCP connection settings."
-                        )}
-                      </p>
-                      <CodeSnippet code={data.mcpPrompt} />
-                    </div>
-                  )}
-                </LedgerSection>
-              </div>
               <div id="ai">
                 <LedgerSection
                   title={t("Set up Google Analytics")}

@@ -11,7 +11,7 @@ import { AppSidebar } from "../../components/AppSidebar";
 import { Button } from "../../components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../../components/ui/sheet";
 import { DEPLOYMENT, IS_CLOUD } from "../../lib/const";
-import { Database } from "./components/database/Database";
+import { Database } from "../../../../adapter/accounts/Database";
 import { Organizations } from "./components/organizations/Organizations";
 import { AdminLayout } from "./components/shared/AdminLayout";
 import { Sites } from "./components/sites/Sites";
@@ -32,7 +32,7 @@ function MobileSidebar() {
         </SheetTrigger>
         <VisuallyHidden>
           <SheetHeader>
-            <SheetTitle>{t("Rybbit Sidebar")}</SheetTitle>
+            <SheetTitle>{t("MetriBee Sidebar")}</SheetTitle>
           </SheetHeader>
         </VisuallyHidden>
         <SheetContent side="left" className="p-0 w-[40px] flex gap-0" showClose={false}>
@@ -54,7 +54,7 @@ export default function AdminPage() {
       <div className="hidden md:block">
         <AppSidebar />
       </div>
-      <StandardPage showSidebar={false} fullWidth>
+      <StandardPage showSidebar={false} showFooter={false} fullWidth>
         <AdminLayout>
           <div className="mb-4 flex items-center gap-3">
             <MobileSidebar />

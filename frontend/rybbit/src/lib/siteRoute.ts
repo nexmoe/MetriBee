@@ -7,6 +7,7 @@ export const SYNCED_ANALYTICS_ROUTES = new Set([
   "performance",
   "globe",
   "goals",
+  "dashboards",
   "events",
   "funnels",
   "journeys",

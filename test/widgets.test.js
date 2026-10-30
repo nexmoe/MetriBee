@@ -13,10 +13,11 @@ const row = (dimension, values) => ({ dimensionValues: dimension == null ? [] : 
 async function invoke(handler, overrides = {}) {
   const result = { status: 200, headers: {} };
   const res = {
-    set(key, value) { Object.assign(result.headers, typeof key === 'string' ? { [key]: value } : key); return this; },
+    headers(values) { for (const [key, value] of Object.entries(values)) this.header(key, value); return this; },
+    header(key, value) { Object.assign(result.headers, typeof key === 'string' ? { [key]: value } : key); return this; },
     status(code) { result.status = code; return this; },
-    json(value) { result.body = value; return this; },
-    render(view, data) { result.view = view; result.body = data; return this; },
+    send(value) { result.body = value; return this; },
+    view(view, data) { result.view = view; result.body = data; return this; },
   };
   await handler({ method: 'POST', params: { siteId: '123' }, headers: {}, query: {}, body: { config: defaultWidgetConfig() }, path: '/widget/123/abcdef123456', ...overrides }, res);
   return result;
@@ -139,9 +140,10 @@ describe('saved generic widgets', () => {
     await fs.writeFile(path.join(directory, '123.json'), JSON.stringify({ embedEnabled: true, privateLinkKey: null }));
     expect(await store.listWidgets('123')).to.deep.equal([]);
     const raw = JSON.stringify({ embedEnabled: true, privateLinkKey: null, widgets: [{ id: 'abcdef123456', createdAt: 'date', updatedAt: 'date', config: { metrics: [] } }] });
-    await fs.writeFile(path.join(directory, '123.json'), raw);
+    const db = require('../lib/database').openDatabase(path.join(directory, 'store.sqlite'));
+    db.prepare("UPDATE app_document SET payload=? WHERE kind='embeds' AND propertyId='123'").run(raw);
     try { await store.saveWidget('123', defaultWidgetConfig()); throw new Error('Expected failure.'); } catch (error) { expect(error.status).to.equal(503); }
-    expect(await fs.readFile(path.join(directory, '123.json'), 'utf8')).to.equal(raw);
+    expect(db.prepare("SELECT payload FROM app_document WHERE kind='embeds' AND propertyId='123'").get().payload).to.equal(raw);
   });
 });
 

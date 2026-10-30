@@ -7,7 +7,7 @@ describe("globe view", () => {
     let viewName;
     let options;
     const res = {
-      render(name, opts) {
+      view(name, opts) {
         viewName = name;
         options = opts;
       },

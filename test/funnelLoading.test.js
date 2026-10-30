@@ -24,7 +24,7 @@ const pass = ({ children }) => React.createElement('div', null, children);
 const steps = [{ type: 'event', value: 'page_view' }, { type: 'event', value: 'purchase' }];
 const funnel = { id: 1, name: 'Checkout', steps };
 const summary = { users_entered_any: 80, funnels: [{ funnel_id: 1, steps: [{ sessions: 80 }, { sessions: 20 }] }] };
-function render({ current, previous, definitions = [funnel] }) {
+function view({ current, previous, definitions = [funnel] }) {
   const requests = [], cells = [];
   const store = { site: 123, time: { mode: 'day', day: '2026-10-22' }, previousTime: { mode: 'day', day: '2026-10-21' } };
   const mocks = {
@@ -70,20 +70,20 @@ const pending = { isLoading: true, isPending: true };
 
 describe('funnel page loading', () => {
   it('shows current figures while only the comparison cell waits', () => {
-    const { cells } = render({ current: ready, previous: pending });
+    const { cells } = view({ current: ready, previous: pending });
     expect(cells.map(cell => cell.loading)).to.deep.equal([false, false, true, false]);
     expect(cells[1].value).to.equal('80');
     expect(cells[3].value).to.equal('75.0%');
   });
 
   it('prioritizes the current period before starting comparison work', () => {
-    const { requests, cells } = render({ current: pending, previous: { ...pending, isLoading: false } });
+    const { requests, cells } = view({ current: pending, previous: { ...pending, isLoading: false } });
     expect(requests.map(request => request.enabled)).to.deep.equal([true, false]);
     expect(cells.map(cell => cell.loading)).to.deep.equal([false, true, true, true]);
   });
 
   it('does not analyze empty lists', () => {
-    const { requests } = render({ definitions: [], current: pending, previous: pending });
+    const { requests } = view({ definitions: [], current: pending, previous: pending });
     expect(requests.every(request => request.enabled === false)).to.equal(true);
   });
 });

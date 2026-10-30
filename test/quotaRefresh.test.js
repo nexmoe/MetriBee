@@ -63,7 +63,8 @@ async function invoke(handler) {
   await handler(
     {},
     {
-      set(name, value) {
+      headers(values) { for (const [key, value] of Object.entries(values)) this.header(key, value); return this; },
+      header(name, value) {
         result.headers[name] = value;
         return this;
       },
@@ -71,7 +72,7 @@ async function invoke(handler) {
         result.status = code;
         return this;
       },
-      json(body) {
+      send(body) {
         result.body = body;
         return this;
       },

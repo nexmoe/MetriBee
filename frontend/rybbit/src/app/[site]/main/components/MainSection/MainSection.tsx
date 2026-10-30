@@ -186,7 +186,7 @@ export function MainSection({ additionalStats, chartOverride }: {
           </div>
         </CardContent>
       </Card>
-      <></>
+      <AnnotationFormDialog state={annotationEditor} onClose={() => setAnnotationEditor(null)} />
     </>
   );
 }

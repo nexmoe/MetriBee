@@ -7,7 +7,9 @@ describe("demo mode", function () {
     this.timeout(30000);
     const port = 3900 + Math.floor(Math.random() * 90);
     const base = `http://localhost:${port}`;
-    let app;
+    let app, cookie, temporary;
+    const networkFetch = globalThis.fetch;
+    const fetch = (url, options = {}) => networkFetch(url, { ...options, headers: { origin:base, ...(cookie ? { cookie } : {}), ...options.headers } });
     const get = async (u) => {
         const res = await fetch(base + u);
         expect(res.status, u).to.equal(200);
@@ -15,13 +17,17 @@ describe("demo mode", function () {
     };
 
     before(async () => {
+        temporary = await require('node:fs/promises').mkdtemp(path.join(require('node:os').tmpdir(),'metribee-demo-http-'));
         app = spawn(process.execPath, ["app.js"], {
             cwd: path.join(__dirname, ".."),
-            env: { ...process.env, DEMO: "1", PORT: String(port) },
+            env: { ...process.env, DEMO: "1", DATABASE_PATH:path.join(temporary,"demo.sqlite"), BASE_URL:base, PORT: String(port) },
             stdio: "ignore",
         });
         for (let i = 0; i < 100; i++) {
             try {
+                if (!(await networkFetch(`${base}/healthz`)).ok) continue;
+                const signup=await networkFetch(`${base}/api/auth/sign-up/email`,{method:'POST',headers:{'Content-Type':'application/json',origin:base},body:JSON.stringify({email:'demo@example.com',password:'demo-password',name:'Demo'})});
+                cookie=signup.headers.getSetCookie()[0].split(';')[0];
                 const nav = await (await fetch(`${base}/api/nav-index`)).json();
                 if (nav.sites?.length) return;
             } catch { /* not up yet */ }
@@ -29,7 +35,7 @@ describe("demo mode", function () {
         }
         throw new Error("demo server did not start");
     });
-    after(() => app && app.kill());
+    after(async () => { if(app)app.kill(); await require('node:fs/promises').rm(temporary,{recursive:true,force:true}); });
 
 
     it("renders the three pages with the Demo data badge", async () => {

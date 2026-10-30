@@ -226,8 +226,9 @@ function handler(overrides = {}) {
 async function invoke(handle, { method = 'POST', propertyId = '123', action = 'analyze', query = {}, body = {} } = {}) {
   const result = { status: 200 };
   await handle({ method, params: { propertyId, action }, query, body }, {
-    set(key, value) { result.headers ||= {}; result.headers[key] = value; return this; },
-    status(code) { result.status = code; return this; }, json(payload) { result.body = payload; return this; },
+    headers(values) { for (const [key, value] of Object.entries(values)) this.header(key, value); return this; },
+    header(key, value) { result.headers ||= {}; result.headers[key] = value; return this; },
+    status(code) { result.status = code; return this; }, send(payload) { result.body = payload; return this; },
   });
   return result;
 }

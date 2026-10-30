@@ -264,7 +264,7 @@ export function GoalExpanded({ row, siteId, timeSeries, isLoadingTimeSeries, cha
             )}
           </div>
           {pivotFilters && (
-            <PivotActions filters={pivotFilters} actions={["sessions", "users", "replays", "segment"]} />
+            <PivotActions filters={pivotFilters} actions={["segment"]} />
           )}
         </div>
       )}
@@ -292,11 +292,7 @@ export function GoalExpanded({ row, siteId, timeSeries, isLoadingTimeSeries, cha
           )}
         </div>
 
-        <ConvertedSessions
-          row={row}
-          siteId={siteId}
-          sessionsHref={pivotFilters ? pivotHref("sessions", pivotFilters) : undefined}
-        />
+          <div className="flex items-center justify-center rounded-lg border border-neutral-150 p-4 text-sm text-neutral-500 dark:border-neutral-850">{t("GA4 provides aggregate conversions. Individual converting sessions require an ordered event source.")}</div>
       </div>
     </div>
   );

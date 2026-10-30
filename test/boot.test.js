@@ -47,7 +47,7 @@ describe("boot sequence", () => {
 		let release;
 		const warm = new Promise((r) => { release = r; });
 		const passed = [];
-		const run = (gate, path) => gate({ path }, {}, () => passed.push(path));
+		const run = (gate, path) => gate({ path }, {}).then(() => passed.push(path));
 		const gate = bootGate(() => warm, { timeoutMs: 1000 });
 		run(gate, "/analytics");
 		run(gate, "/healthz");
@@ -60,7 +60,7 @@ describe("boot sequence", () => {
 
 		const stuck = bootGate(() => new Promise(() => {}), { timeoutMs: 20 });
 		const t = Date.now();
-		await new Promise((r) => stuck({ path: "/globe" }, {}, r));
+		await stuck({ path: "/globe" }, {});
 		assert.ok(Date.now() - t >= 15);
 	});
 
@@ -72,9 +72,10 @@ describe("boot sequence", () => {
 		const served = [];
 		const passed = [];
 		const gate = bootGate(() => new Promise(() => {}), { timeoutMs: 10, page: (req) => served.push(req.path) });
-		const req = (path, type) => ({ path, method: "GET", accepts: () => type });
-		await gate(req("/globe", "html"), {}, () => passed.push("/globe"));
-		await gate(req("/api/x", "json"), {}, () => passed.push("/api/x"));
+		const req = (path, type) => ({ path, method: "GET", headers: { accept: type === "html" ? "text/html" : "application/json" } });
+		await gate(req("/globe", "html"), {});
+		await gate(req("/api/x", "json"), {});
+		passed.push("/api/x");
 		assert.deepStrictEqual(served, ["/globe"]);
 		assert.deepStrictEqual(passed, ["/api/x"]);
 	});

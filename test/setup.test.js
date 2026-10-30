@@ -86,21 +86,27 @@ describe("setup gate (not configured)", function () {
     this.timeout(30000);
     const port = 3990 + Math.floor(Math.random() * 9);
     const base = `http://localhost:${port}`;
-    let app;
+    let app, cookie, temporary;
+    const networkFetch=globalThis.fetch;
+    const fetch=(url,options={})=>networkFetch(url,{...options,headers:{origin:base,...(cookie?{cookie}:{}),...options.headers}});
 
     before(async () => {
+        temporary=await require('node:fs/promises').mkdtemp(path.join(require('node:os').tmpdir(),'metribee-setup-http-'));
         app = spawn(process.execPath, ["app.js"], {
             cwd: path.join(__dirname, ".."),
-            env: { ...process.env, DEMO: "", GA4_CLIENT_EMAIL: "", GA4_PRIVATE_KEY: "", MCP_PUBLIC_URL: "", PORT: String(port) },
+            env: { ...process.env, DEMO: "", GA4_CLIENT_EMAIL: "", GA4_PRIVATE_KEY: "", MCP_PUBLIC_URL: "", DATABASE_PATH:path.join(temporary,"setup.sqlite"),BASE_URL:base, PORT: String(port) },
             stdio: "ignore",
         });
         for (let i = 0; i < 100; i++) {
-            try { if ((await fetch(`${base}/healthz`)).ok) return; } catch { /* not up yet */ }
+            try { if ((await networkFetch(`${base}/healthz`)).ok) {
+                const signup=await networkFetch(`${base}/api/auth/sign-up/email`,{method:'POST',headers:{'Content-Type':'application/json',origin:base},body:JSON.stringify({email:'setup@example.com',password:'setup-password',name:'Setup'})});
+                cookie=signup.headers.getSetCookie()[0].split(';')[0];return;
+            } } catch { /* not up yet */ }
             await new Promise((r) => setTimeout(r, 200));
         }
         throw new Error("server did not start");
     });
-    after(() => app && app.kill());
+    after(async () => { if(app)app.kill(); await require('node:fs/promises').rm(temporary,{recursive:true,force:true}); });
 
     it("/healthz answers ok with the package version", async () => {
         const j = await (await fetch(`${base}/healthz`)).json();
@@ -129,7 +135,7 @@ describe("setup gate (not configured)", function () {
         }
     });
     it("serves Streamable HTTP MCP before the setup gate", async () => {
-        const res = await fetch(`${base}/mcp`, {
+        const res = await fetch(`${base}/api/mcp`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
             body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
@@ -148,24 +154,16 @@ describe("setup gate (not configured)", function () {
         expect(asset.status).to.equal(200);
         expect(asset.headers.get("content-type")).to.include("image/svg+xml");
     });
-    it("shows the running dashboard's HTTP URL in the setup prompt", async () => {
+    it("keeps setup instructions focused on data sources", async () => {
         const instructions = await (await fetch(`${base}/api/setup/instructions`)).json();
         expect(instructions).not.to.have.property("projectDir");
-        expect(instructions.mcpPrompt).to.include(`${base}/mcp`);
-        expect(instructions.mcpPrompt).to.include("--transport http");
-        expect(instructions.mcpPrompt).to.not.include("<MCP URL>");
-        expect(instructions.mcpPrompt).to.not.include("node mcp-server");
-        expect(instructions.mcp.url).to.equal(`${base}/mcp`);
-        expect(instructions.mcp.transport).to.equal("Streamable HTTP");
-        expect(JSON.parse(instructions.mcp.clientConfig)).to.deep.equal({
-            mcpServers: { ga4: { type: "http", url: `${base}/mcp` } },
-        });
-        expect(instructions.mcp.claudeCommand).to.equal(`claude mcp add ga4 --transport http --scope project '${base}/mcp'`);
-        expect(instructions.mcpPrompt).to.include(instructions.mcp.claudeCommand);
-        expect(instructions.mcp.features).to.deep.equal(loadSetupDoc().mcpFeatures);
-        expect(instructions.mcp.verify).to.deep.equal(loadSetupDoc().mcpVerify);
-        expect(instructions.gsc).to.deep.equal(loadSetupDoc().gsc);
-        expect(instructions.oauth).to.deep.equal(loadSetupDoc().oauth);
+        expect(instructions).not.to.have.property("mcp");
+        expect(instructions).not.to.have.property("mcpPrompt");
+        const doc = loadSetupDoc();
+        expect(instructions.prompt).to.equal(doc.prompt);
+        expect(instructions.manual).to.deep.equal(doc.manual.map(html => ({ html })));
+        expect(instructions.gsc).to.deep.equal(doc.gsc);
+        expect(instructions.oauth).to.deep.equal(doc.oauth);
     });
     it("pages redirect to /setup", async () => {
         for (const p of ["/", "/globe", "/analytics"]) {

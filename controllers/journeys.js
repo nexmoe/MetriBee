@@ -104,26 +104,26 @@ function createJourneysHandler({ run, getProperties = () => require('./apiContro
   return async (req, res) => {
     const { propertyId } = req.params;
     const range = req.query.range || '30d';
-    if (!/^\d+$/.test(propertyId || '')) return res.status(400).json({ error: 'Invalid propertyId' });
-    if (!Object.hasOwn(RANGES, range)) return res.status(400).json({ error: 'Invalid range' });
+    if (!/^\d+$/.test(propertyId || '')) return res.status(400).send({ error: 'Invalid propertyId' });
+    if (!Object.hasOwn(RANGES, range)) return res.status(400).send({ error: 'Invalid range' });
     try {
       const { properties } = await getProperties();
-      if (!properties.some(p => String(p.id) === propertyId)) return res.status(404).json({ error: 'Unknown property' });
+      if (!properties.some(p => String(p.id) === propertyId)) return res.status(404).send({ error: 'Unknown property' });
       const compare = req.query.compare !== 'none';
       const key = `v1:${propertyId}:${range}:${compare ? 'previous' : 'none'}`;
       const fresh = req.query.fresh === '1' && shouldBypass(`journeys:${key}`);
       const cached = fresh ? null : await readCache('journeys', key);
-      if (cached) return res.json({ ...cached, cached: true });
+      if (cached) return res.send({ ...cached, cached: true });
       if (!inFlight.has(key)) {
         const pending = fetchJourneys({ propertyId, range, compare, run })
           .then(async payload => { await writeCache('journeys', key, payload); return payload; })
           .finally(() => inFlight.delete(key));
         inFlight.set(key, pending);
       }
-      return res.json(await inFlight.get(key));
+      return res.send(await inFlight.get(key));
     } catch (err) {
       res.status(err.code === 7 ? 403 : err.code === 8 || err.code === 429 ? 429 : 502)
-        .json({ ok: false, error: 'Could not load page transitions. Try again later.', rateLimited: err.code === 8 || err.code === 429 });
+        .send({ ok: false, error: 'Could not load page transitions. Try again later.', rateLimited: err.code === 8 || err.code === 429 });
     }
   };
 }
@@ -131,7 +131,7 @@ function createJourneysHandler({ run, getProperties = () => require('./apiContro
 async function journeysView(req, res) {
   const { properties } = await require('./apiController').ensureProperties();
   res.locals.nav = { ...res.locals.nav, title: 'Journeys', analytics: true, journeys: true };
-  res.render('journeys', {
+  res.view('journeys', {
     properties,
     head: { title: 'MetriBee · Journeys', description: 'Explore page-to-page journeys from Google Analytics 4' },
   });

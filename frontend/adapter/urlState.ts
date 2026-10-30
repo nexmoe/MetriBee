@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 import { useStore, getTimezone } from '../rybbit/src/lib/store';
 import { getDashboardTimeForRange } from '../rybbit/src/lib/defaultTimeRange';
 import { timeToUrlParams, comparisonToUrlParams, urlParamsToTime, urlParamsToComparison } from '../rybbit/src/lib/time';
-import { getSharedRoute } from './navigation';
+import { getSharedRoute, getPropertyRoute } from './navigation';
 
 let restoring = false;
 let lastLocation = '';
@@ -15,7 +15,7 @@ function restore() {
     const values: any = Object.fromEntries(params);
     const state = useStore.getState();
     const shared = getSharedRoute();
-    const site = shared?.siteId || params.get('prop') || String((window as any).__GA4_CONTEXT__?.properties?.[0]?.id || '');
+    const site = shared?.siteId || getPropertyRoute()?.siteId || params.get('prop') || String((window as any).__GA4_CONTEXT__?.properties?.[0]?.id || '');
     if (state.site !== site || state.privateKey !== (shared?.privateKey ?? null)) state.setSiteContext(site, shared?.privateKey ?? null);
     const zone = getTimezone();
     const parsed = urlParamsToTime(values, zone);

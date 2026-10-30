@@ -10,6 +10,8 @@ import { Footer } from "../components/Footer";
 import { Header } from "./components/Header/Header";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import { useEmbedPageOptions } from "./utils";
+import { SiteSettingsRoute } from "../../../../adapter/accounts/SiteSettingsRoute";
+import { isPublicDashboard } from "../../../../adapter/navigation";
 
 function isMainDashboardPath(pathname: string) {
   return getSiteRouteContext(pathname).route === "main";
@@ -20,6 +22,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const { setSiteContext, site, privateKey } = useStore();
   const { embed, hideSidebar } = useEmbedPageOptions();
+  const readOnly = !!privateKey || isPublicDashboard();
 
   // Sync store state with URL parameters
   useSyncStateWithUrl();
@@ -48,6 +51,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <div>
         <Header />
         <div>{children}</div>
+        {!embed && !readOnly && <SiteSettingsRoute siteId={Number(site)} />}
         <Footer disabled={embed} />
       </div>
     );
@@ -55,7 +59,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="flex flex-row h-dvh">
-      {!embed && !privateKey && <AppSidebar />}
+      {!embed && !readOnly && <AppSidebar />}
       <div className="flex flex-1 overflow-hidden">
         {!hideSidebar && (
           <div className="hidden md:flex">
@@ -67,6 +71,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             {/* <div className="px-4 py-2 max-w-[1400px] mx-auto w-full mb-4"> */}
             <Header />
             <div className="flex-1">{children}</div>
+            {!embed && !readOnly && <SiteSettingsRoute siteId={Number(site)} />}
             <Footer disabled={embed} />
           </div>
         </div>

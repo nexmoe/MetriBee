@@ -1,6 +1,7 @@
 const { expect } = require('chai');
 const path = require('node:path');
-const { create } = require('express-handlebars');
+const fs = require('node:fs/promises');
+const handlebars = require('handlebars').create();
 
 const pages = [
   ['analytics', '/analytics', 'analyticsMain'],
@@ -10,7 +11,11 @@ const pages = [
   ['retention', '/retention', 'retention'],
 ];
 const expected = ['/analytics', '/analytics/pages', '/events', '/journeys', '/retention'];
-const engine = create({ extname: 'hbs', partialsDir: path.resolve('views/partials'), helpers: { json_stringify: JSON.stringify } });
+handlebars.registerHelper('json_stringify', JSON.stringify);
+const engine = { async renderView(file, data) {
+  for (const partial of await fs.readdir(path.resolve('views/partials'))) if (partial.endsWith('.hbs')) handlebars.registerPartial(partial.replace(/\.hbs$/, ''), await fs.readFile(path.resolve('views/partials', partial), 'utf8'));
+  return handlebars.compile(await fs.readFile(file, 'utf8'))(data);
+} };
 
 describe('shared analytics sidebar', () => {
   for (const [view, route, active] of pages) {

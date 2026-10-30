@@ -44,7 +44,7 @@ export function CreateOrganizationDialog({ open, onOpenChange, onSuccess, trigge
         .toLowerCase()
         .replace(/\s+/g, "-")
         .replace(/[^a-z0-9-]/g, "");
-      setSlug(generatedSlug);
+      setSlug(generatedSlug || `org-${crypto.randomUUID().slice(0, 8)}`);
     }
   };
 
@@ -83,6 +83,7 @@ export function CreateOrganizationDialog({ open, onOpenChange, onSuccess, trigge
       if (onSuccess) {
         onSuccess();
       }
+      window.location.reload();
     },
     onError: (error: Error) => {
       setError(error.message);

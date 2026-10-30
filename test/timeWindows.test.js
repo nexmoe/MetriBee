@@ -60,7 +60,7 @@ describe('Rybbit rolling time windows', () => {
 const row = (dims, values) => ({ dimensionValues: dims.map(value => ({ value })), metricValues: values.map(value => ({ value: String(value) })) });
 async function invoke(handler, path, query, body) {
   const output = { status: 200 };
-  await handler({ path, query, body, method: body ? 'POST' : 'GET' }, { status(value) { output.status = value; return this; }, json(value) { output.body = value; return this; } });
+  await handler({ path, query, body, method: body ? 'POST' : 'GET' }, { status(value) { output.status = value; return this; }, send(value) { output.body = value; return this; } });
   return output;
 }
 function setup(overrides = {}) {
@@ -132,7 +132,7 @@ describe('rolling-window GA4 requests', () => {
   it('accepts Express next as its third argument without mistaking it for the clock', async () => {
     const { handler } = setup();
     let response;
-    await handler({ path: '/sites/123/overview', query: rolling, method: 'GET' }, { json(value) { response = value; } }, () => {});
+    await handler({ path: '/sites/123/overview', query: rolling, method: 'GET' }, { send(value) { response = value; } }, () => {});
     expect(response.data.sessions).to.equal(20);
   });
 });

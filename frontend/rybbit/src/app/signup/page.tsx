@@ -1,7 +1,6 @@
 "use client";
 
 import { AuthError } from "@/components/auth/AuthError";
-import { CheckoutModal } from "@/components/subscription/components/CheckoutModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { useExtracted } from "next-intl";
@@ -19,9 +18,9 @@ import { BACKEND_URL, IS_CLOUD } from "../../lib/const";
 import { trackAdEvent } from "../../lib/trackAdEvent";
 import { userStore } from "../../lib/userStore";
 import { cn, isValidDomain, normalizeDomain } from "../../lib/utils";
-import { EVENT_TIERS, findPriceForTier } from "../subscribe/components/utils";
 import { AccountStep } from "./components/AccountStep";
-import { PlanStep } from "./components/PlanStep";
+import { completeSignupWorkspace } from "../../../../adapter/accounts/onboarding";
+import { actualHref } from "../../../../adapter/navigation";
 import { SetupStep } from "./components/SetupStep";
 
 function SignupPageContent() {
@@ -29,7 +28,7 @@ function SignupPageContent() {
   useSetPageTitle("Signup");
   const t = useExtracted();
 
-  const maxStep = IS_CLOUD ? 3 : 2;
+  const maxStep = 2;
   const [stepParam, setStepParam] = useQueryState("step", parseAsInteger);
   const [currentStep, setCurrentStepRaw] = useState(stepParam && stepParam >= 1 && stepParam <= maxStep ? stepParam : 1);
 
@@ -47,12 +46,6 @@ function SignupPageContent() {
   const [password, setPassword] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string>("");
 
-  // Plan selection (cloud step 2)
-  const [eventLimitIndex, setEventLimitIndex] = useState(0);
-  const [isAnnual, setIsAnnual] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<"standard" | "pro">("pro");
-  const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null);
-
   // Setup: Organization + website
   const [orgName, setOrgName] = useState("");
   const [orgSlug, setOrgSlug] = useState("");
@@ -66,7 +59,7 @@ function SignupPageContent() {
         .toLowerCase()
         .replace(/\s+/g, "-")
         .replace(/[^a-z0-9-]/g, "");
-      setOrgSlug(generatedSlug);
+      setOrgSlug(generatedSlug || `org-${crypto.randomUUID().slice(0, 8)}`);
     }
   };
 
@@ -76,12 +69,6 @@ function SignupPageContent() {
     setError("");
 
     try {
-      if (IS_CLOUD && !turnstileToken) {
-        setError(t("Please complete the captcha verification"));
-        setIsLoading(false);
-        return;
-      }
-
       const { data, error } = await authClient.signUp.email(
         {
           email,
@@ -97,9 +84,10 @@ function SignupPageContent() {
         }
       );
 
+      if ((data as { redirect?: boolean } | null)?.redirect) return;
       if (data?.user) {
         userStore.setState({ user: data.user });
-        setCurrentStep(2);
+        window.location.assign(actualHref("/signup?step=2"));
       }
 
       if (error) {
@@ -127,39 +115,8 @@ function SignupPageContent() {
         return;
       }
 
-      // Create organization
-      const { data, error } = await authClient.organization.create({
-        name: orgName,
-        slug: orgSlug,
-      });
-
-      if (error) {
-        throw new Error(error.message || t("Failed to create organization"));
-      }
-
-      if (!data?.id) {
-        throw new Error(t("No organization ID returned"));
-      }
-
-      await authClient.organization.setActive({ organizationId: data.id });
-
-      if (IS_CLOUD && referralSource && userStore.getState().user?.id) {
-        window.rybbit?.identify(userStore.getState().user?.id || "", {
-          source: referralSource,
-        });
-      }
-
-      // Add website
-      const normalizedDomain = normalizeDomain(domain);
-      const response = await addSite(normalizedDomain, normalizedDomain, data.id);
-
-      if (IS_CLOUD) {
-        setSiteId(response.siteId);
-        setOrganizationId(data.id);
-        setCurrentStep(3);
-      } else {
-        router.push(`/${response.siteId}`);
-      }
+      const response = await completeSignupWorkspace({name:orgName,slug:orgSlug,domain:normalizeDomain(domain)});
+      window.location.assign(actualHref(IS_CLOUD ? '/settings/billing' : response.siteId ? `/${response.siteId}` : '/'));
     } catch (error) {
       setError(String(error));
     } finally {
@@ -167,66 +124,10 @@ function SignupPageContent() {
     }
   };
 
-  // Step 3 (cloud): Create checkout session and open modal
-  const handleSubscribe = async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const eventLimit = EVENT_TIERS[eventLimitIndex];
-      if (eventLimit === "Custom") return;
-
-      const selectedTierPrice = findPriceForTier(
-        eventLimit,
-        isAnnual ? "year" : "month",
-        selectedPlan
-      );
-
-      if (!selectedTierPrice) {
-        setError("Could not find a matching plan. Please try a different selection.");
-        return;
-      }
-
-      const baseUrl = window.location.origin;
-      const returnUrl = `${baseUrl}/${siteId}?session_id={CHECKOUT_SESSION_ID}`;
-
-      const checkoutResponse = await fetch(`${BACKEND_URL}/stripe/create-checkout-session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          priceId: selectedTierPrice.priceId,
-          returnUrl,
-          organizationId,
-          referral: (window as any).Rewardful?.referral || undefined,
-        }),
-      });
-
-      const checkoutData = await checkoutResponse.json();
-
-      if (!checkoutResponse.ok) {
-        throw new Error(checkoutData.error || "Failed to create checkout session");
-      }
-
-      trackAdEvent("checkout", { tier: selectedTierPrice.name });
-      setCheckoutClientSecret(checkoutData.clientSecret);
-    } catch (error) {
-      setError(String(error));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const steps = IS_CLOUD
-    ? [
-      { step: 1, label: t("Account") },
-      { step: 2, label: t("Add site") },
-      { step: 3, label: t("Pick plan") },
-    ]
-    : [
-      { step: 1, label: t("Account") },
-      { step: 2, label: t("Add site") },
-    ];
+  const steps = [
+    { step: 1, label: t("Account") },
+    { step: 2, label: t("Add site") },
+  ];
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -258,19 +159,6 @@ function SignupPageContent() {
             onSubmit={handleSetupSubmit}
           />
         );
-      case 3:
-        return (
-          <PlanStep
-            eventLimitIndex={eventLimitIndex}
-            setEventLimitIndex={setEventLimitIndex}
-            isAnnual={isAnnual}
-            setIsAnnual={setIsAnnual}
-            selectedPlan={selectedPlan}
-            setSelectedPlan={setSelectedPlan}
-            onSubscribe={handleSubscribe}
-            isLoading={isLoading}
-          />
-        );
       default:
         return null;
     }
@@ -280,7 +168,7 @@ function SignupPageContent() {
     return null;
   }
 
-  if (configs?.disableSignup) {
+  if (configs?.disableSignup && currentStep === 1) {
     return (
       <div className="flex justify-center items-center h-dvh w-full">
         <Card className="w-full max-w-sm p-1">
@@ -309,7 +197,7 @@ function SignupPageContent() {
       <div className="w-full max-w-[550px] flex flex-col p-6 lg:p-10">
         {/* Logo */}
         <div className="mb-8">
-          <a href="https://rybbit.com" target="_blank" className="inline-block">
+          <a href="/" className="inline-block">
             <RybbitTextLogo />
           </a>
         </div>
@@ -317,7 +205,7 @@ function SignupPageContent() {
         <div className="flex-1 flex flex-col justify-center w-full max-w-[550px] mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-medium">
-              {IS_CLOUD ? t("Start your 7-day free trial") : t("Get started with Rybbit")}
+              {t("Get started with MetriBee")}
             </h1>
             {IS_CLOUD && (
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3">
@@ -376,26 +264,18 @@ function SignupPageContent() {
         {!IS_CLOUD && (
           <div className="text-xs text-muted-foreground mt-8">
             <a
-              href="https://rybbit.com"
+              href="https://github.com/nexmoe/MetriBee"
               target="_blank"
               rel="noopener"
-              title="Rybbit - Open Source Privacy-Focused Web Analytics"
+              title="MetriBee - Open Source Google Analytics 4 Dashboard"
             >
-              {t("Open source web analytics powered by Rybbit")}
+              {t("Open source web analytics powered by MetriBee")}
             </a>
           </div>
         )}
       </div>
 
-      {IS_CLOUD && (
-        <CheckoutModal
-          clientSecret={checkoutClientSecret}
-          open={!!checkoutClientSecret}
-          onOpenChange={(open) => {
-            if (!open) setCheckoutClientSecret(null);
-          }}
-        />
-      )}
+
     </div>
   );
 }

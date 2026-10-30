@@ -19,6 +19,7 @@ import { DangerRow, DangerZone, LedgerRow, LedgerRows, LedgerSaveBar, LedgerSect
 import { ApiKeyManager } from "./ApiKeyManager";
 import { ChangePassword } from "./ChangePassword";
 import { DeleteAccount, useHasActiveSubscription } from "./DeleteAccount";
+import McpConnection from "../../../../../../adapter/accounts/McpConnection";
 
 const INLINE_LINK =
   "font-medium text-neutral-900 underline underline-offset-2 hover:text-neutral-700 dark:text-neutral-100 dark:hover:text-neutral-300";
@@ -262,6 +263,8 @@ export function AccountInner() {
       </LedgerSection>
 
       <ApiKeyManager />
+
+      <McpConnection />
 
       <DangerZone>
         <DangerRow

@@ -128,7 +128,7 @@ async function getCachedProperties() {
     }
 }
 // Read-only metadata access for cache-only MCP portfolio reports; never schedules Google work.
-exports.readCachedProperties = getCachedProperties;
+exports.readCachedProperties = async () => { const result = await getCachedProperties(); return result ? { ...result, properties: require('../lib/requestContext').filterProperties(result.properties || []) } : result; };
 
 async function savePropertiesToCache(properties) {
     await fs.mkdir(CACHE_DIR, { recursive: true });
@@ -261,7 +261,7 @@ let propertiesRevalidateUntil = 0;
  * A failed fetch falls back to the stale cache. One fetch at a time, shared by concurrent callers.
  * Returns { properties, source: "cached" | "fetched" | "stale" | "none" }.
  */
-exports.ensureProperties = async function ensureProperties({ refreshStale = true, force = false } = {}) {
+async function ensureProperties({ refreshStale = true, force = false } = {}) {
     const cache = await getCachedProperties();
     const missing = !cache?.properties?.length;
     if (!force && !missing && !(refreshStale && isCacheStale(cache))) {
@@ -285,6 +285,12 @@ exports.ensureProperties = async function ensureProperties({ refreshStale = true
     return propertiesInFlight;
 };
 
+exports.ensureProperties = async options => {
+    const result = await ensureProperties(options);
+    const context = require('../lib/requestContext').storage.getStore();
+    context?.access?.syncProperties(result.properties);
+    return { ...result, properties: require('../lib/requestContext').filterProperties(result.properties) };
+};
 const loadProperties = async () => (await exports.ensureProperties()).properties;
 
 // ---------------------------------------------------------------------------
@@ -497,7 +503,7 @@ exports.allrealtime = async (req, res) => {
             baselineKind: r.baselineKind ?? null,
         }));
 
-        res.status(200).render("home", {
+        res.status(200).view("home", {
             data: formattedData,
             quota: quota ?? null,
             cacheAge: cache?.lastUpdated ?? null,
@@ -549,9 +555,9 @@ exports.realtimeAllApi = async (req, res) => {
             : await refreshRealtime(properties);
         const failed = entry.data.filter(row => row.error);
         const unavailable = failed.length > 0 && failed.length === entry.data.length;
-        res.set("Cache-Control", "no-store");
-        if (unavailable) res.set("Retry-After", "10");
-        res.status(unavailable ? 503 : 200).json({
+        res.header("Cache-Control", "no-store");
+        if (unavailable) res.header("Retry-After", "10");
+        res.status(unavailable ? 503 : 200).send({
             ...entry,
             ok: !unavailable,
             status: unavailable ? "unavailable" : failed.length ? "partial" : "ready",
@@ -565,7 +571,7 @@ exports.realtimeAllApi = async (req, res) => {
             ...require("./dashboardModels").scoreRealtime(withPropertyAccounts(entry.data, properties), req.query),
         });
     } catch (err) {
-        res.status(500).json({ ok: false, error: err.message });
+        res.status(500).send({ ok: false, error: err.message });
     }
 };
 
@@ -573,14 +579,14 @@ exports.realtimeAllApi = async (req, res) => {
 /** Compatibility property URL; use the same native domain favicon service as the UI. */
 exports.favicon = async (req, res) => {
     const id = req.params.propertyId;
-    if (!/^\d+$/.test(id)) return res.sendStatus(400);
+    if (!/^\d+$/.test(id)) return res.code(400).send();
     const cache = await getCachedProperties();
     const prop = cache?.properties?.find((p) => p.id === id);
-    if (!prop) return res.sendStatus(404);
+    if (!prop) return res.code(404).send();
     if (demo.enabled()) {
         // No icon found: same letter tile the client draws, so the <img> never errors.
         const { letter, color } = letterTile(prop.site, Number(id));
-        res.set({ "Cache-Control": "max-age=3600", "X-Content-Type-Options": "nosniff" }).type("image/svg+xml");
+        res.headers({ "Cache-Control": "max-age=3600", "X-Content-Type-Options": "nosniff" }).type("image/svg+xml");
         return res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><rect width="20" height="20" fill="${color}"/><text x="10" y="14.5" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">${letter}</text></svg>`);
     }
     let domain = prop.domain;
@@ -591,9 +597,9 @@ exports.favicon = async (req, res) => {
 /** GET /api/flag/:cc: country flag SVG (lowercase ISO code), cached forever in .data/flags */
 exports.flag = async (req, res) => {
     const cc = req.params.cc;
-    if (!flags.isCc(cc)) return res.sendStatus(400);
+    if (!flags.isCc(cc)) return res.code(400).send();
     const svg = await flags.getFlag(cc).catch(() => null);
-    res.set({
+    res.headers({
         "Cache-Control": svg ? "max-age=604800" : "no-store",
         "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
         "X-Content-Type-Options": "nosniff",
@@ -603,15 +609,15 @@ exports.flag = async (req, res) => {
 
 exports.quotaData = (req, res) => {
     if (!latestQuota) {
-        return res.json({ ok: false, quota: null, message: "No quota data yet. Reload the dashboard first." });
+        return res.send({ ok: false, quota: null, message: "No quota data yet. Reload the dashboard first." });
     }
-    res.json({ ok: true, quota: latestQuota });
+    res.send({ ok: true, quota: latestQuota });
 };
 
 /** GET /api/nav-index: sites and report names for the navbar jump palette */
 exports.navIndex = async (req, res) => {
     const props = await loadProperties();
-    res.json({
+    res.send({
         ok: true,
         sites: props.map((p) => ({ id: String(p.id), name: p.site || p.domain || String(p.id), domain: p.domain || "" })),
         reports: getAnalyticsCatalog().map((c) => ({ id: c.type, name: c.title, group: c.group })),
@@ -625,20 +631,20 @@ exports.trafficSpikes = async (req, res) => {
         const opts = parseSpikeOpts(req.query);
         const properties = selectSpikeProperties(await loadProperties(), req.query.propertyIds);
         // Viewer drill-downs query only the displayed spikes, not every property.
-        const scope = req.query.propertyIds == null ? 'all' : properties.map(property => String(property.id)).sort().join(',');
+        const scope = properties.map(property => String(property.id)).sort().join(',');
         const cacheKey = `${scope}:z${opts.z}:l${opts.lift}`;
         const cached = wantFresh(req, "spike", cacheKey) ? null : await cacheGet("spike", cacheKey);
         if (cached) {
-            return res.json({ ...cached, cached: true });
+            return res.send({ ...cached, cached: true });
         }
 
         const spikes = await detectAllSpikes(properties, opts);
         const payload = { ok: true, count: spikes.length, rule: opts, spikes };
         cacheSet("spike", cacheKey, payload).catch(() => {});
-        res.json(payload);
+        res.send(payload);
     } catch (err) {
         console.error("[spikes] Error detecting traffic spikes:", err.message);
-        res.status(err.status || 500).json({ ok: false, error: err.message });
+        res.status(err.status || 500).send({ ok: false, error: err.message });
     }
 };
 
@@ -646,7 +652,7 @@ exports.trafficSpikes = async (req, res) => {
 exports.propertyDetail = async (req, res) => {
     const { propertyId } = req.params;
     if (!propertyId || !/^\d+$/.test(propertyId)) {
-        return res.status(400).json({ error: "Invalid propertyId" });
+        return res.status(400).send({ error: "Invalid propertyId" });
     }
     try {
         // Run three focused realtime reports in parallel (each isolated so one failure doesn't break the rest)
@@ -690,12 +696,12 @@ exports.propertyDetail = async (req, res) => {
             views: parseInt(r.metricValues?.[0]?.value || "0", 10),
         })).filter(r => r.views > 0).slice(0, 8);
 
-        res.json({ ok: true, countries, events, pages });
+        res.send({ ok: true, countries, events, pages });
     } catch (err) {
         if (err.code === 7) {
-            return res.status(403).json({ error: "Permission denied for this property" });
+            return res.status(403).send({ error: "Permission denied for this property" });
         }
-        res.status(500).json({ error: err.message });
+        res.status(500).send({ error: err.message });
     }
 };
 
@@ -703,16 +709,16 @@ exports.propertyDetail = async (req, res) => {
 exports.visitorInsights = async (req, res) => {
     const { propertyId } = req.params;
     if (!propertyId || !/^\d+$/.test(propertyId)) {
-        return res.status(400).json({ error: "Invalid propertyId" });
+        return res.status(400).send({ error: "Invalid propertyId" });
     }
     try {
         const { getVisitorInsights } = require("./visitorInsights");
         const range = req.query.range || "28d";
         const insights = await getVisitorInsights(propertyId, range);
-        res.json(insights);
+        res.send(insights);
     } catch (err) {
         console.error(`[visitor-insights] ${propertyId}:`, err.message);
-        res.status(500).json({ ok: false, error: err.message });
+        res.status(500).send({ ok: false, error: err.message });
     }
 };
 
@@ -720,16 +726,16 @@ exports.visitorInsights = async (req, res) => {
 exports.refreshCache = async (req, res) => {
     try {
         const result = await exports.ensureProperties({ force: true });
-        if (result.source !== "fetched") return res.status(502).json({ ok: false, error: "Could not sync properties from GA4. The previous property list has been kept. Try again." });
+        if (result.source !== "fetched") return res.status(502).send({ ok: false, error: "Could not sync properties from GA4. The previous property list has been kept. Try again." });
         const properties = result.properties;
-        res.json({
+        res.send({
             ok: true,
             count: properties.length,
             updatedAt: new Date().toISOString(),
             properties,
         });
     } catch (err) {
-        res.status(500).json({ ok: false, error: err.message });
+        res.status(500).send({ ok: false, error: err.message });
     }
 };
 
@@ -742,7 +748,7 @@ const GLOBE_CACHE_TTL_SEC = 60; // 1 minute
 
 async function getCachedGlobeData() {
     try {
-        const raw = await fs.readFile(GLOBE_CACHE_PATH, "utf8");
+        const raw = await fs.readFile(scopedGlobePath(GLOBE_CACHE_PATH), "utf8");
         const parsed = JSON.parse(raw);
         if (!parsed || !parsed.fetchedAt) return null;
         const ageMs = Date.now() - new Date(parsed.fetchedAt).getTime();
@@ -755,7 +761,7 @@ async function getCachedGlobeData() {
 
 async function saveGlobeDataToCache(payload) {
     await fs.mkdir(CACHE_DIR, { recursive: true });
-    await fs.writeFile(GLOBE_CACHE_PATH, JSON.stringify(payload, null, 2));
+    await fs.writeFile(scopedGlobePath(GLOBE_CACHE_PATH), JSON.stringify(payload, null, 2));
 }
 
 async function fetchGlobeCountryData(properties) {
@@ -828,11 +834,12 @@ const GLOBE_USERS_MAX_AGE_SEC = 300;
 /** Last propertyQuota per property and the measured token cost of one globe poll per property. */
 const globeQuotas = new Map();
 const globeCosts = new Map();
-let globeFetchInFlight = null;
+const globeFetchInFlight = new Map();
+function scopedGlobePath(file) { const scope = require('../lib/requestContext').cacheScope(); return scope === 'all' ? file : file.replace(/\.json$/, `-${scope}.json`); }
 
 async function getCachedGlobeUsers(maxAgeSec = GLOBE_USERS_TTL_SEC) {
     try {
-        const raw  = await fs.readFile(GLOBE_USERS_CACHE_PATH, "utf8");
+        const raw  = await fs.readFile(scopedGlobePath(GLOBE_USERS_CACHE_PATH), "utf8");
         const parsed = JSON.parse(raw);
         if (!parsed?.fetchedAt || parsed.v !== GLOBE_USERS_CACHE_V) return null;
         const ageMs = Date.now() - new Date(parsed.fetchedAt).getTime();
@@ -843,7 +850,7 @@ async function getCachedGlobeUsers(maxAgeSec = GLOBE_USERS_TTL_SEC) {
 
 async function saveGlobeUsersToCache(payload) {
     await fs.mkdir(CACHE_DIR, { recursive: true });
-    await fs.writeFile(GLOBE_USERS_CACHE_PATH, JSON.stringify(payload, null, 2));
+    await fs.writeFile(scopedGlobePath(GLOBE_USERS_CACHE_PATH), JSON.stringify(payload, null, 2));
 }
 
 async function fetchGlobeUsersData(properties) {
@@ -904,8 +911,9 @@ async function fetchGlobeUsersData(properties) {
 
 /** Fetch city-level users for every property and write the cache file. One fetch at a time. */
 function loadGlobeUsers() {
-    if (!globeFetchInFlight) {
-        globeFetchInFlight = (async () => {
+    const scope = require('../lib/requestContext').cacheScope();
+    if (!globeFetchInFlight.has(scope)) {
+        globeFetchInFlight.set(scope, (async () => {
             const properties = await loadProperties();
             const payload = await fetchGlobeUsersData(properties);
             payload.fetchedAt = new Date().toISOString();
@@ -915,9 +923,9 @@ function loadGlobeUsers() {
             // No properties yet (first boot, Admin API failed): do not cache an empty globe for the TTL.
             if (properties.length) await saveGlobeUsersToCache(publicPayload);
             return publicPayload;
-        })().finally(() => { globeFetchInFlight = null; });
+        })().finally(() => { globeFetchInFlight.delete(scope); }));
     }
-    return globeFetchInFlight;
+    return globeFetchInFlight.get(scope);
 }
 
 /** Boot warm-up: "cached" when the globe cache is fresh, else fetch it and return the active user count. */
@@ -937,7 +945,7 @@ exports.globeUsers = async (req, res) => {
 
         const send = (payload, cached) => {
             const refresh = refreshInfo(globeQuotas, globeCosts) || payload.refresh || null;
-            res.json(stripSensitiveGlobeUsersPayload({ ...payload, refresh, cached }));
+            res.send(stripSensitiveGlobeUsersPayload({ ...payload, refresh, cached }));
         };
 
         const cached = await getCachedGlobeUsers(maxAge);
@@ -946,7 +954,7 @@ exports.globeUsers = async (req, res) => {
         send(await loadGlobeUsers(), false);
     } catch (err) {
         console.error("[globe-users] Fatal:", err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).send({ error: err.message });
     }
 };
 
@@ -955,7 +963,7 @@ exports.globeData = async (req, res) => {
     try {
         const cached = await getCachedGlobeData();
         if (cached) {
-            return res.json(cached);
+            return res.send(cached);
         }
 
         const properties = await loadProperties();
@@ -964,16 +972,16 @@ exports.globeData = async (req, res) => {
         const payload    = { fetchedAt: new Date().toISOString(), countries };
 
         await saveGlobeDataToCache(payload);
-        res.json(payload);
+        res.send(payload);
     } catch (err) {
         console.error("[globe] Fatal:", err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).send({ error: err.message });
     }
 };
 
 /** GET /globe – renders the 3D globe view (uses main layout for nav) */
 exports.globeView = (req, res) => {
-    res.render("globe", {
+    res.view("globe", {
         head: {
             title: "MetriBee · Globe",
             description: "3D real-time active user globe",
@@ -991,7 +999,7 @@ exports.globeView = (req, res) => {
 exports.analyticsView = async (req, res) => {
     try {
         const properties = await loadProperties();
-        res.render("analytics", {
+        res.view("analytics", {
             properties,
             analyticsCatalog: getAnalyticsCatalog(),
             head: {
@@ -1011,11 +1019,11 @@ exports.analyticsView = async (req, res) => {
 exports.analyticsCard = async (req, res) => {
     const { propertyId, type } = req.params;
     if (!propertyId || !/^\d+$/.test(propertyId)) {
-        return res.status(400).json({ error: "Invalid propertyId" });
+        return res.status(400).send({ error: "Invalid propertyId" });
     }
     const range  = req.query.range || "28d";
     const cfg    = getAnalyticsCardConfig(type);
-    if (!cfg) return res.status(400).json({ error: `Unknown card type: ${type}` });
+    if (!cfg) return res.status(400).send({ error: `Unknown card type: ${type}` });
 
     // Split cards take ?seg= (one cached query per segment)
     const seg = cfg.segments
@@ -1026,7 +1034,7 @@ exports.analyticsCard = async (req, res) => {
     const cacheKey = getAnalyticsCardCacheKey(propertyId, type, range, seg) + ":inclusive-v2";
     const cached = wantFresh(req, "card", cacheKey) ? null : await cacheGet("card", cacheKey);
     if (cached) {
-        return res.json({ ...cached, cached: true });
+        return res.send({ ...cached, cached: true });
     }
 
     const dateRange = getDateRange(range);
@@ -1045,10 +1053,10 @@ exports.analyticsCard = async (req, res) => {
             });
             const payload = { ...extra, type, range, timeSeries: false, currencyCode, fetchedAt: Date.now() };
             cacheSet("card", cacheKey, payload).catch(() => {});
-            return res.json(payload);
+            return res.send(payload);
         } catch (err) {
             console.error(`[analytics-card] ${type}:`, err.message);
-            return res.status(500).json({ error: err.message });
+            return res.status(500).send({ error: err.message });
         }
     }
 
@@ -1129,25 +1137,25 @@ exports.analyticsCard = async (req, res) => {
         // Cache asynchronously (don't block response)
         cacheSet("card", cacheKey, payload).catch(() => {});
 
-        res.json(payload);
+        res.send(payload);
     } catch (err) {
         console.error(`[analytics-card] ${type}:`, err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).send({ error: err.message });
     }
 };
 
 /** GET /api/realtime-summary/:propertyId – pulls live data from in-memory realtime cache */
 exports.realtimeSummary = (req, res) => {
     if (!realtimeMemCache) {
-        return res.json({ ok: false, message: "No realtime data cached. Load the dashboard first." });
+        return res.send({ ok: false, message: "No realtime data cached. Load the dashboard first." });
     }
     const { propertyId } = req.params;
     if (!propertyId || !/^\d+$/.test(propertyId)) {
-        return res.status(400).json({ error: "Invalid propertyId" });
+        return res.status(400).send({ error: "Invalid propertyId" });
     }
     const prop = (realtimeMemCache.data || []).find(r => String(r.propertyId) === String(propertyId));
-    if (!prop) return res.json({ ok: false, message: "Property not in cache" });
-    res.json({
+    if (!prop) return res.send({ ok: false, message: "Property not in cache" });
+    res.send({
         ok: true,
         activeUsers: prop.activeUsers,
         pageViews:   prop.pageViews,
@@ -1171,7 +1179,7 @@ exports.realtimeSummary = (req, res) => {
 exports.analyticsReports = async (req, res) => {
     const { propertyId } = req.params;
     if (!propertyId || !/^\d+$/.test(propertyId)) {
-        return res.status(400).json({ error: "Invalid propertyId" });
+        return res.status(400).send({ error: "Invalid propertyId" });
     }
     const range = req.query.range || "28d";
 
@@ -1179,7 +1187,7 @@ exports.analyticsReports = async (req, res) => {
     const cacheKey = `${propertyId}:reports:${range}`;
     const cached = wantFresh(req, "report", cacheKey) ? null : await cacheGet("report", cacheKey);
     if (cached) {
-        return res.json({ ...cached, cached: true });
+        return res.send({ ...cached, cached: true });
     }
 
     const dateRange = getDateRange(range);
@@ -1474,9 +1482,9 @@ exports.analyticsReports = async (req, res) => {
         // Cache asynchronously (don't block response)
         cacheSet("report", cacheKey, payload).catch(() => {});
 
-        res.json(payload);
+        res.send(payload);
     } catch (err) {
         console.error(`[analytics-reports] ${propertyId}:`, err.message);
-        res.status(500).json({ ok: false, error: err.message });
+        res.status(500).send({ ok: false, error: err.message });
     }
 };

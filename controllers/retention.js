@@ -178,16 +178,16 @@ function createRetentionHandler(deps = {}) {
       // UTC+14 may already be on the next calendar day. Validate the exact
       // future cutoff once the property's zone is available.
       planReport(req.query, todayInZone(new Date(date.getTime() + DAY), 'UTC'));
-      if (!/^\d+$/.test(req.params.propertyId || '')) return res.status(400).json({ ok: false, error: 'Choose a numeric property ID.' });
+      if (!/^\d+$/.test(req.params.propertyId || '')) return res.status(400).send({ ok: false, error: 'Choose a numeric property ID.' });
       const { properties } = await loadProperties();
       const property = properties.find(p => String(p.id) === req.params.propertyId);
-      if (!property) return res.status(404).json({ ok: false, error: 'Property not found.' });
+      if (!property) return res.status(404).send({ ok: false, error: 'Property not found.' });
       const timeZone = await timeZoneFor(property);
       const plan = planReport(req.query, todayInZone(date, timeZone));
-      return res.json(await report(property, plan, timeZone, req.query.fresh === '1'));
+      return res.send(await report(property, plan, timeZone, req.query.fresh === '1'));
     } catch (err) {
       const status = err.status || (err.code === 7 ? 403 : err.code === 8 ? 429 : 502);
-      return res.status(status).json({ ok: false, error: err.message || 'Could not load retention data.' });
+      return res.status(status).send({ ok: false, error: err.message || 'Could not load retention data.' });
     }
   };
 }
@@ -195,11 +195,11 @@ function createRetentionHandler(deps = {}) {
 async function retentionView(req, res, next) {
   try {
     const { properties } = await require('./apiController').ensureProperties();
-    res.render('retention', {
+    res.view('retention', {
       properties,
       head: { title: 'MetriBee · Retention', description: 'User retention by first-visit cohort' },
     });
-  } catch (err) { next(err); }
+  } catch (err) { throw err; }
 }
 
 module.exports = { todayInZone, validDate, planReport, buildCohorts, summarize, createRetentionHandler, retentionView };

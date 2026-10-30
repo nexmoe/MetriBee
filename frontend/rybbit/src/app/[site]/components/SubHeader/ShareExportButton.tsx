@@ -35,13 +35,18 @@ import { authClient } from "../../../../lib/auth";
 import { getTimezone, useStore } from "../../../../lib/store";
 import { useStripeSubscription } from "../../../../lib/subscription/useStripeSubscription";
 import { exportCsv, exportPdf } from "./Export";
+import { useGetSite } from "../../../../api/admin/hooks/useSites";
+import { useCanOnSite } from "../../../../hooks/usePermissions";
+import { publicDashboardUrl } from "../../../../../../adapter/navigation";
 
 export function ShareExportButton() {
   const t = useExtracted();
   const session = authClient.useSession();
   const params = useParams();
   const siteId = Number(params.site);
-  const canShare = false;
+  const canShare = useCanOnSite("sites:configure", siteId);
+  const canReadAnalytics = useCanOnSite("analytics:read", siteId);
+  const { data: siteMetadata } = useGetSite(siteId);
 
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -55,7 +60,7 @@ export function ShareExportButton() {
   const { mutateAsync: revokePrivateLinkKey, isPending: isRevokingPrivateLink } = useRevokePrivateLinkKey();
 
   const privateLinkUrl = privateLink?.privateLinkKey
-    ? `${globalThis.location.protocol}//${globalThis.location.host}/${siteId}/${privateLink.privateLinkKey}`
+    ? publicDashboardUrl(siteId).replace(/\/main$/, `/${privateLink.privateLinkKey}/main`)
     : "";
 
   const handleRevokePrivateLink = async () => {
@@ -108,8 +113,7 @@ export function ShareExportButton() {
   };
 
   const isExporting = isExportingCsv || isExportingPdf;
-  const canExportPdf =
-    subscription?.planName !== "free" && !["appsumo-1", "appsumo-2"].includes(subscription?.planName ?? "");
+  const canExportPdf = canReadAnalytics;
 
   return (
     <div className={canShare ? undefined : "hidden md:block"}>
@@ -135,6 +139,15 @@ export function ShareExportButton() {
             <>
               <div className="flex flex-col p-2">
                 <span className="text-sm font-medium pb-2">{t("Share this dashboard")}</span>
+                {siteMetadata?.public && (
+                  <div className="mb-3 space-y-2">
+                    <span className="text-xs text-muted-foreground">{t("Public dashboard link")}</span>
+                    <div className="flex items-center">
+                      <Input aria-label={t("Public dashboard link")} value={publicDashboardUrl(siteId)} readOnly className="rounded-r-none bg-white dark:bg-neutral-900" />
+                      <CopyButton iconOnly variant="default" value={publicDashboardUrl(siteId)} label={t("Copy link")} className="w-10 rounded-l-none" />
+                    </div>
+                  </div>
+                )}
                 {!isLoadingPrivateLink && !privateLink?.privateLinkKey && (
                   <Button onClick={() => generatePrivateLinkKey(siteId)} disabled={isGeneratingPrivateLink}>
                     {isGeneratingPrivateLink ? t("Generating...") : t("Generate Private Link")}
@@ -171,7 +184,7 @@ export function ShareExportButton() {
               <DropdownMenuSeparator />
             </>
           )}
-          {false && canExportPdf && (
+          {session.data && canExportPdf && (
             <DropdownMenuItem onClick={handleExportPdf} disabled={isExportingPdf}>
               <FileText className="h-4 w-4 mr-2" />
               {isExportingPdf ? t("Generating PDF...") : t("Export as PDF Report")}

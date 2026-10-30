@@ -26,7 +26,7 @@ import { useStripeSubscription } from "../../../../lib/subscription/useStripeSub
  */
 export function useHasActiveSubscription() {
   const { data: subscription } = useStripeSubscription();
-  return !!(subscription?.planName.startsWith("standard") || subscription?.planName.startsWith("pro"));
+  return subscription?.hasActiveSubscription === true;
 }
 
 export function DeleteAccount() {

@@ -5,6 +5,7 @@ const { todayInZone, validDate } = require('./retention');
 const { buildTransitions } = require('./journeys');
 const { DateTime } = require('luxon');
 const { windowFor, windowFilter, hasSubday, calendarRange } = require('../lib/reportWindow');
+const { utmPresenceFilter } = require('../lib/utm');
 
 const DAY = 86400000;
 const iso = date => new Date(date).toISOString().slice(0, 10);
@@ -57,7 +58,7 @@ function filtersFor(raw) {
       }
       return and({ filter: { fieldName, stringFilter: { matchType, value: text, caseSensitive: false } } }, country && exact('countryId', country), region && exact('region', region));
     });
-    const expression = expressions.length > 1 ? { orGroup: { expressions } } : expressions[0];
+    const expression = and(utmPresenceFilter(item.parameter), expressions.length > 1 ? { orGroup: { expressions } } : expressions[0]);
     return item.type.startsWith('not_') || item.type === 'is_not' ? { notExpression: expression } : expression;
   }));
 }
@@ -191,10 +192,28 @@ function createRybbitHandler(deps = {}) {
       if (path === '/favicon' && req.method === 'GET') return await favicon(req, res);
       const metadata = await properties();
       let all = metadata.properties;
+      const context = require('../lib/requestContext').storage.getStore();
+      const access = context?.access, identity = req.identity || context?.identity;
+      const organizationId = /^\/organizations\/([^/]+)/.exec(path)?.[1];
+      if (access && identity && organizationId) {
+        access.requireOrg(identity, organizationId, /\/(?:site-cards(?:-lite)?|site-status)$/.test(path) ? 'analytics:read' : 'org:read');
+        all = access.filterProperties(identity, all, organizationId);
+      }
+      const info = async property => {
+        const base = { ...siteInfo(property), public: await embeds.store.isPublic(property.id) };
+        if (context?.publicSiteId || req.headers?.['x-private-key'] || req.headers?.['x-private-site']) return { ...base, accountId: null, accountName: null, organizationId: null, permissions: [], role: null, isOwner: false };
+        return access && identity ? access.decorateProperty(identity, { ...base, id: String(property.id) }) : base;
+      };
       const sharedKey = req.headers?.['x-private-key'];
       const sharedSite = req.headers?.['x-private-site'];
-      const shared = !!(sharedKey || sharedSite);
-      if (shared) {
+      const privateShared = !!(sharedKey || sharedSite);
+      const shared = privateShared || !!context?.publicSiteId;
+      if (context?.publicSiteId) {
+        if (require('../lib/publicDashboard').publicApiSite(req.path, req.method) !== context.publicSiteId ||
+          !await embeds.store.isPublic(context.publicSiteId)) throw failure('Public dashboard is unavailable.', 403);
+        all = all.filter(property => String(property.id) === context.publicSiteId);
+      }
+      if (privateShared) {
         if (!sharedSite || !/^\d+$/.test(sharedSite) || !await embeds.store.validate(sharedSite, sharedKey)) throw failure('Private dashboard link is invalid or has been revoked.', 403);
         all = all.filter(property => String(property.id) === sharedSite);
         if (!all.length) throw failure('Property not found.', 404);
@@ -204,11 +223,13 @@ function createRybbitHandler(deps = {}) {
       }
       const cards = /^\/organizations\/[^/]+\/site-cards(?:-lite)?$/.test(path);
       const homeSites = /^\/organizations\/[^/]+\/site-status$/.test(path);
+      const definitionWrite = /^\/sites\/\d+\/(?:segments|annotations|goals|dashboards)(?:\/\d+)?$/.test(path) && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method);
+      const analysisRead = req.method === 'POST' && /^\/sites\/\d+\/(?:goals\/preview|dashboards\/run-card)$/.test(path);
       const funnelAnalyze = /^\/sites\/\d+\/funnels\/analyze$/.test(path);
       const funnelSave = /^\/sites\/\d+\/funnels$/.test(path) && req.method === 'POST';
       const funnelDelete = /^\/sites\/\d+\/funnels\/[1-9]\d*$/.test(path) && req.method === 'DELETE';
-      if (req.method !== 'GET' && !funnelSave && !funnelDelete && !(req.method === 'POST' && (cards || homeSites || funnelAnalyze))) throw failure('This GA4 connection provides read-only analytics.', 405);
-      if (path === '/config') return res.json({ disableSignup: true, mapboxToken: '', liteDashboard: false });
+      if (req.method !== 'GET' && !definitionWrite && !analysisRead && !funnelSave && !funnelDelete && !(req.method === 'POST' && (cards || homeSites || funnelAnalyze))) throw failure('This GA4 connection provides read-only analytics.', 405);
+      if (path === '/config') return res.send({ disableSignup: true, mapboxToken: '', liteDashboard: false });
       if (cards || homeSites) {
         const observations = [];
         const ids = req.body?.siteIds;
@@ -217,7 +238,7 @@ function createRybbitHandler(deps = {}) {
         if (homeSites && req.body.comparison != null && (typeof req.body.comparison !== 'object' || Array.isArray(req.body.comparison))) throw failure('Choose a valid comparison period.');
         const comparison = homeSites && req.body.comparison ? windowFor(req.body.comparison, req.query.time_zone || 'UTC', asOf) : null;
         const bucket = homeSites ? require('./homeSites').reportBucket(range, req.query.bucket) : req.query.bucket || 'day';
-        const call = (id, action, query, observed) => new Promise((resolve, reject) => gateway({ method: 'GET', path: `/sites/${id}/${action}`, query }, { status(code) { this.code = code; return this; }, json(payload) {
+        const call = (id, action, query, observed) => new Promise((resolve, reject) => gateway({ method: 'GET', path: `/sites/${id}/${action}`, query }, { status(code) { this.code = code; return this; }, send(payload) {
           if (this.code >= 400) return reject(failure(payload.error, this.code));
           if (payload.reportStatus) observed.push(payload.reportStatus);
           resolve(payload.data);
@@ -244,44 +265,96 @@ function createRybbitHandler(deps = {}) {
           const data = require('./homeSites').buildHomeSites({ range, comparison, bucket,
             properties: all.filter(property => ids.some(id => String(id) === String(property.id))),
             metrics: Object.fromEntries(results), ...saved, now: now() });
-          return res.json({ data, reportStatus: combineReportStatus(observations) });
+          return res.send({ data, reportStatus: combineReportStatus(observations) });
         }
-        return res.json({ data: Object.fromEntries(results), reportStatus: combineReportStatus(observations) });
+        return res.send({ data: Object.fromEntries(results), reportStatus: combineReportStatus(observations) });
       }
-      if (/^\/organizations\/[^/]+\/sites$/.test(path)) return res.json({ sites: all.map(property => ({ ...siteInfo(property), ...(shared ? { permissions: [] } : {}) })), organization: { id: 'ga4', name: 'Google Analytics 4' }, permissions: [], role: 'viewer', subscription: null,
+      if (/^\/organizations\/[^/]+\/sites$/.test(path)) return res.send({ sites: await Promise.all(all.map(info)), organization: access && identity ? access.organizations(identity).find(o => o.id === organizationId) : { id: 'ga4', name: 'Google Analytics 4' }, permissions: access && identity ? access.organizations(identity).find(o => o.id === organizationId)?.permissions || [] : [], role: access && identity ? access.membership(identity, organizationId)?.role : 'viewer', subscription: null,
         ...(!shared && metadata.revalidateUntil ? { metadataRevalidateUntil: metadata.revalidateUntil } : {}),
       });
-      if (/^\/organizations\/[^/]+\/teams$/.test(path)) return res.json({ teams: [] });
-      if (path === '/user/organizations') return res.json([{ id: 'ga4', name: 'Google Analytics 4', permissions: [], role: 'viewer', assignableRoles: [] }]);
+      if (/^\/organizations\/[^/]+\/teams$/.test(path)) return res.send({ teams: [] });
+      if (path === '/user/organizations') return res.send([{ id: 'ga4', name: 'Google Analytics 4', permissions: [], role: 'viewer', assignableRoles: [] }]);
       const match = path.match(/^\/sites\/(\d+)(?:\/(.*))?$/);
       if (!match) throw failure('GA4 data endpoint not available.', 404);
       const property = all.find(p => String(p.id) === match[1]);
       if (!property) throw failure('Property not found.', 404);
-      const action = match[2] || '', q = req.query, propertyId = String(property.id);
+      const action = match[2] || '', propertyId = String(property.id);
+      let q = { ...(req.query || {}) };
+      if (action === 'dashboards/run-card') {
+        const body = req.body || {};
+        q = { ...q, ...Object.fromEntries([['start_date', body.startDate], ['end_date', body.endDate], ['time_zone', body.timeZone], ['start_datetime', body.startDateTime], ['end_datetime', body.endDateTime], ['past_minutes_start', body.pastMinutesStart], ['past_minutes_end', body.pastMinutesEnd], ['bucket', body.bucket]].filter(([, value]) => value !== undefined)) };
+      }
+      const definitionKind = /^(segments|annotations|goals|dashboards)(?:\/|$)/.exec(action)?.[1];
+      if (access && identity) access.requireSite(identity, propertyId,
+        definitionKind ? `${definitionKind}:${['GET', 'HEAD'].includes(req.method) || analysisRead ? 'read' : 'write'}` : action.startsWith('funnels') ? req.method !== 'GET' && action !== 'funnels/analyze' && action !== 'funnels/summary' ? 'funnels:write' : 'funnels:read'
+          : action === 'journeys/sessions' || /^sessions\/bq-/.test(action) ? 'sessions:read'
+          : action.startsWith('gsc/') ? 'gsc:read' : !action ? 'sites:read' : 'analytics:read');
       if (!action) {
         const metadata = await metadataFor(property);
         const config = shared ? {} : await embeds.store.get(propertyId);
-        return res.json({ ...siteInfo(property), ...(!shared ? { embedEnabled: config.embedEnabled, permissions: ['funnels:write', 'sites:configure'] } : { permissions: [] }),
+        return res.send({ ...await info(property), ...(!shared ? { embedEnabled: config.embedEnabled, ...(!access ? { permissions: ['funnels:write', 'sites:configure'] } : {}) } : { permissions: [], role: null }),
           timeZone: metadata.timeZone, createdAt: metadata.createTime || undefined });
       }
-      if (action === 'has-data') return res.json({ hasData: true });
-      if (action === 'is-public') return res.json({ isPublic: false });
+      let analysisStore;
+      const getAnalysisStore = () => analysisStore ||= require('../lib/analysisStore').createAnalysisStore({ access, identity, propertyId, shared });
+      if (q.segment_id !== undefined) {
+        const segment = getAnalysisStore().get('segments', q.segment_id);
+        let extra; try { extra = typeof q.filters === 'string' ? JSON.parse(q.filters) : q.filters || []; } catch { throw failure('Invalid filters.'); }
+        if (!Array.isArray(extra)) throw failure('Invalid filters.');
+        q.filters = [...new Map([...segment.filters, ...extra].map(filter => [JSON.stringify(filter), filter])).values()];
+      }
+      const definitionRoute = /^(segments|annotations|goals|dashboards)(?:\/([1-9]\d*))?$/.exec(action);
+      if (definitionRoute && (req.method !== 'GET' || definitionRoute[1] !== 'goals' || definitionRoute[2])) {
+        const kind = definitionRoute[1], id = definitionRoute[2], store = getAnalysisStore();
+        if (req.method === 'GET') {
+          if (id) return res.send(store.get(kind, id));
+          return res.send(store.list(kind));
+        }
+        if (req.method === 'DELETE' && id) return res.send(store.remove(kind, id));
+        if (req.method === 'POST' && !id || ['PUT', 'PATCH'].includes(req.method) && id) {
+          const value = store.save(kind, req.body, id);
+          return res.send(['segments'].includes(kind) ? value : { success: true, [`${kind === 'annotations' ? 'annotation' : kind === 'dashboards' ? 'dashboard' : 'goal'}Id`]: value[kind === 'annotations' ? 'annotationId' : kind === 'dashboards' ? 'dashboardId' : 'goalId'] });
+        }
+        throw failure('Method not allowed.', 405);
+      }
+      if (action === 'has-data') return res.send({ hasData: true });
+      if (action === 'is-public') return res.send({ isPublic: await embeds.store.isPublic(propertyId) });
       const demoJourneys = require('./demoData').enabled();
       const sessionSource = demoJourneys ? 'demo-sessions' : deps.journeySessions ? 'ordered-sessions' : null;
-      if (action === 'journeys/capabilities') return res.json({ data: {
+      const sessionJourneyAction = ['journeys', 'journeys/summary', 'journeys/sessions', 'journeys/context'].includes(action)
+        && (q.mode === 'sessions' || action === 'journeys/context');
+      const bigQueryAction = sessionJourneyAction || action === 'journeys/capabilities' || /^sessions\/bq-/.test(action);
+      // Public analytics shares never grant access to the optional event-level source.
+      let bigQuery;
+      if (bigQueryAction && !shared && !sessionSource) {
+        require('../lib/setupCheck').syncEnvFile();
+        bigQuery = deps.bigQueryJourneys || require('./bigqueryJourneys').getBigQueryJourneys();
+        if (!bigQuery.configured(propertyId)) bigQuery = null;
+      }
+      if (action === 'journeys/capabilities') return res.send({ data: {
         available: !!sessionSource, source: sessionSource, minSteps: 2, maxSteps: 10,
         transitionsAvailable: true,
+        ...(bigQuery ? await bigQuery.capabilities(propertyId) : {}),
       } });
+      if (bigQuery && (sessionJourneyAction || /^sessions\/bq-/.test(action))) {
+        const timeZone = property.timeZone || (await metadataFor(property)).timeZone;
+        const detail = action.startsWith('sessions/');
+        const goal = q.goalId == null ? null : getAnalysisStore().get('goals', q.goalId);
+        const result = await bigQuery.report({ property, timeZone, dateRange: detail ? undefined : windowFor(q, timeZone, asOf), query: q,
+          action: detail ? 'details' : action === 'journeys' ? 'paths' : action.slice('journeys/'.length),
+          goal, sessionId: detail ? action.slice('sessions/'.length) : undefined });
+        const { data, ...status } = result;
+        return res.send(action === 'journeys' ? { ...data, ...status } : result);
+      }
+      if (/^sessions\/bq-/.test(action)) throw failure('Session not found.', 404);
       if (demoJourneys && /^sessions\/demo-/.test(action)) {
         const { demoJourneySession, journeySessionDetails } = require('./sessionJourneys');
         const session = demoJourneySession(property, action.slice('sessions/'.length));
         if (!session) throw failure('Session not found.', 404);
-        return res.json({ data: journeySessionDetails(session, q), source: 'demo-sessions' });
+        return res.send({ data: journeySessionDetails(session, q), source: 'demo-sessions' });
       }
-      const sessionJourneyAction = ['journeys', 'journeys/summary', 'journeys/sessions', 'journeys/context'].includes(action)
-        && (q.mode === 'sessions' || action === 'journeys/context');
-      if (sessionJourneyAction || (demoJourneys && action === 'goals')) {
-        if (!sessionSource) return res.status(422).json({
+      if (sessionJourneyAction || (demoJourneys && action === 'goals' && !access)) {
+        if (!sessionSource) return res.status(422).send({
           error: 'Connect ordered session events to view multi-step journeys, session lists and exits. GA4 referrer data remains available in Page transitions.',
           code: 'journey_source_required',
         });
@@ -300,20 +373,20 @@ function createRybbitHandler(deps = {}) {
           const goal = { goalId: 1, name: `Visit ${path}`, goalType: 'path', config: { pathPattern: path },
             createdAt: '2026-01-01T00:00:00Z', total_conversions: conversions, total_sessions: context.sessions,
             conversion_rate: context.sessions ? conversions * 100 / context.sessions : 0 };
-          return res.json({ data: [goal], meta: { total: 1, page: 1, pageSize: 100, totalPages: 1 }, source: sessionSource });
+          return res.send({ data: [goal], meta: { total: 1, page: 1, pageSize: 100, totalPages: 1 }, source: sessionSource });
         }
         const report = journeyReport(sessions, q, action === 'journeys' ? 'paths' : action.slice('journeys/'.length));
-        return res.json(action === 'journeys' ? { ...report, source: sessionSource } : { data: report, source: sessionSource });
+        return res.send(action === 'journeys' ? { ...report, source: sessionSource } : { data: report, source: sessionSource });
       }
       if (action.startsWith('gsc/')) {
-        if (shared) return res.json({ connected: false, gscPropertyUrl: null, reason: 'private_workspace_only', data: null });
+        if (shared) return res.send({ connected: false, gscPropertyUrl: null, reason: 'private_workspace_only', data: null });
         require('../lib/setupCheck').syncEnvFile();
         const gsc = deps.gsc || require('./searchConsole').getSearchConsole();
         if (action === 'gsc/connection' || action === 'gsc/status') {
           const { match, ...connection } = await gsc.connection(property);
-          return res.json(connection);
+          return res.send(connection);
         }
-        return res.json(await gsc.report(property, action.slice(4), q));
+        return res.send(await gsc.report(property, action.slice(4), q));
       }
       if (action === 'funnels' || /^funnels\/(analyze|summary|events|[1-9]\d*)$/.test(action)) {
         funnels ||= require('./funnels').createFunnels();
@@ -322,8 +395,6 @@ function createRybbitHandler(deps = {}) {
           params: { propertyId, action: action === 'funnels' ? 'definitions' : action.slice('funnels/'.length) },
         }, res);
       }
-      if (action === 'annotations' || action === 'segments' || action === 'dashboards') return res.json({ data: [] });
-      if (action === 'goals') return res.json({ data: [], totalCount: 0 });
       // Realtime aggregates have their own window, independent of historical
       // dates, audience filters and the property's timezone metadata.
       if (action === 'live-user-count' || action === 'ga4/live-users') {
@@ -331,7 +402,7 @@ function createRybbitHandler(deps = {}) {
         const observations = [], observe = status => observations.push(status);
         const total = await liveReport(propertyId, minutes, [], asOf, observe);
         const activeUsers = n(total.rows?.[0], 0);
-        if (action === 'live-user-count') return res.json({ count: activeUsers });
+        if (action === 'live-user-count') return res.send({ count: activeUsers });
         const groups = [
           ['countries', ['country', 'countryId']],
           ['devices', ['deviceCategory']],
@@ -343,7 +414,7 @@ function createRybbitHandler(deps = {}) {
           const totalCount = Number(result.rowCount) || rows.length;
           return [key, { rows, totalCount, truncated: totalCount > rows.length }];
         }));
-        return res.json({ data: { activeUsers, pageviews: n(total.rows?.[0], 1), ...Object.fromEntries(sections) },
+        return res.send({ data: { activeUsers, pageviews: n(total.rows?.[0], 1), ...Object.fromEntries(sections) },
           reportStatus: combineReportStatus(observations) });
       }
       // Like the official analytics screen, live spikes cover the whole property in the
@@ -366,7 +437,7 @@ function createRybbitHandler(deps = {}) {
           return { spike: { activeUsers, baselineUsers: baseline.baseline, ratio: score.ratio,
             topPage: pages.ok ? d(pages.rows?.[0], 0) : '' } };
         }), 'spike', status => observations.push(status));
-        return res.json({ data, reportStatus: combineReportStatus(observations) });
+        return res.send({ data, reportStatus: combineReportStatus(observations) });
       }
       const timeZone = property.timeZone || (hasSubday(q) ? (await metadataFor(property)).timeZone : 'UTC');
       const dateRange = windowFor(q, timeZone, asOf);
@@ -380,11 +451,25 @@ function createRybbitHandler(deps = {}) {
         return response;
       }), 'report', status => observations.push(status));
       const send = data => {
-        return res.json({ data, source: 'ga4', timeZone: property.timeZone || 'property',
+        return res.send({ data, source: 'ga4', timeZone: property.timeZone || 'property',
           reportStatus: combineReportStatus(observations),
         });
       };
 
+      if (action === 'dashboards/run-card') {
+        const result = await require('./analysisReports').dashboardCard({ raw: req.body?.query, q, report, pointTime, timeDimension });
+        return res.send({ ...result, reportStatus: combineReportStatus(observations) });
+      }
+      if (action === 'goals' || action.startsWith('goals/')) {
+        const result = await require('./analysisReports').goalsReport({ store: getAnalysisStore(), action, q, body: req.body, report, pointTime, timeDimension });
+        return res.send({ ...result, source: 'ga4', reportStatus: combineReportStatus(observations) });
+      }
+      if (action === 'export/pdf') {
+        if (!identity || shared) throw failure('PDF export requires an authenticated workspace.', 403);
+        const data = await require('../lib/reports/data').collectReport({ property, query: q, gateway, identity, asOf });
+        const pdf = await require('../lib/reports/pdf').renderPdf(data);
+        return res.header('Content-Type', 'application/pdf').header('Content-Disposition', `attachment; filename="metribee-${propertyId}-${dateRange.startDate}-${dateRange.endDate}.pdf"`).send(pdf);
+      }
       if (action.startsWith('ga4/')) {
         const data = await require('./overviewReports').overviewReport({ type: action.slice(4), report, dateRange, propertyId, ownHost: property.domain || '', segment: q.segment, propertyCurrency: property.currencyCode });
         return send(data);
@@ -404,7 +489,7 @@ function createRybbitHandler(deps = {}) {
         if (!dimension) throw failure(`GA4 does not expose the ${parameter} dimension.`, 422);
         const countMetric = 'sessions';
         const dimensions = parameter === 'region' ? ['region', 'countryId'] : parameter === 'city' ? ['city', 'region', 'countryId'] : [dimension];
-        const result = await report(dimensions, [countMetric, 'screenPageViews', 'bounceRate', 'userEngagementDuration', 'activeUsers']);
+        const result = await report(dimensions, [countMetric, 'screenPageViews', 'bounceRate', 'userEngagementDuration', 'activeUsers'], utmPresenceFilter(parameter));
         const total = (await report([], [countMetric, 'screenPageViews'])).rows[0];
         const items = result.rows.map(row => ({ value: parameter === 'region' ? regionCode(d(row, 1), d(row, 0)) || `${d(row, 1)}-${d(row, 0)}` : parameter === 'city' ? `${regionCode(d(row, 2), d(row, 1)) || d(row, 2) + '-'}-${d(row, 0)}` : d(row, 0), count: n(row, 0), percentage: n(total, 0) ? n(row, 0) / n(total, 0) * 100 : 0, pageviews: n(row, 1), pageviews_percentage: n(total, 1) ? n(row, 1) / n(total, 1) * 100 : 0, bounce_rate: n(row, 2) * 100, time_on_page_seconds: n(row, 1) ? n(row, 3) / n(row, 1) : null, active_users: n(row, 4) })).sort((a, b) => b.count - a.count);
         const limit = Math.min(10000, Math.max(1, Number(q.limit) || 100)), offset = Math.max(0, (Number(q.page) || 1) - 1) * limit;
@@ -502,7 +587,7 @@ function createRybbitHandler(deps = {}) {
           const key = JSON.stringify(path); const item = grouped.get(key) || { path, count: 0, percentage: 0 }; item.count += row.views; grouped.set(key, item);
         }
         const journeys = [...grouped.values()].sort((a, b) => b.count - a.count).slice(0, Math.min(500, Number(q.limit) || 15)).map(item => ({ ...item, percentage: transition.internalViews ? item.count / transition.internalViews * 100 : 0 }));
-        return res.json({ journeys, totalSessions: transition.internalViews, source: 'ga4-referrer-pageviews', steps: 2, exitsKnown: false, reportStatus: combineReportStatus(observations) });
+        return res.send({ journeys, totalSessions: transition.internalViews, source: 'ga4-referrer-pageviews', steps: 2, exitsKnown: false, reportStatus: combineReportStatus(observations) });
       }
       if (action === 'retention') {
         if (dateRange.startDateTime) throw failure('GA4 retention requires whole calendar days. Choose Today or a date range.', 422);
@@ -510,7 +595,7 @@ function createRybbitHandler(deps = {}) {
         const days = Math.round((Date.parse(dateRange.endDate) - Date.parse(dateRange.startDate)) / DAY) + 1;
         if (days > 90) throw failure('GA4 cohort reports support up to 90 days here. Choose a shorter range.', 422);
         const handler = retention;
-        const data = await new Promise((resolve, reject) => handler({ params: { propertyId }, query: { start: dateRange.startDate, end: dateRange.endDate, bucket: q.mode || 'week', range: '30d' } }, { status(code) { this.code = code; return this; }, json(payload) { this.code >= 400 ? reject(failure(payload.error, this.code)) : resolve(payload); } }).catch(reject));
+        const data = await new Promise((resolve, reject) => handler({ params: { propertyId }, query: { start: dateRange.startDate, end: dateRange.endDate, bucket: q.mode || 'week', range: '30d' } }, { status(code) { this.code = code; return this; }, send(payload) { this.code >= 400 ? reject(failure(payload.error, this.code)) : resolve(payload); } }).catch(reject));
         const cohorts = Object.fromEntries(data.cohorts.map(cohort => [cohort.periodStart, { size: cohort.size, counts: [cohort.size, ...cohort.cells.map(cell => cell.users)], percentages: [100, ...cohort.cells.map(cell => cell.rate == null ? null : cell.rate * 100)] }]));
         observations.push({ fetchedAt: data.fetchedAt || null, cacheStatus: data.cached ? 'cached' : 'fresh' });
         return send({ cohorts, maxPeriods: data.periods + 1, periods: data.cohorts.map(cohort => cohort.periodStart), mode: data.bucket, range: days, windowStart: data.startDate, windowEnd: data.endDate, timeZone: data.timeZone, firstPeriodPartial: data.cohorts[0]?.startDate !== data.cohorts[0]?.periodStart, lastPeriodPartial: data.cohorts.at(-1)?.endDate !== data.cohorts.at(-1)?.periodEnd, lastPeriodInProgress: data.endDate >= data.today, truncated: false, lookbackDays: days });
@@ -549,7 +634,7 @@ function createRybbitHandler(deps = {}) {
         throw failure('GA4 Data API supplies aggregated events, not individual event or session logs.', 422);
       }
       throw failure('This Rybbit feature requires individual collector data that GA4 Data API does not expose.', 422);
-    } catch (error) { return res.status(error.status || 502).json({ error: error.message || 'GA4 report unavailable.' }); }
+    } catch (error) { return res.status(error.status || 502).send({ error: error.message || 'GA4 report unavailable.', ...(error.code && { code: error.code }) }); }
   };
 }
-module.exports = { createRybbitHandler, filtersFor, windowFor, overview, timeValue, eventType };
+module.exports = { createRybbitHandler, filtersFor, windowFor, overview, timeValue, timeDimension, eventType };

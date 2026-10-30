@@ -4,14 +4,16 @@ services:
     image: ghcr.io/nexmoe/metribee:latest
     env_file: .env
     environment:
+      # This compose file is for self-hosting, including when .env contains Cloud credentials.
+      CLOUD: "false"
       # .env sets HOST=127.0.0.1 for bare-metal. Inside the container that hides
       # the server from the published port, so listen on all interfaces here.
       HOST: 0.0.0.0
     ports:
-      # Localhost only. The app has no login: put a reverse proxy or tunnel in front of it.
+      # Localhost by default; configure BASE_URL for your HTTPS reverse proxy.
       - "127.0.0.1:5485:5483"
     volumes:
-      # Host directories so a local restart keeps funnels, quota, favicons, and report cache.
+      # SQLite users, organizations, grants, funnels and widgets persist alongside quota/cache data.
       - ./.data:/app/.data
       - ./.cache:/app/.cache
     restart: unless-stopped

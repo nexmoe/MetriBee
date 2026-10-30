@@ -23,7 +23,7 @@ function fixture({ fail = false, truncated = false } = {}) {
   const request = async query => {
     let result, status = 200;
     await gateway({ path: '/sites/123/pages', method: 'GET', query: { start_date: '2026-10-01', end_date: '2026-10-19', ...query } },
-      { json(value) { result = value; }, status(value) { status = value; return this; } });
+      { send(value) { result = value; }, status(value) { status = value; return this; } });
     expect(status).to.equal(200);
     return result.data;
   };

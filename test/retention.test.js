@@ -19,7 +19,7 @@ async function invoke(handle, query = {}, propertyId = '123') {
   const result = { status: 200 };
   await handle({ query, params: { propertyId } }, {
     status(code) { result.status = code; return this; },
-    json(body) { result.body = body; return this; },
+    send(body) { result.body = body; return this; },
   });
   return result;
 }

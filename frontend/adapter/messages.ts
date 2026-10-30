@@ -1,6 +1,116 @@
 // MetriBee-specific strings supplement Rybbit's original 12 message catalogs.
 export const appMessages: Record<string, Record<string, string>> = {
   zh: {
+    "Per organization": "按组织计费",
+    "Are you sure?": "确定要取消吗？",
+    "Active": "生效中",
+    "Choose Your Plan": "选择套餐",
+    "/mo": "/月",
+    "Current": "当前套餐",
+    "Billed {price}/year": "按年收取 {price}",
+    "Annual savings": "年付优惠",
+    "Billed annually.": "按年付费。",
+    "Your plan is set to cancel on {date}.": "你的套餐将在 {date} 取消。",
+    "{status} · Current period ends {date}": "{status} · 当前账期于 {date} 结束",
+    "Your card and billing email are managed in Waffo.": "在 Waffo 中管理银行卡和账单邮箱。",
+    "Manage in Waffo": "在 Waffo 中管理",
+    "View in billing portal": "在账单门户查看",
+    "Why are you leaving?": "为什么选择取消订阅？",
+    "Before you go...": "取消之前……",
+    "We'd love to understand why you're leaving so we can improve.": "我们希望了解你取消订阅的原因，以便改进产品。",
+    "It's too expensive": "价格太高",
+    "Missing features I need": "缺少我需要的功能",
+    "I'm not using it enough": "使用频率不高",
+    "It's too hard to set up or use": "设置或使用过于复杂",
+    "Switching to another tool": "改用其他工具",
+    "Other reason": "其他原因",
+    "Tell us more...": "请告诉我们更多信息……",
+    "What features are you looking for?": "你希望增加哪些功能？",
+    "Which tool are you switching to?": "你准备改用哪个工具？",
+    "Never mind": "暂不取消",
+    "Before you go, we'd like to offer an alternative:": "取消之前，你也可以考虑以下选择：",
+    "Switch to annual and save": "改为年付，节省费用",
+    "Review your plan": "查看你的套餐",
+    "Save compared with paying monthly when you choose annual billing.": "选择年付，比逐月付费更优惠。",
+    "Review the available organization plans before canceling.": "取消前，可以先查看其他组织套餐。",
+    "Is there anything we can do?": "我们还能为你做些什么？",
+    "We're sorry to see you go. If there's anything we can do to improve your experience, we'd love to hear about it.": "如果有任何能改善你使用体验的地方，欢迎告诉我们。",
+    "Switch to Annual Billing": "改为按年付费",
+    "View Plans": "查看套餐",
+    "Keep My Plan": "保留我的套餐",
+    "No thanks, continue cancelling": "不了，继续取消",
+    "Cancel My Subscription": "取消我的订阅",
+    "Unable to cancel subscription.": "无法取消订阅。",
+    "Overdue subscriptions are canceled as soon as the payment provider confirms.": "逾期订阅将在支付服务确认后立即取消。",
+    "Plan, subscription and invoices for {name}.": "{name} 的套餐、订阅与发票。",
+    "Self-hosted": "自托管",
+    "No subscription required.": "无需订阅。",
+    "Billing is available in MetriBee Cloud.": "账单功能适用于 MetriBee Cloud。",
+    "Allow popups to open the secure payment page.": "请允许弹出窗口以打开安全支付页面。",
+    "Unable to open the payment page.": "无法打开支付页面。",
+    "Cancels at period end": "将在当前账期结束后取消",
+    "Payment overdue": "付款逾期",
+    "No active subscription": "尚无有效订阅",
+    "Test mode": "测试模式",
+    "Sandbox payments. No real charges.": "沙盒支付，不会产生真实扣款。",
+    "Waiting for payment confirmation. This page updates automatically.": "正在等待支付确认，页面会自动更新。",
+    "Fixed fee per organization.": "按组织收取固定费用。",
+    "Current period ends {date}": "当前账期于 {date} 结束",
+    "Subscriptions belong to the organization. Teams and members use its existing permissions.": "订阅归属于组织，团队和成员沿用现有权限。",
+    "Payments are not configured yet. Contact your administrator.": "支付暂未配置，请联系管理员。",
+    "Secure payments powered by Waffo Pancake.": "由 Waffo Pancake 提供安全支付。",
+    "Manage payment details and download invoices in the billing portal.": "在账单门户管理付款信息并下载发票。",
+    "Manage billing": "管理账单",
+    "Payment history": "付款记录",
+    "Refunded": "已退款",
+    "No payments yet.": "暂无付款记录。",
+    "Test checkout": "测试结账",
+    "One-time payment": "一次性付款",
+    "Sandbox verification only. This does not create a subscription.": "仅用于沙盒验证，不会创建订阅。",
+    "Your subscription remains available until the current billing period ends.": "取消后，订阅在当前账期结束前仍然有效。",
+    "Review the final amount, tax and any plan change adjustment on the secure payment page.": "请在安全支付页面确认最终金额、税费及套餐变更的费用调整。",
+    "Continue to checkout": "前往结账",
+    "Keep subscription": "保留订阅",
+    "Cancel subscription?": "确定取消订阅？",
+    "Connect AI tools": "连接 AI 工具",
+    "Connect with your own account. Access follows your organization and team permissions.": "使用自己的账号连接，权限跟随现有组织和团队授权。",
+    "Unable to load MCP connection details.": "无法加载 MCP 连接信息。",
+    "MCP server": "MCP 服务器",
+    "Connection instructions": "接入说明",
+    "Run this command, then open /mcp in Claude Code, select metribee and choose Authenticate. Sign in and approve access in your browser.": "运行此命令，然后在 Claude Code 中打开 /mcp，选择 metribee 并点击 Authenticate，在浏览器中登录并授权。",
+    "Run these commands, then sign in and approve access in the browser window.": "运行这些命令，然后在打开的浏览器窗口中登录并授权。",
+    "Merge this entry into your client's existing MCP configuration. Each person signs in with their own account.": "将此条目合并到客户端现有的 MCP 配置中，每个人使用自己的账号登录授权。",
+    "Other clients: add the server URL as a Streamable HTTP connection and follow the sign-in prompt. For narrower access, use a personal API key.": "其他客户端：使用服务器地址添加 Streamable HTTP 连接，然后按提示登录。如需更小的权限范围，可使用个人 API Key。",
+    "OAuth requires HTTPS or a loopback address. Create a personal API key and configure your client's Authorization header.": "OAuth 需要 HTTPS 或本机回环地址。请创建个人 API Key，并在客户端配置 Authorization 请求头。",
+    "Public dashboard link": "公开仪表盘链接",
+    "Failed to update site configuration": "更新站点设置失败",
+    "Get started with MetriBee": "开始使用 MetriBee",
+    "Property names and domains are managed in Google Analytics.": "资源名称和域名由 Google Analytics 管理。",
+    "Database unavailable": "数据库暂不可用",
+    "Database size": "数据库大小",
+    "Table statistics": "数据表统计",
+    "Total rows": "总行数",
+    "Migrations": "迁移记录",
+    "Migration": "迁移",
+    "Applied at": "执行时间",
+    "GA4 reports, events, realtime, retention and journeys": "GA4 报告、事件、实时数据、留存和用户旅程",
+    "Property settings, widgets and sharing; write also allows property transfers": "资源设置、组件和分享；写入权限还允许转移资源",
+    "Search Console connection status and reports": "Search Console 连接状态和报告",
+    "Add GA4 property": "添加 GA4 资源",
+    "Choose a connected property you can transfer to this organization. Its saved reports move with it.": "选择你有权转移的已连接资源，已保存的报告定义会随资源一起移动。",
+    "No properties are available to add. Ask a system administrator to assign a connected GA4 property.": "没有可添加的资源，请联系系统管理员分配已连接的 GA4 资源。",
+    "Add property": "添加资源",
+    "The recipient gets an email and accepts the property into an organization they manage. Its saved definitions and sharing settings move with it.": "收件人通过邮件将资源接收到其管理的组织，已保存的定义和分享设置随资源一起转移。",
+    "Property access": "资源访问权限",
+    "Property unavailable": "资源暂不可用",
+    "This property could not be loaded.": "无法加载此资源。",
+    "Current organization": "当前组织",
+    "Move to organization": "移动到组织",
+    "Existing member and team grants are cleared when the property moves.": "移动资源时会清除现有成员和团队的资源授权。",
+    "Configure email delivery to transfer this property to someone else.": "配置邮件发送后，即可将此资源转移给其他人。",
+    "Registration is disabled. Ask an administrator for an invitation.": "注册已关闭，请联系管理员获取邀请。",
+    "Integrity check": "完整性检查",
+    "Stop impersonating": "结束模拟登录",
     "Some funnel data could not be loaded. Available results are shown.": "部分漏斗数据加载失败，已显示可用结果。",
     "MetriBee home": "MetriBee 首页",
     "Your Google Analytics 4 reports, in one workspace.":
@@ -88,8 +198,8 @@ export const appMessages: Record<string, Record<string, string>> = {
     Comparison: "对比",
     "Comparison unavailable": "对比数据暂不可用",
     Configured: "已配置",
-    "Connect Google Analytics, optional data sources and your AI tools.":
-      "连接 Google Analytics、可选数据源和 AI 工具。",
+    "Connect Google Analytics and optional data sources.":
+      "连接 Google Analytics 和可选数据源。",
     "Connect your AI tool": "连接 AI 工具",
     Connected: "已连接",
     "Connection unavailable": "连接信息暂不可用",
@@ -290,6 +400,45 @@ export const appMessages: Record<string, Record<string, string>> = {
 };
 
 // Footer labels are available in every language supported by the imported UI.
+const brandLabels: Record<string, [string, string, string]> = {
+  zh: ["由 MetriBee 提供的开源网站分析", "MetriBee 侧边栏", "你是如何发现 MetriBee 的？"],
+  de: ["Open-Source-Webanalyse mit MetriBee", "MetriBee-Seitenleiste", "Wie haben Sie MetriBee gefunden?"],
+  fr: ["Analyse web open source propulsée par MetriBee", "Barre latérale MetriBee", "Comment avez-vous découvert MetriBee ?"],
+  es: ["Analítica web de código abierto con MetriBee", "Barra lateral de MetriBee", "¿Cómo descubriste MetriBee?"],
+  pl: ["Analityka internetowa open source od MetriBee", "Pasek boczny MetriBee", "Jak odkryłeś MetriBee?"],
+  it: ["Analisi web open source con MetriBee", "Barra laterale MetriBee", "Come hai scoperto MetriBee?"],
+  ko: ["MetriBee가 제공하는 오픈 소스 웹 분석", "MetriBee 사이드바", "MetriBee를 어떻게 알게 되셨나요?"],
+  pt: ["Análise web de código aberto com MetriBee", "Barra lateral do MetriBee", "Como você descobriu o MetriBee?"],
+  ja: ["MetriBee によるオープンソースのウェブ解析", "MetriBee サイドバー", "MetriBee をどこで知りましたか？"],
+  cs: ["Open source webová analytika od MetriBee", "Postranní panel MetriBee", "Jak jste objevili MetriBee?"],
+  uk: ["Вебаналітика з відкритим кодом від MetriBee", "Бічна панель MetriBee", "Як ви дізналися про MetriBee?"],
+};
+const projectSupportLabels: Record<string, [string, string]> = {
+  zh: ["喜欢 MetriBee？在 GitHub 上点亮 Star 支持项目！", "在 GitHub 上点 Star"],
+  de: ["Gefällt Ihnen MetriBee? Geben Sie dem Projekt einen Stern auf GitHub!", "Stern auf GitHub"],
+  fr: ["Vous aimez MetriBee ? Ajoutez une étoile au projet sur GitHub !", "Une étoile sur GitHub"],
+  es: ["¿Te gusta MetriBee? ¡Dale una estrella en GitHub!", "Dar estrella en GitHub"],
+  pl: ["Podoba Ci się MetriBee? Daj projektowi gwiazdkę na GitHubie!", "Gwiazdka na GitHubie"],
+  it: ["Ti piace MetriBee? Dai una stella al progetto su GitHub!", "Stella su GitHub"],
+  ko: ["MetriBee가 마음에 드시나요? GitHub에서 별을 눌러 주세요!", "GitHub에서 별 누르기"],
+  pt: ["Gostou do MetriBee? Dê uma estrela ao projeto no GitHub!", "Dar estrela no GitHub"],
+  ja: ["MetriBee が気に入ったら、GitHub でスターを付けて応援してください！", "GitHub でスターを付ける"],
+  cs: ["Líbí se vám MetriBee? Dejte projektu hvězdičku na GitHubu!", "Hvězdička na GitHubu"],
+  uk: ["Подобається MetriBee? Підтримайте проєкт зіркою на GitHub!", "Зірка на GitHub"],
+};
+const websiteLabels: Record<string, [string, string, string, string]> = {
+  zh: ["官网首页", "常见问题", "更新日志", "媒体素材"],
+  de: ["Offizielle Website", "Häufige Fragen", "Änderungsprotokoll", "Pressekit"],
+  fr: ["Site officiel", "Questions fréquentes", "Journal des modifications", "Kit presse"],
+  es: ["Sitio oficial", "Preguntas frecuentes", "Registro de cambios", "Kit de prensa"],
+  pl: ["Oficjalna strona", "Częste pytania", "Historia zmian", "Materiały prasowe"],
+  it: ["Sito ufficiale", "Domande frequenti", "Registro delle modifiche", "Kit stampa"],
+  ko: ["공식 웹사이트", "자주 묻는 질문", "변경 내역", "프레스 키트"],
+  pt: ["Site oficial", "Perguntas frequentes", "Registro de alterações", "Kit de imprensa"],
+  ja: ["公式サイト", "よくある質問", "更新履歴", "プレスキット"],
+  cs: ["Oficiální web", "Časté dotazy", "Přehled změn", "Materiály pro média"],
+  uk: ["Офіційний сайт", "Поширені запитання", "Історія змін", "Матеріали для преси"],
+};
 const footerLabels: Record<string, string[]> = {
   de: [
     "Ressourcen",
@@ -417,6 +566,27 @@ for (const [locale, labels] of Object.entries(footerLabels)) {
   appMessages[locale] = Object.fromEntries(
     footerKeys.map((key, index) => [key, labels[index]])
   );
+}
+for (const [locale, [footer, sidebar, referral]] of Object.entries(brandLabels)) {
+  Object.assign(appMessages[locale], {
+    "Open source web analytics powered by MetriBee": footer,
+    "MetriBee Sidebar": sidebar,
+    "How did you find MetriBee?": referral,
+  });
+}
+for (const [locale, [message, action]] of Object.entries(projectSupportLabels)) {
+  Object.assign(appMessages[locale], {
+    "Liking MetriBee? Star the project on GitHub!": message,
+    "Star on GitHub": action,
+  });
+}
+for (const [locale, [home, faq, changelog, pressKit]] of Object.entries(websiteLabels)) {
+  Object.assign(appMessages[locale], {
+    "Official website": home,
+    FAQ: faq,
+    Changelog: changelog,
+    "Press Kit": pressKit,
+  });
 }
 
 const updateNotices: Record<string, string> = {
@@ -558,4 +728,13 @@ Object.assign(appMessages.zh, {
   Stopped: "已停止",
   Low: "低流量",
   "No comparison": "无对比数据",
+});
+
+Object.assign(appMessages.zh, {
+  "GA4 report": "GA4 报表", "Dimensions": "维度", "Metrics": "指标",
+  "Select up to 3 dimensions": "选择最多 3 个维度", "Select up to 8 metrics": "选择最多 8 个指标",
+  "Automatic": "自动", "Direction": "排序方向", "Descending": "降序", "Ascending": "升序",
+  "Row limit": "行数上限", "Run query": "运行查询", "Running…": "运行中…",
+  "GA4 provides aggregate conversions. Individual converting sessions require an ordered event source.": "GA4 提供聚合转化数据，查看具体转化会话需要有序事件数据源。",
+  "Goals count sessions from existing GA4 events. Event properties must be registered GA4 custom dimensions; button_click and copy require your own GA4 events.": "目标统计现有 GA4 事件对应的会话。事件属性需要注册为 GA4 自定义维度；button_click 和 copy 需要自行上报对应的 GA4 事件。",
 });

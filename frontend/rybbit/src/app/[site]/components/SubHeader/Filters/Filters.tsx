@@ -7,6 +7,7 @@ import { useGetSegments } from "../../../../../api/analytics/hooks/useSegments";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../../../../components/ui/tooltip";
 import { removeFilter, updateFilter, useStore } from "../../../../../lib/store";
 import { FilterChip } from "./FilterChip";
+import { SegmentDialog } from "./SegmentDialog";
 import { SegmentChip } from "./SegmentChip";
 import { filterListKeys, partitionFilters } from "./segmentUtils";
 
@@ -50,7 +51,7 @@ export function Filters({ availableFilters }: { availableFilters?: FilterParamet
         }
         return <div key={key}>{pill}</div>;
       })}
-      <></>
+      <SegmentDialog open={editing !== null} onOpenChange={open => !open && setEditing(null)} siteId={site} segment={editing ?? undefined} availableFilters={availableFilters} />
     </div>
   );
 }

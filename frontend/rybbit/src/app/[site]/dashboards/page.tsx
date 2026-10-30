@@ -51,7 +51,7 @@ export default function DashboardsListPage() {
         <div>
           <h1 className="text-lg font-semibold">Dashboards</h1>
           <p className="text-sm text-neutral-500">
-            Build views from custom SQL queries, scoped to the site time range.
+            Build views from GA4 metrics and dimensions, scoped to the site time range.
           </p>
         </div>
         {canWrite && (

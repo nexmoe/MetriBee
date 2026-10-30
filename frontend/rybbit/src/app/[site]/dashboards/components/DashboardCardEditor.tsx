@@ -44,7 +44,7 @@ import {
   X,
 } from "lucide-react";
 import { JsonEditor } from "../../feature-flags/components/JsonEditor";
-import { QueryEditor } from "../../query/components/QueryEditor";
+import { QueryBuilder as QueryEditor, DEFAULT_QUERY } from "../../../../../../adapter/dashboards/QueryBuilder";
 import { ResultsTable } from "../../query/components/ResultsTable";
 import type { SortState } from "../../query/types";
 import { formatQuery, getColumns, sortRows } from "../../query/utils";
@@ -249,7 +249,7 @@ function FormatSelect({
 export function DashboardCardEditor({ siteId, card, open, onClose, onSave }: DashboardCardEditorProps) {
   const t = useExtracted();
   const [title, setTitle] = useState(card.title);
-  const [sql, setSql] = useState(card.sql);
+  const [sql, setSql] = useState(card.sql || JSON.stringify(DEFAULT_QUERY, null, 2));
   const [vizType, setVizType] = useState<DashboardVizType>(card.vizType);
   const [xColumn, setXColumn] = useState(card.mapping.xColumn);
   const [yColumns, setYColumns] = useState<string[]>(card.mapping.yColumns ?? []);
@@ -613,19 +613,13 @@ export function DashboardCardEditor({ siteId, card, open, onClose, onSave }: Das
             <div className="flex min-h-0 flex-col gap-3 p-4 lg:overflow-hidden">
               <QueryEditor
                 value={sql}
-                disabled={false}
                 isRunning={isFetching}
                 onChange={setSql}
-                onFormat={() => setSql(formatQuery(sql))}
                 onRun={() => setPreviewSql(sql)}
                 headerActions={examplesMenu}
               />
               <p className="shrink-0 text-[11px] leading-relaxed text-neutral-500">
-                Queries read from{" "}
-                <code className="font-mono text-neutral-600 dark:text-neutral-400">scoped_events</code>, scoped to the
-                dashboard time range. Use{" "}
-                <code className="font-mono text-neutral-600 dark:text-neutral-400">{"{{bucket}}"}</code> for the
-                selected granularity.
+                Queries read GA4 aggregate reports for the selected time range.{" "}
               </p>
               {error && (
                 <p className="shrink-0 rounded-md bg-red-50 px-2.5 py-1.5 text-xs text-red-600 dark:bg-red-950/40 dark:text-red-400">

@@ -9,33 +9,46 @@ const DAYS = { today: 1, '7d': 7, '28d': 28, '30d': 30, '90d': 90 };
 const METRICS = ['totalUsers', 'newUsers', 'sessions', 'screenPageViews', 'bounceRate', 'averageSessionDuration', 'totalRevenue'];
 const pending = new Map();
 
-async function workspaceView(req, res, next) {
+async function workspaceView(req, res) {
   try {
     const manifestPath = path.join(__dirname, '../public/ui/.vite/manifest.json');
     if (!fs.existsSync(manifestPath)) return res.status(503).send('Build the analytics UI with pnpm build:ui, then reload this page.');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const entry = manifest['index.html'];
     const setupPage = /\/setup\/?$/.test(req.path);
-    const { properties } = req.metricWidget ? { properties: [] } : req.sharedProperty ? { properties: [req.sharedProperty] }
-      : setupPage ? { properties: [] } : await require('./apiController').ensureProperties();
-    res.render('workspace', { layout: false, title: 'MetriBee', locale: getLocale(req.path), setup: setupPage,
-      bootstrap: { properties, catalog: getAnalyticsCatalog(), demo: demo.enabled(),
+    const accountPage = /^\/(?:login|signup|invitation|reset-password|auth\/|settings|admin|transfer)/.test(require('../lib/uiLocale').stripLocale(req.path));
+    let { properties } = req.metricWidget ? { properties: [] } : req.sharedProperty ? { properties: [req.sharedProperty] }
+      : setupPage || accountPage ? { properties: [] } : await require('./apiController').ensureProperties();
+    const publicSiteId = require('../lib/requestContext').storage.getStore()?.publicSiteId;
+    if (publicSiteId) {
+      properties = properties.filter(property => String(property.id) === publicSiteId)
+        .map(({ id, site, domain, timeZone }) => ({ id, site, domain, timeZone }));
+      if (!properties.length) return res.status(404).send({ error: 'Property not found.' });
+      if (!await require('./embeds').handlers.store.isPublic(publicSiteId)) return res.status(403).send({ error: 'Public dashboard is unavailable.' });
+    }
+    res.header('Cache-Control', 'no-store');
+    return res.viewAsync('workspace', { layout: false, title: 'MetriBee', locale: getLocale(req.path), setup: setupPage,
+      startupScript: fs.readFileSync(path.join(__dirname, '../public/js/workspaceStartup.js'), 'utf8'),
+      startupLoading: getLocale(req.path) === 'zh' ? '正在加载 MetriBee…' : 'Loading MetriBee…',
+      startupReload: getLocale(req.path) === 'zh' ? '重新加载页面' : 'Reload page',
+      bootstrap: { properties, cloud: req.server?.billing?.cloud === true, authScope: req.identity ? JSON.stringify([req.identity.userId, req.identity.session?.activeOrganizationId, properties.map(p => [p.id, require('../lib/requestContext').storage.getStore()?.access.siteRole(req.identity, p.id)])]) : null, catalog: getAnalyticsCatalog(), demo: demo.enabled(),
         ...(req.sharedProperty ? { sharedSiteId: String(req.sharedProperty.id) } : {}),
+        ...(publicSiteId ? { publicSiteId } : {}),
         ...(req.metricWidget ? { metricWidget: req.metricWidget } : {}) },
       demo: demo.enabled(), script: '/ui/' + entry.file, styles: (entry.css || []).map(file => '/ui/' + file),
     });
-  } catch (err) { next(err); }
+  } catch (err) { throw err; }
 }
 
 function createOverviewHandler({ run = runSafeHistoricalReport, read = cacheGet, write = cacheSet, properties = () => require('./apiController').ensureProperties() } = {}) {
   return async (req, res) => {
     const propertyId = req.params.propertyId, range = req.query.range || '30d';
-    if (!/^\d+$/.test(propertyId || '') || typeof range !== 'string' || !Object.hasOwn(DAYS, range)) return res.status(400).json({ ok: false, error: 'Choose a property and a valid date range.' });
+    if (!/^\d+$/.test(propertyId || '') || typeof range !== 'string' || !Object.hasOwn(DAYS, range)) return res.status(400).send({ ok: false, error: 'Choose a property and a valid date range.' });
     try {
-      if (!(await properties()).properties.some(p => String(p.id) === propertyId)) return res.status(404).json({ ok: false, error: 'Property not found.' });
+      if (!(await properties()).properties.some(p => String(p.id) === propertyId)) return res.status(404).send({ ok: false, error: 'Property not found.' });
       const key = `overview-v1:${propertyId}:${range}`;
       const cached = req.query.fresh === '1' && shouldBypass(key) ? null : await read('report', key);
-      if (cached) return res.json({ ...cached, cached: true });
+      if (cached) return res.send({ ...cached, cached: true });
       if (!pending.has(key)) {
         const task = (async () => {
           const days = DAYS[range], current = { startDate: days === 1 ? 'today' : `${days - 1}daysAgo`, endDate: 'today' };
@@ -61,8 +74,8 @@ function createOverviewHandler({ run = runSafeHistoricalReport, read = cacheGet,
         })().finally(() => pending.delete(key));
         pending.set(key, task);
       }
-      res.json(await pending.get(key));
-    } catch (err) { res.status(502).json({ ok: false, error: err.message || 'Overview unavailable.' }); }
+      res.send(await pending.get(key));
+    } catch (err) { res.status(502).send({ ok: false, error: err.message || 'Overview unavailable.' }); }
   };
 }
 module.exports = { workspaceView, createOverviewHandler };

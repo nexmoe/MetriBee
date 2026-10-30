@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { authClient } from "@/lib/auth";
-import { IS_CLOUD } from "@/lib/const";
+import { useConfigs } from "@/lib/configs";
 import { useRoleInfo } from "@/lib/roles";
 import { getTimezone } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -64,6 +64,7 @@ export function PeopleTable({
 }: PeopleTableProps) {
   const t = useExtracted();
   const roleInfo = useRoleInfo();
+  const { configs } = useConfigs();
   const { data: session } = authClient.useSession();
   const { data: sitesData, isError: sitesError } = useGetSitesFromOrg(organizationId);
   const { data: teamsData, isError: teamsError } = useTeams(organizationId);
@@ -81,7 +82,7 @@ export function PeopleTable({
   const canEditMember = (member: MemberData) => assignableRoles.some(role => role === member.role);
   // Invitations are emailed on cloud only, and resending needs the right to give the invited role.
   const canResend = (invitation: Invitation) =>
-    IS_CLOUD && canManageMembers && assignableRoles.some(role => role === invitation.role);
+    !!configs?.mailConfigured && canManageMembers && assignableRoles.some(role => role === invitation.role);
 
   const needle = query.trim().toLowerCase();
   const matches = (...values: (string | null | undefined)[]) =>
@@ -116,7 +117,7 @@ export function PeopleTable({
             />
           </div>
           {canManageMembers &&
-            (IS_CLOUD ? (
+            (configs?.mailConfigured ? (
               <InviteMemberDialog
                 organizationId={organizationId}
                 onSuccess={onRefresh}
@@ -202,7 +203,7 @@ export function PeopleTable({
                       <SiteAccessSummary access={accessOf(member.userId)} />
                     </TableCell>
                     <TableCell className={cn(PEOPLE_CELL, "whitespace-nowrap tabular-nums")}>
-                      {DateTime.fromSQL(member.createdAt, { zone: "utc" })
+                      {DateTime.fromISO(member.createdAt, { zone: "utc" })
                         .setZone(getTimezone())
                         .toLocaleString(DateTime.DATE_MED)}
                     </TableCell>

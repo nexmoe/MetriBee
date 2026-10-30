@@ -40,7 +40,7 @@ describe('External funnel catalog imports', () => {
   it('backs up existing definitions and preserves edits, IDs and property isolation on repeated imports', async () => {
     const store = createFunnelStore({ directory });
     const existing = await store.save('123', { name: 'My checkout', steps: steps('purchase') });
-    const before = await fs.readFile(path.join(directory, '123.json'), 'utf8');
+    const before = require('../lib/database').readDocumentSnapshot('funnels', '123', directory, path.resolve('.data/funnels'));
     const result = await importFunnels(options);
     assert.equal(result.added, 2);
     assert.equal(result.existing, 1);
@@ -51,9 +51,9 @@ describe('External funnel catalog imports', () => {
     assert.equal(saved[0].name, 'My checkout');
     assert.deepEqual(saved[1].importedFrom, ['example/analytics-events.json']);
     assert.equal((await store.list('456'))[0].name, 'Download');
-    const bytes = await fs.readFile(path.join(directory, '123.json'), 'utf8');
+    const bytes = require('../lib/database').readDocumentSnapshot('funnels', '123', directory, path.resolve('.data/funnels'));
     assert.equal((await importFunnels(options)).added, 0);
-    assert.equal(await fs.readFile(path.join(directory, '123.json'), 'utf8'), bytes);
+    assert.equal(require('../lib/database').readDocumentSnapshot('funnels', '123', directory, path.resolve('.data/funnels')), bytes);
   });
 
   it('validates every property and domain before writing any definitions or backups', async () => {

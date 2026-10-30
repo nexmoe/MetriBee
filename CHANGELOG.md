@@ -5,6 +5,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- Add optional GA4 BigQuery export support for real two-to-ten-step Journeys, path sessions, event timelines and MCP reports, with property-scoped configuration and scan/daily budgets.
+- Add Rybbit's Public Analytics switch, shareable public dashboard URLs and property-scoped anonymous reports, with immediate revocation and existing private links preserved.
+- Align saved segments, chart annotations, Goals, custom Dashboards, PDF exports and weekly email reports with Rybbit’s native UI, with SQLite persistence, GA4 adapters, scoped permissions and MCP tools.
+- Add Better Auth accounts, sessions, email verification and recovery, optional Google/GitHub sign-in, organizations, invitations, teams, five access roles, property grants, administrator tools and scoped personal/organization API keys.
+- Connect MCP clients through OAuth with PKCE and explicit consent; enforce the same property permissions across dashboard and MCP requests.
+- Store accounts and saved definitions in SQLite, automatically import legacy JSON without changing existing share/widget links, and provide online backup and integrity checks.
+- Add opt-in Cloud organization subscriptions through Waffo Pancake, with hosted checkout, plan changes, cancellation and invoices; self-hosted deployments keep billing disabled by default.
+
+### Changed
+
+- Replace Express with Fastify for the dashboard and standalone MCP server while preserving GA4 report caches and quota safeguards.
+- Preserve native Rybbit account, organization, administrator and authentication layouts, restore Site Settings property moves, and retain previous UI assets with a startup/reload fallback for open tabs.
+
+### Fixed
+
+- Open the available GA4 page-transitions report directly on Journeys instead of showing unavailable session controls and a source-required screen.
+
 ## [2.2.1] - 2026-10-25
 
 ### Improvements

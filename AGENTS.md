@@ -5,9 +5,13 @@
 
 Every UI change (views/, public/css, new components) MUST follow DESIGN.md: colors, type, radii, spacing tokens. No ad hoc palette or font choices.
 
+Account, organization, teams, administrator, login and signup pages must preserve the local Rybbit reference's complete page composition, widths, spacing, sidebars, tabs and auth form/step layouts. Import the original pages and layouts; do not replace them with custom page shells. Limit adaptations to MetriBee branding, GA4/SQLite data and the required map-boundary source.
+
+Property organization moves and person-to-person transfers live in the native Site Settings dialog's General tab, reachable from the property sidebar and Home cards. Preserve its original desktop shell, settings sections and move confirmation; GA4 names/domains are read-only and unsupported collector controls are omitted. Legacy `/property-access` links open this dialog on the matching analytics page. Footer retains Rybbit's 1100px content width, 140px logo, three columns, support-action area and bottom-bar layout with MetriBee branding and valid project links.
+
 ## Stack
 
-Express serves GA4 APIs and the analytics workspace. Following the owner's October 22, 2026 instruction, all user-facing pages use the native Rybbit React UI in `frontend/`, built by Vite into `public/ui/`. Reuse imported `frontend/rybbit/src/components/ui`, site, journeys and retention components; do not recreate controls in Handlebars or mix in the legacy panel palette. GA4 controllers and quota/auth logic remain on the server. Home (including Sites report views), Globe, quota, connection and GA4-specific reports compose those same components in `frontend/adapter/`. Preserve every GA4 data capability when adapting presentation. Do not add user-account or Documentation menus.
+Fastify serves GA4 APIs, Better Auth and the analytics workspace. SQLite stores application and authentication data; Express is not used. Following the owner's October 22, 2026 instruction, all user-facing pages use the native Rybbit React UI in `frontend/`, built by Vite into `public/ui/`. Reuse imported `frontend/rybbit/src/components/ui`, site, journeys and retention components; do not recreate controls in Handlebars or mix in the legacy panel palette. GA4 controllers and quota/auth logic remain on the server. Home (including Sites report views), Globe, quota, connection and GA4-specific reports compose those same components in `frontend/adapter/`. Preserve every GA4 data capability when adapting presentation. Reuse native Rybbit account, organization, team and system-admin controls. Do not add a Documentation menu.
 
 Home combines the original Rybbit site cards with Status, Table and Heatmap tabs. All four views share search, tag/team filters, date selection and comparison periods. Keep the view tabs, update time and date controls in one desktop toolbar row. Status, Table and Heatmap query the shared GA4 report cache for the selected dates; saved AdSense values appear only when they fully cover the selected period. Home offers optional account grouping across all four views; Realtime stays ungrouped. Property names/account metadata refresh every five minutes independently of report caches, with a manual Sync properties action on Home. Legacy `/sites` links redirect to the matching Home tab.
 
@@ -21,18 +25,28 @@ Widgets are managed on their own property-scoped `/widgets?prop=ID` page, reacha
 
 Run `pnpm build:ui` after changing frontend source, `pnpm dev:ui` to watch, and `pnpm typecheck:ui` to check it. `pnpm build` builds both server TypeScript and UI. Imported code and modifications retain their Rybbit AGPL license and attribution in `frontend/third-party/`.
 
+UI builds retain previous hashed assets so open tabs can keep importing their scripts. Do not clean `public/ui` while serving existing pages. HTML shells use `Cache-Control: no-store` and provide a startup/reload fallback. Authentication browser QA must use a separate database and a different hostname from the user's preview (for example `127.0.0.1` versus `localhost`); different ports alone do not isolate login cookies.
+
 ## Credentials
 Env only, never a key file. Both the app and `mcp-server/` read `GA4_CLIENT_EMAIL` and `GA4_PRIVATE_KEY` (quoted, `\n` escaped) from the root `.env` through `lib/credentials.js`. Optional: `PSI_API_KEY`, `PORT`.
-- Until both are set (or `DEMO=1`), pages redirect to `/setup` and `/api/*` returns 503 `not_configured` (gate in `app.js`). The server re-reads `.env` on each check, so no restart is needed.
+- Until both are set (or `DEMO=1`), pages redirect to `/setup` and `/api/*` returns 503 `not_configured` (authenticated setup gate in `app.js`). The server re-reads `.env` on each check, so no restart is needed.
 - Check: `pnpm setup:check` (exit 0 connected, 1 env missing, 2 key rejected, 3 no properties, 4 GA4 request failed), `GET /api/setup/status`, `GET /healthz`.
 - Setup prompt, manual steps and MCP prompt live in `SETUP.md` between markers; `/setup` reads them from there. Edit text there, not in the view.
 - One `pnpm install` at the root covers the MCP server (`pnpm mcp`).
-- MCP uses the stable v2 SDK and Streamable HTTP only. The dashboard mounts `/mcp` before its setup/boot gates; `pnpm mcp` serves the same tools separately on `MCP_HOST`/`MCP_PORT` (default `127.0.0.1:5484`). Client configs use an HTTP URL, never a node/stdio command. Keep the per-request server factory and shared cache/quota modules.
+- MCP uses the stable v2 SDK and Streamable HTTP only. The dashboard registers `/mcp` independently of its setup/boot gates; MCP requires a scoped API key or OAuth bearer token (or a same-origin signed-in session); `pnpm mcp` serves the same tools separately on `MCP_HOST`/`MCP_PORT` (default `127.0.0.1:5484`). Client configs use an HTTP URL, never a node/stdio command. Keep the per-request server factory and shared cache/quota modules.
 - High-level MCP tools in `mcp-server/lib/dashboard.js` reuse native dashboard controllers, caches, funnel/widget stores and GA4 clients. New analytics features should be reflected in the MCP capability catalog and tools. Guard every uncached GA4 call, keep each analysis on one property, and never bypass quota protection through native helpers. Results include structured content and explicit truncation; local definition writes need read/write annotations. Demo MCP data must not read/write live quota or mix with live tool caches. Sharing keys and enablement are not MCP operations.
 
 Optional supplemental user OAuth lives in lib/supplementalAuth.js and is shared by the dashboard,
 MCP server and snapshot script. Credentials stay in .env. Only explicit numeric account/property
 allowlists use OAuth; its only scope is analytics.readonly. See SETUP.md.
+
+## Users and SQLite
+
+Better Auth 1.7.3 owns authentication at `/api/auth`; `lib/auth.mjs` generates its SQLite schema. `lib/database.js` applies idempotent application migrations. The first registered user becomes a system administrator and owner of the default organization; connected GA4 properties are assigned there initially. New organizations receive no properties automatically. Reuse Rybbit's five roles and scope taxonomy in `lib/permissions.js` and `lib/scopes.js`. All HTTP and MCP entry points must enforce the same organization/property grants, including legacy APIs and aggregate caches. Never trust browser role, organization or property claims. Private links and explicitly enabled embeds retain their separate public read guards.
+
+`DATABASE_PATH` defaults to `.data/metribee.sqlite` (demo: `.data/metribee-demo.sqlite`). Funnels, Widgets and private-link settings are transactionally stored in SQLite; valid legacy JSON documents migrate automatically without deleting originals or changing IDs/keys. Report caches, GA4 quota ledgers and supplemental Google credentials keep their existing formats and guards. Use `pnpm db:migrate`, `pnpm db:check` and `pnpm db:backup`; an online backup includes WAL contents. Persist `.data`, run one app database on a local filesystem, and do not store GA4 service-account credentials in it. Mail uses SMTP or Resend; browser login OAuth credentials are separate from supplemental GA4 OAuth.
+
+Public Analytics is an opt-in property setting in Site Settings → General. Its SQLite flag is independent of private links and widget publishing. Anonymous access uses the report allowlist in `lib/publicDashboard.js`, checks enablement before cached reports, filters metadata to one property, hides private segments/annotations and workspace identities, and never grants organization, management, GSC or MCP access. Keep public browser report caches separate from signed-in workspace persistence.
 
 ## Tests
 `pnpm test` runs mocha on `test/**/*.test.js`. Run once before commit, not after every edit.

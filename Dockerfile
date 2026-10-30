@@ -2,6 +2,7 @@
 # MetriBee. Credentials come from env (GA4_CLIENT_EMAIL, GA4_PRIVATE_KEY), never a file.
 
 FROM node:22-alpine AS pnpm
+RUN apk add --no-cache python3 make g++
 ENV PNPM_HOME=/pnpm
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -16,7 +17,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm dlx --package="typescript@$(node -p "require('./package.json').devDependencies.typescript")" \
       tsc -p . --noCheck --outDir . --declaration false --sourceMap false
 
-# Build the Rybbit-derived React UI. The API/runtime still runs as one Express process.
+# Build the Rybbit-derived React UI; Fastify serves the API and built assets.
 FROM pnpm AS ui
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 COPY frontend frontend
@@ -32,15 +33,16 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
  && find node_modules -type f \( -name '*.d.ts' -o -name '*.d.cts' -o -name '*.d.mts' -o -name '*.map' \) -delete
 
 FROM node:22-alpine
+RUN apk add --no-cache chromium font-noto font-noto-cjk
 WORKDIR /app
 # IN_DOCKER=1: the /setup page shows docker commands instead of pnpm ones
-ENV NODE_ENV=production PORT=5483 HOST=0.0.0.0 IN_DOCKER=1
+ENV NODE_ENV=production PORT=5483 HOST=0.0.0.0 IN_DOCKER=1 CLOUD=false PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 COPY --from=deps /app/node_modules ./node_modules
 # Runtime files only: no docs, screenshots, tests or dev config.
 COPY package.json app.js SETUP.md LICENSE NOTICE ./
 COPY LICENSES LICENSES
 COPY lib lib
-COPY scripts/setup-check.js scripts/
+COPY scripts/setup-check.js scripts/database.mjs scripts/
 COPY routes routes
 COPY views views
 COPY public public

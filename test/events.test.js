@@ -10,7 +10,7 @@ const make = (overrides = {}) => createEventsHandlers({
 });
 async function invoke(handler, req = request()) {
   const result = { status: 200 };
-  await handler(req, { status(n) { result.status = n; return this; }, json(body) { result.body = body; return this; } });
+  await handler(req, { status(n) { result.status = n; return this; }, send(body) { result.body = body; return this; } });
   return result;
 }
 

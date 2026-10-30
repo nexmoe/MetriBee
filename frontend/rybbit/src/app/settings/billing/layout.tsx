@@ -13,7 +13,7 @@ export default function BillingLayout({ children }: { children: React.ReactNode 
     <SettingsPage>
       <SettingsPageHeader
         title={t("Billing")}
-        description={orgName ? t("Plan, usage and invoices for {name}.", { name: orgName }) : undefined}
+        description={orgName ? t("Plan, subscription and invoices for {name}.", { name: orgName }) : undefined}
       />
       <OrgPermissionGate
         permission="billing:manage"

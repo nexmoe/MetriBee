@@ -55,6 +55,8 @@ import { getHomeView } from "../../../../../lib/homeViews";
 const useCheckoutReturn = () => false;
 const PlanRequiredNotice = (_props: any) => null;
 import { SiteCards } from "./SiteCards";
+import { AddSite } from '../components/AddSite';
+import { NoOrganization } from '../../components/NoOrganization';
 
 // Rank all sites first; keep card/chart rendering paginated.
 const PAGE_SIZE = 20;
@@ -83,6 +85,7 @@ export default function Home() {
   const isDesktop = width !== null && width >= 768;
 
   const { time, setTime } = useStore();
+  const { data: session } = authClient.useSession();
   const { data: activeOrganization, isPending } =
     authClient.useActiveOrganization();
 
@@ -360,14 +363,14 @@ export default function Home() {
           <FolderTree className="h-4 w-4" />
           {t("Group by account")}
         </Button>
-        <Button
+        {session?.user.role === 'admin' && <Button
           variant="outline"
           loading={syncing}
           onClick={() => void syncProperties()}
         >
           <RefreshCw className="h-4 w-4" />
           {t("Sync properties")}
-        </Button>
+        </Button>}
       </div>
     ) : null;
 
@@ -450,6 +453,11 @@ export default function Home() {
 
   const content = (
     <Tabs value={view} onValueChange={setView} className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
+        <div className="w-56"><OrganizationSelector /></div>
+        {canAddSites && <AddSite />}
+      </div>
+      {hasNoOrganizations && <NoOrganization />}
       <div
         className="flex flex-wrap items-center justify-between gap-3 pt-4"
         data-home-toolbar
@@ -496,11 +504,6 @@ export default function Home() {
   if (!isDesktop) {
     return (
       <StandardPage>
-        <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-2 my-4">
-          <div>
-            <OrganizationSelector />
-          </div>
-        </div>
         {content}
       </StandardPage>
     );

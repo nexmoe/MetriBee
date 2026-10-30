@@ -548,7 +548,7 @@ describe('MCP complete funnel management', function () {
 				return response.structuredContent;
 			};
 			assert.equal((await call('validate_funnel', { steps })).valid, true);
-			assert.deepEqual(fs.readdirSync(directory), []);
+			assert.deepEqual((await store.list('123')), []);
 			const created = await call('save_funnel', { name: 'Checkout', description: 'Production', steps });
 			const id = created.funnelId;
 			const before = (await call('get_funnel', { funnelId: id })).data;
@@ -582,7 +582,7 @@ describe('MCP complete funnel management', function () {
 		const { service, calls } = harness({ deps: { store } });
 		const args = { propertyId: '123', definitions: [{ name: 'Checkout', steps }], dryRun: true };
 		assert.equal((await service.execute('import_funnels', args)).added, 1);
-		assert.deepEqual(fs.readdirSync(directory), []);
+		assert.deepEqual((await store.list('123')), []);
 		const invalid = await service.execute('import_funnels', { ...args, dryRun: false,
 			definitions: [...args.definitions, { name: 'Invalid', steps: [{ type: 'page', value: '/**' }, steps[1]] }] });
 		assert.ok(invalid.error);
@@ -627,13 +627,13 @@ describe('MCP complete funnel management', function () {
 
 	it('leaves existing definitions untouched when an import exceeds capacity', async () => {
 		for (let i = 0; i < 99; i++) await store.save('123', { name: `Funnel ${i}`, steps: [{ type: 'page', value: `/entry-${i}` }, steps[1]] });
-		const before = fs.readFileSync(path.join(directory, '123.json'), 'utf8');
+		const before = require('../lib/database').readDocumentSnapshot('funnels', '123', directory, path.resolve('.data/funnels'));
 		const { service } = harness({ deps: { store } });
 		const result = await service.execute('import_funnels', { propertyId: '123', definitions: [
 			{ name: 'New A', steps }, { name: 'New B', steps: [{ type: 'page', value: '/new-b' }, steps[1]] },
 		] });
 		assert.ok(result.error);
-		assert.equal(fs.readFileSync(path.join(directory, '123.json'), 'utf8'), before);
+		assert.equal(require('../lib/database').readDocumentSnapshot('funnels', '123', directory, path.resolve('.data/funnels')), before);
 	});
 
 	it('guards event discovery and native paginated union summaries, including comparison', async () => {

@@ -2,13 +2,22 @@ import { Building2 } from "lucide-react";
 import { useExtracted } from "next-intl";
 import { useState, useEffect } from "react";
 import { authClient } from "../lib/auth";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { useUserOrganizations } from "../api/admin/hooks/useOrganizations";
+import { actualHref } from "../../../adapter/navigation";
 
 export function OrganizationSelector() {
   const t = useExtracted();
-  const { data: organizations, isLoading: isLoadingOrganizations } = useUserOrganizations();
-  const { data: activeOrganization, isPending } = authClient.useActiveOrganization();
+  const { data: organizations, isLoading: isLoadingOrganizations } =
+    useUserOrganizations();
+  const { data: activeOrganization, isPending } =
+    authClient.useActiveOrganization();
 
   // Local state to handle the delay when switching organizations
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
@@ -20,13 +29,14 @@ export function OrganizationSelector() {
     }
   }, [activeOrganization?.id]);
 
-  const handleValueChange = (organizationId: string) => {
+  const handleValueChange = async (organizationId: string) => {
     // Update local state immediately for responsive UI
     setSelectedOrgId(organizationId);
     // Then update the actual active organization
-    authClient.organization.setActive({
+    const result = await authClient.organization.setActive({
       organizationId,
     });
+    if (!result.error) window.location.assign(actualHref("/"));
   };
 
   if (!isLoadingOrganizations && organizations?.length === 0) {
@@ -65,7 +75,7 @@ export function OrganizationSelector() {
         <SelectValue placeholder={t("Select an organization")} />
       </SelectTrigger>
       <SelectContent>
-        {organizations?.map(org => (
+        {organizations?.map((org) => (
           <SelectItem key={org.id} value={org.id}>
             <div className="flex items-center min-w-0">
               <Building2 className="h-4 w-4 mr-2 text-muted-foreground shrink-0" />

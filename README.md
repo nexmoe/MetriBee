@@ -12,8 +12,8 @@ Every report comes from your GA4 properties through the GA4 Data and Admin APIs,
 
 What that saves you:
 
-- **No analytics server to pay for.** Self-hosted Rybbit or Plausible run ClickHouse and PostgreSQL, which grow to hundreds of GB, then TBs, over the years. GA4 stores and queries events for free, with no event cap on standard properties. MetriBee is one small stateless process that runs on your laptop, a Raspberry Pi or the cheapest VPS you already have.
-- **Nothing to maintain.** No database to tune, back up, upgrade or resize, and no disk that fills up as traffic grows. Ten years of history costs the same as ten days: nothing.
+- **No analytics server to pay for.** Self-hosted Rybbit or Plausible run ClickHouse and PostgreSQL, which grow to hundreds of GB, then TBs, over the years. GA4 stores and queries events for free, with no event cap on standard properties. MetriBee is one small Fastify process that runs on your laptop, a Raspberry Pi or the cheapest VPS you already have.
+- **Small application database.** SQLite stores accounts, organizations, access grants, funnels and widgets in one local file. Analytics events remain in GA4; back up the application database with `pnpm db:backup`.
 - **Depth without the weight.** Lighter tools like Umami are easy to host but have fewer features, and their PostgreSQL row store slows down as years of events pile up. MetriBee gives you funnels, journeys, retention and a live globe on Google's warehouse.
 - **No migration.** Years of GA4 history show up on day one. If you stop using MetriBee, your data is still in GA4.
 
@@ -22,9 +22,12 @@ What you get:
 - **Intuitive UI on your GA4 reports.** Overview, Pages, Events, Journeys, Retention and Funnels in one shell, with click-to-filter, period comparison and keyboard shortcuts.
 - **Every GA4 property on one screen.** Cards, Status, Table and Heatmap views across all properties the service account can see, with CSV export and optional AdSense earnings.
 - **Realtime with spike alerts.** Live users from the GA4 Realtime API for every property, plus a live 3D globe.
-- **Funnels, journeys, retention.** Built on GA4's native funnel reports, page paths and first-visit cohorts.
+- **Saved analysis.** Reusable segments, chart annotations, conversion goals and custom dashboards with native Rybbit controls and GA4 metrics.
+- **Reports to share.** Native PDF exports and weekly email reports with account preferences and property access checks.
+- **Funnels, journeys, retention.** GA4 funnel reports, page transitions and first-visit cohorts; optional [BigQuery export](SETUP.md#optional-multi-step-journeys-with-bigquery) adds real two-to-ten-step session journeys.
 - **Search Console built in.** Clicks, impressions, CTR and position sit next to GA4 metrics in the same tables.
-- **Widgets and share links.** Embeddable cards and badges from GA4 metrics, plus revocable private dashboards.
+- **Widgets and share links.** Embeddable cards and badges from GA4 metrics, public dashboards and revocable private links.
+- **Accounts and collaboration.** Better Auth with SQLite, organization invitations, five roles, teams, property access grants, account management and personal/organization API keys.
 - **MCP server at `/mcp`.** Claude Code, Codex, Cursor and others can query your GA4 and Search Console data.
 - **Quota-safe.** Report caches and per-property quota guards keep you inside GA4's free API limits.
 - **Privacy mode.** Press **P** to blur names and URLs before screen sharing.
@@ -47,11 +50,13 @@ Install MetriBee (https://github.com/nexmoe/MetriBee) with Docker and connect it
 5. Ask me if I also want the MCP server added to my AI tool. If yes, follow "Use with AI (MCP)" in SETUP.md.
 
 Rules: never print the private key, never commit .env, and stop to ask me before any step that needs my
-Google sign-in or GA4 admin access. The app has no login, so keep it on localhost unless I ask otherwise.
+Google sign-in or GA4 admin access. Create the first administrator at /signup, configure BASE_URL for the deployment, and keep Google credentials in .env.
 If Docker is not available, ask me before falling back to Node.js 22+ and pnpm (see "Install" in SETUP.md).
 ```
 
 Want to set it up by hand, run it from source, or put it online behind Cloudflare Access or Tailscale? See [SETUP.md](SETUP.md). Every feature is documented in [docs/features.md](docs/features.md).
+
+Self-hosted needs no payment credentials. Optional MetriBee Cloud uses Waffo Pancake for fixed organization subscriptions, hosted checkout, invoices and subscription management. See [Cloud billing setup](docs/cloud-billing.md).
 
 The workspace checks [GitHub Releases](https://github.com/nexmoe/MetriBee/releases) once per browser tab session. A newer version shows a dismissible notice linking to that release for a manual upgrade. Unavailable checks are skipped silently.
 

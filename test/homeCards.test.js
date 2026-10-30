@@ -22,7 +22,7 @@ async function invoke(handle, range) {
   const result = { status: 200 };
   const res = {
     status(code) { result.status = code; return this; },
-    json(body) { result.body = body; return this; },
+    send(body) { result.body = body; return this; },
   };
   await handle({ query: { range } }, res);
   return result;

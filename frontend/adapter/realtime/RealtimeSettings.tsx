@@ -24,6 +24,7 @@ import {
 import { useExtracted } from "../extracted";
 import { QuotaPanel } from "../pages/Quota";
 import { clampRule, PRESETS, SpikeRule } from "./model";
+import { authClient } from '../../rybbit/src/lib/auth';
 
 function RuleDialog({
   rule,
@@ -168,6 +169,7 @@ export function RealtimeSettings({
   const t = useExtracted();
   const [editing, setEditing] = useState(false);
   const [quota, setQuota] = useState(false);
+  const { data: session } = authClient.useSession();
   const preset =
     Object.keys(PRESETS).find(
       (key) => PRESETS[key].z === rule.z && PRESETS[key].lift === rule.lift
@@ -221,10 +223,10 @@ export function RealtimeSettings({
             </span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled={refreshing} onSelect={refreshProperties}>
+          {session?.user.role === 'admin' && <DropdownMenuItem disabled={refreshing} onSelect={refreshProperties}>
             <RefreshCw />
             {refreshing ? t("Refreshing…") : t("Refresh property list")}
-          </DropdownMenuItem>
+          </DropdownMenuItem>}
           <DropdownMenuItem onSelect={() => setQuota(true)}>
             <Gauge />
             {t("API quota")}

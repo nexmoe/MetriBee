@@ -74,7 +74,7 @@ export function SetupStep({
 
         {IS_CLOUD && (
           <div className="space-y-2">
-            <Label htmlFor="referralSource">{t("How did you find Rybbit?")}</Label>
+            <Label htmlFor="referralSource">{t("How did you find MetriBee?")}</Label>
             <Select value={referralSource} onValueChange={setReferralSource}>
               <SelectTrigger className="h-10 bg-neutral-100 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700">
                 <SelectValue placeholder={t("Select an option")} />

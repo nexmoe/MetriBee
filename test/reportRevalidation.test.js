@@ -13,7 +13,7 @@ async function invoke(handler, path = "/sites/123/overview", body) {
   const result = { status: 200 };
   await handler({ path, query: dates, method: body ? "POST" : "GET", body }, {
     status(value) { result.status = value; return this; },
-    json(value) { result.body = value; return this; },
+    send(value) { result.body = value; return this; },
   });
   return result;
 }

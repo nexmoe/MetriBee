@@ -32,7 +32,7 @@ async function invoke(h, path, query = {}, method = "GET", body = {}, headers = 
         out.status = code;
         return this;
       },
-      json(value) {
+      send(value) {
         out.body = value;
         return this;
       },
@@ -396,7 +396,7 @@ describe("Rybbit GA4 data adapter", () => {
     expect(calls).to.equal(0);
   });
   it("uses the original cohort fetch time and cache state for retention", async () => {
-    const result = await invoke(handler({ retention: async (_req, res) => res.json({ cohorts: [], periods: 4, bucket: "week", fetchedAt: "2026-10-22T09:00:00Z", cached: true }) }), "/sites/123/retention", dates);
+    const result = await invoke(handler({ retention: async (_req, res) => res.send({ cohorts: [], periods: 4, bucket: "week", fetchedAt: "2026-10-22T09:00:00Z", cached: true }) }), "/sites/123/retention", dates);
     expect(result.body.reportStatus).to.deep.equal({ fetchedAt: "2026-10-22T09:00:00.000Z", cacheStatus: "cached" });
   });
   it("preserves Express query getters when forwarding funnel requests", async () => {
@@ -405,14 +405,14 @@ describe("Rybbit GA4 data adapter", () => {
       method: "POST", path: "/sites/123/funnels/analyze", body: { steps: [] },
     });
     let forwarded;
-    await handler({ funnels: async (req, res) => { forwarded = req; return res.json({ ok: true }); } })(request, { json() {} });
+    await handler({ funnels: async (req, res) => { forwarded = req; return res.send({ ok: true }); } })(request, { send() {} });
     expect(forwarded.query).to.equal(query);
     expect(forwarded.body).to.equal(request.body);
     expect(forwarded.params).to.deep.equal({ propertyId: "123", action: "analyze" });
   });
   it("routes local funnel definitions separately from read-only GA4 operations", async () => {
     const requests = [];
-    const h = handler({ funnels: async (req, res) => { requests.push(req); return res.json({ ok: true }); } });
+    const h = handler({ funnels: async (req, res) => { requests.push(req); return res.send({ ok: true }); } });
     expect((await invoke(h, "/sites/123/funnels", {}, "POST", { name: "Tools", steps: [] })).status).to.equal(200);
     expect((await invoke(h, "/sites/123/funnels", {}, "GET")).status).to.equal(200);
     expect((await invoke(h, "/sites/123/funnels/summary", {}, "GET")).status).to.equal(200);
@@ -454,7 +454,7 @@ describe("Rybbit GA4 data adapter", () => {
     const domains = [];
     const h = handler({ favicon: async (req, res) => {
       domains.push(req.query.domain);
-      return res.json({ image: true });
+      return res.send({ image: true });
     } });
     const result = await invoke(h, "/favicon", { domain: "chatgpt.com" });
     expect(result.status).to.equal(200);
@@ -464,7 +464,7 @@ describe("Rybbit GA4 data adapter", () => {
   it("does not call GA4 when loading a favicon", async () => {
     const h = handler({
       properties: async () => { throw new Error("GA4 is unavailable"); },
-      favicon: async (_req, res) => res.json({ image: true }),
+      favicon: async (_req, res) => res.send({ image: true }),
     });
     const result = await invoke(h, "/favicon", { domain: "vidbee.org" });
     expect(result.status).to.equal(200);

@@ -43,7 +43,9 @@ export default defineConfig({
     '@rybbit/shared': fileURLToPath(new URL('./rybbit/shared/index.ts', import.meta.url)),
     '@': fileURLToPath(new URL('./rybbit/src', import.meta.url))
   } },
-  build: { outDir: '../public/ui', emptyOutDir: true, manifest: true, sourcemap: false,
+  // Open tabs can still import chunks from the previous build. Publish the new
+  // manifest without deleting those hashed files underneath existing pages.
+  build: { outDir: '../public/ui', emptyOutDir: false, manifest: true, sourcemap: false,
     commonjsOptions: { include: [/node_modules/, /lib\/(?:homeViews|uiLocale)\.js$/, /public\/js\/homeAccounts\.js$/] },
     rollupOptions: { onwarn(warning, defaultHandler) { if (warning.code === "MODULE_LEVEL_DIRECTIVE" && warning.message.includes("use client")) return; defaultHandler(warning); } } },
 });

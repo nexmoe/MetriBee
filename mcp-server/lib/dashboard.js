@@ -15,6 +15,7 @@ const { comparisonWindow, metricChanges, paginateReport } = require('./results')
 const { createPortfolio } = require('./portfolio');
 const LOCAL_FUNNEL_OPERATIONS = ['list_saved_funnels', 'get_funnel', 'validate_funnel', 'duplicate_funnel', 'import_funnels', 'export_funnels', 'save_funnel', 'delete_funnel'];
 
+const LOCAL_ANALYSIS_OPERATIONS = ['list_analysis_definitions', 'save_analysis_definition', 'delete_analysis_definition'];
 const DAY = 86400000;
 const RANGES = { today: 1, "7d": 7, "28d": 28, "30d": 30, "90d": 90 };
 const REPORTS = [
@@ -89,6 +90,7 @@ function capabilities() {
 			],
 			maxFilters: 20,
 		},
+		analysisObjects: { kinds: ['segments', 'annotations', 'goals', 'dashboards'], tools: LOCAL_ANALYSIS_OPERATIONS, reportTools: ['get_goals_report', 'run_dashboard_card'], scopes: 'Site-scoped; segments and annotations optionally span the organization. Only public rows appear in private links.', dashboardDimensions: ['time', ...Object.keys(require('../../controllers/analysisReports').DIMENSIONS)], dashboardMetrics: Object.keys(require('../../controllers/analysisReports').METRICS), dashboardQuery: 'GA4 JSON report: dimensions (up to 3), metrics (up to 8), filters, limit (1–1000), orderBy and direction. No raw SQL or individual sessions.', goals: 'Conversions count sessions matching the goal; any-goal totals use a union, never sum overlapping goals. Custom event parameters must be registered GA4 dimensions.' },
 		limits: { maxDays: 90, maxRequestedRows: 100, maxApiCallsPerAnalysis: 20, propertiesPerQuestion: 1 },
 		comparison: { presets: ['previous_period', 'previous_year'], custom: { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' },
 			budget: 'Both periods share 20 uncached GA4 calls. Previous data and scalar/matched-row changes are returned under comparison; missing/failed matches remain unknown.' },
@@ -97,7 +99,7 @@ function capabilities() {
 		portfolio: { tool: 'get_cached_sites_report', source: 'Saved snapshots and cached metadata only; never schedules Google calls or refreshes missing data.' },
 		timeWindows: { pastMinutes: 'Rolling minute window, e.g. 1440 for Last 24 Hours. Available on dashboard, pages, events, journeys and site status reports; calendar-only reports reject it.', precision: 'minute', freshness: 'GA4 historical processing delay applies; use realtime for live traffic.' },
 		workflow: [
-			"Use list_properties to select one property, and get_capabilities to choose a report.",
+			"Start with list_sites for organizations, roles and permitted sites; list_properties adds GA4 metadata. Scopes narrow current role and team grants.",
 			"Use a short date range and one focused high-level tool. Shared dashboard cache hits spend no GA4 tokens.",
 			"Inspect returned quota, apiCalls, warnings and truncation. Stop on quota_low or rate_limited; never loop reports over properties.",
 		],
@@ -106,11 +108,12 @@ function capabilities() {
 			tool: "get_journeys_report",
 			steps: 2,
 			metric: "screenPageViews",
-			filters: "from and to filter the two aggregate columns. * matches one nonempty path segment; ** matches any number. Section grouping uses patterns such as /docs/**.",
-			nativeParity: "Full Rybbit multi-step journeys, ordered session lists and exit counts require an ordered event-level source. Aggregate pair reports do not provide native journey semantics.",
+			filters: "from/to filter aggregate endpoints. * matches one path segment; ** spans segments. Sections use /docs/**.",
+			nativeParity: "Session paths and exits require ordered events, optionally from GA4 BigQuery exports. Referrer pairs cannot reconstruct them.",
 			orderedSessions: { mode: "sessions", minSteps: 2, maxSteps: 10, defaultSteps: 4,
 				available: require("../../controllers/demoData").enabled(),
 				source: require("../../controllers/demoData").enabled() ? "synthetic demo session events" : "not connected",
+				bigQuery: { configured: require('../../lib/bigquery').configurationStatus().configured, maxDays: 31 },
 				pathDetails: "Pass path to list its matching sessions. The same step filters, grouping and end-page truncation apply." },
 		},
 		funnels: {
@@ -169,14 +172,14 @@ async function invoke(handler, req) {
 	await handler(
 		{ method: "GET", query: {}, params: {}, body: {}, ...req },
 		{
-			set() {
+			header() {
 				return this;
 			},
 			status(code) {
 				status = code;
 				return this;
 			},
-			json(data) {
+			send(data) {
 				value = data;
 				return data;
 			},
@@ -235,8 +238,9 @@ function createDashboardService(deps = {}) {
 	}
 
 	async function execute(operation, args) {
-		const mutating = ["save_funnel", "delete_funnel", 'duplicate_funnel', 'import_funnels', "save_widget", "delete_widget", "refresh_property_quota"].includes(operation);
-		const key = JSON.stringify([operation, args]);
+		const mutating = ["save_analysis_definition", "delete_analysis_definition", "save_funnel", "delete_funnel", 'duplicate_funnel', 'import_funnels', "save_widget", "delete_widget", "refresh_property_quota"].includes(operation);
+		const identity = require("../../lib/requestContext").storage.getStore()?.identity;
+        const key = JSON.stringify([identity?.userId, identity?.organizationId, identity?.statements, operation, args]);
 		if (!mutating && pending.has(key)) return pending.get(key);
 		const work = perform(operation, args);
 		if (!mutating) {
@@ -360,6 +364,7 @@ function createDashboardService(deps = {}) {
 			};
 			const admin = { getProperty: guarded(deps.adminClient || clients.getAdminClient, "getProperty", null, "admin") };
 			const definitionOnly = [
+                ...LOCAL_ANALYSIS_OPERATIONS,
 				...LOCAL_FUNNEL_OPERATIONS,
 				"list_saved_widgets",
 				"save_widget",
@@ -409,6 +414,7 @@ function createDashboardService(deps = {}) {
 				funnels,
 				...(deps.gsc ? { gsc: deps.gsc } : {}),
 				...(deps.journeySessions ? { journeySessions: deps.journeySessions } : {}),
+				...(deps.bigQueryJourneys ? { bigQueryJourneys: deps.bigQueryJourneys } : {}),
 				realtime: (query) => ga4.runSafeRealtimeReport({ ...query, client: beta }),
 				client: () => beta,
 				admin: () => admin,
@@ -446,7 +452,18 @@ function createDashboardService(deps = {}) {
 			const query = { ...window, filters: JSON.stringify(args.filters || []) };
 			const request = (action, extra = {}) => invoke(gateway, { path: `/sites/${args.propertyId}/${action}`, query, ...extra });
 			let result;
-			if (operation === 'get_search_analytics_report') {
+			if (LOCAL_ANALYSIS_OPERATIONS.includes(operation)) {
+                const store = require('../../lib/analysisStore').createAnalysisStore({ propertyId: args.propertyId });
+                const data = operation === 'list_analysis_definitions' ? (args.id ? store.get(args.kind, args.id) : store.list(args.kind))
+                  : operation === 'save_analysis_definition' ? store.save(args.kind, args.definition, args.id) : store.remove(args.kind, args.id);
+                result = { data, ga4ApiCalls: 0, source: 'sqlite' };
+            } else if (operation === 'get_goals_report') {
+                const saved = require('../../lib/analysisStore').createAnalysisStore({ propertyId: args.propertyId }).list('goals');
+                const ids = args.goalIds || saved.slice(0, 16).map(goal => goal.goalId);
+                result = await request('goals/summary', { query: { ...query, goal_ids: JSON.stringify(ids) } });
+            } else if (operation === 'run_dashboard_card') {
+                result = await request('dashboards/run-card', { method: 'POST', body: { query: JSON.stringify(args.query), bucket: args.bucket || 'day', startDate: window.start_date, endDate: window.end_date } });
+            } else if (operation === 'get_search_analytics_report') {
 				const dimension = args.dimension;
 				if (!['country', 'device'].includes(dimension)) throw new Error('Choose country or device.');
 				const analytics = await request('metric', { query: { ...query, parameter: dimension === 'country' ? 'country' : 'device_type', limit: 10000 } });
@@ -541,7 +558,7 @@ function createDashboardService(deps = {}) {
 						result = { ...paths, journeys: paths.journeys.slice(0, limit), truncated: paths.journeys.length > limit,
 							summary: summary.data, context: context.data, metric: "sessions" };
 					}
-					result.limitations = require("../../controllers/demoData").enabled() ? ["Synthetic demo session events; not live GA4 session data."] : [];
+					result.limitations = require("../../controllers/demoData").enabled() ? ["Synthetic demo session events; not live GA4 session data."] : result.source === 'bigquery' ? ["GA4 BigQuery export; paths cover only events inside the selected window. Export latency, late arrivals and missing session identifiers can affect results. No session replay.", ...(result.coverage?.partial ? ["Export tables cover only part of the selected period."] : [])] : [];
 				} else {
 					result = await request("journeys", {
 						query: {

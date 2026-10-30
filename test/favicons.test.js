@@ -7,10 +7,11 @@ const png = Buffer.from('89504e470d0a1a0a', 'hex');
 
 function reply() {
   return { headers: {}, statusCode: 200,
-    set(k, v) { this.headers[k] = v; return this; },
+    headers(values) { for (const [key, value] of Object.entries(values)) this.header(key, value); return this; },
+    header(k, v) { this.headers[k] = v; return this; },
     status(v) { this.statusCode = v; return this; },
     type(v) { this.headers['Content-Type'] = v; return this; },
-    send(v) { this.body = v; return this; }, json(v) { this.body = v; return this; } };
+    send(v) { this.body = v; return this; }, send(v) { this.body = v; return this; } };
 }
 
 describe('Rybbit native favicon service', () => {

@@ -6,11 +6,21 @@ export function StandardPage({
   children,
   showSidebar = true,
   fullWidth = false,
+  showFooter = true,
 }: {
   children: React.ReactNode;
   showSidebar?: boolean;
   fullWidth?: boolean;
+  showFooter?: boolean;
 }) {
+  if (!showFooter) return (
+    <div className="h-full flex w-full">
+      {showSidebar && <AppSidebar />}
+      <main className="flex flex-col items-center p-4 w-full h-dvh overflow-y-auto">
+        <div className={cn("w-full", fullWidth ? "max-w-full" : "max-w-6xl")}>{children}</div>
+      </main>
+    </div>
+  );
   return (
     <div className="h-full flex w-full">
       {showSidebar && <AppSidebar />}

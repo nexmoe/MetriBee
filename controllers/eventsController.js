@@ -120,10 +120,10 @@ function createEventsHandlers(deps = {}) {
   function api(kind) {
     return async (req, res) => {
       const q = parseQuery(req);
-      if (!q) return res.status(400).json({ error: 'Choose a numeric property, a supported range and an offset from 0 to 365 days.' });
+      if (!q) return res.status(400).send({ error: 'Choose a numeric property, a supported range and an offset from 0 to 365 days.' });
       try {
         const { properties } = await loadProperties();
-        if (!properties.some(p => String(p.id) === q.propertyId)) return res.status(404).json({ error: 'Property not found' });
+        if (!properties.some(p => String(p.id) === q.propertyId)) return res.status(404).send({ error: 'Property not found' });
         // Hash event names so cache filenames cannot collide after filename sanitization.
         const event = kind === 'activity' ? req.query.event : undefined;
         const hash = require('crypto').createHash('sha256').update(event || '').digest('hex').slice(0, 20);
@@ -131,7 +131,7 @@ function createEventsHandlers(deps = {}) {
         const fresh = req.query.fresh === '1' && bypass(`events:${key}`);
         if (!fresh) {
           const cached = await read('events', key);
-          if (cached) return res.json({ ...cached, cached: true });
+          if (cached) return res.send({ ...cached, cached: true });
         }
         if (!pending.has(key)) {
           const request = (kind === 'overview' ? overview(q) : activity(q, event)).then(async data => {
@@ -141,9 +141,9 @@ function createEventsHandlers(deps = {}) {
           }).finally(() => pending.delete(key));
           pending.set(key, request);
         }
-        res.json(await pending.get(key));
+        res.send(await pending.get(key));
       } catch (err) {
-        res.status(502).json({ error: err.message || 'GA4 events unavailable' });
+        res.status(502).send({ error: err.message || 'GA4 events unavailable' });
       }
     };
   }
@@ -152,7 +152,7 @@ function createEventsHandlers(deps = {}) {
     overview: api('overview'), activity: api('activity'),
     view: async (req, res) => {
       const { properties } = await loadProperties();
-      res.render('events', { properties, head: { title: 'MetriBee · Events', description: 'Event trends and activity from Google Analytics 4' } });
+      res.view('events', { properties, head: { title: 'MetriBee · Events', description: 'Event trends and activity from Google Analytics 4' } });
     },
   };
 }

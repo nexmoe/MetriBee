@@ -3,6 +3,8 @@ import { authedFetch } from "../api/utils";
 
 interface Configs {
   disableSignup: boolean;
+  mailConfigured: boolean;
+  socialProviders: string[];
   mapboxToken: string;
   liteDashboard: boolean;
 }

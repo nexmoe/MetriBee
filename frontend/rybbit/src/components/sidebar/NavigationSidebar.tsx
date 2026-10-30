@@ -1,56 +1,64 @@
 "use client";
-import { Home, Activity, AppWindow, Globe, Gauge, Plug } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { AppWindow, Building2, Combine, CreditCard, UserCircle, Users } from "lucide-react";
 import { useExtracted } from "next-intl";
+import { usePathname } from "next/navigation";
+import { useActiveOrgName } from "../../hooks/useActiveOrgName";
+import { useOrgPermissions } from "../../hooks/usePermissions";
+import { IS_CLOUD } from "../../lib/const";
 import { OrganizationSelector } from "../OrganizationSelector";
 import { Sidebar } from "./Sidebar";
+
 export function NavigationSidebar() {
-  const pathname = usePathname();
   const t = useExtracted();
+  const pathname = usePathname();
+  const { can } = useOrgPermissions();
+  const activeOrgName = useActiveOrgName();
+  const showOrgSettings = can("members:manage") || can("teams:manage") || (IS_CLOUD && can("billing:manage"));
+
   return (
     <Sidebar.Root>
       <div className="p-3 pt-4 border-b border-neutral-300 dark:border-neutral-800">
         <OrganizationSelector />
       </div>
       <Sidebar.Items>
-        <Sidebar.SectionHeader>{t("Workspace")}</Sidebar.SectionHeader>
         <Sidebar.Item
           label={t("Properties")}
-          href="/"
           active={pathname === "/"}
+          href="/"
           icon={<AppWindow className="w-4 h-4" />}
         />
+        <Sidebar.SectionHeader>{t("Personal")}</Sidebar.SectionHeader>
         <Sidebar.Item
-          label={t("Realtime overview")}
-          href="/realtime"
-          active={pathname === "/realtime"}
-          icon={<Activity className="w-4 h-4" />}
+          label={t("Account")}
+          active={pathname.startsWith("/settings/account")}
+          href="/settings/account"
+          icon={<UserCircle className="w-4 h-4" />}
         />
-        <Sidebar.Item
-          label={t("Sites")}
-          href="/sites"
-          active={pathname === "/sites"}
-          icon={<AppWindow className="w-4 h-4" />}
-        />
-        <Sidebar.Item
-          label={t("Globe")}
-          href="/globe"
-          active={pathname.endsWith("/globe")}
-          icon={<Globe className="w-4 h-4" />}
-        />
-        <Sidebar.SectionHeader>GA4</Sidebar.SectionHeader>
-        <Sidebar.Item
-          label={t("API quota")}
-          href="/quota"
-          active={pathname === "/quota"}
-          icon={<Gauge className="w-4 h-4" />}
-        />
-        <Sidebar.Item
-          label={t("Connection")}
-          href="/setup"
-          active={pathname === "/setup"}
-          icon={<Plug className="w-4 h-4" />}
-        />
+        {showOrgSettings && <Sidebar.SectionHeader>{activeOrgName ?? t("Organization")}</Sidebar.SectionHeader>}
+        {can("members:manage") && (
+          <Sidebar.Item
+            label={t("Organization")}
+            active={pathname === "/settings/organization"}
+            href="/settings/organization"
+            icon={<Building2 className="w-4 h-4" />}
+          />
+        )}
+        {can("teams:manage") && (
+          <Sidebar.Item
+            label={t("Teams")}
+            active={pathname.startsWith("/settings/teams")}
+            href="/settings/teams"
+            icon={<Users className="w-4 h-4" />}
+          />
+        )}
+        {IS_CLOUD && can("billing:manage") && (
+          <Sidebar.Item
+            label={t("Billing")}
+            active={pathname.startsWith("/settings/billing")}
+            href="/settings/billing"
+            icon={<CreditCard className="w-4 h-4" />}
+          />
+        )}
       </Sidebar.Items>
     </Sidebar.Root>
   );

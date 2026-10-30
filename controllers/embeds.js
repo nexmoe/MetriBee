@@ -71,9 +71,9 @@ function createEmbedHandlers(deps = {}) {
     return data.timeZone;
   }
   const handle = task => async (req, res) => {
-    res.set('Cache-Control', 'no-store');
+    res.header('Cache-Control', 'no-store');
     try { return await task(req, res); }
-    catch (error) { return res.status(error.status || (error.code === 8 ? 429 : 502)).json({ error: error.message || 'Embed unavailable.' }); }
+    catch (error) { return res.status(error.status || (error.code === 8 ? 429 : 502)).send({ error: error.message || 'Embed unavailable.' }); }
   };
   const management = task => handle(async (req, res) => {
     if (req.headers?.['x-private-key'] || req.headers?.['x-private-site']) throw failure('Shared dashboards are read-only.', 403);
@@ -85,20 +85,23 @@ function createEmbedHandlers(deps = {}) {
     propertyFor,
     timeZoneFor,
     config: management(async (req, res, id) => {
-      if (!req.body || Object.keys(req.body).length !== 1 || typeof req.body.embedEnabled !== 'boolean') throw failure('Only the embedEnabled setting can be changed here.');
+      if (req.body && Object.keys(req.body).length === 1 && typeof req.body.public === 'boolean') {
+        return res.send({ success: true, ...await store.setPublic(id, req.body.public) });
+      }
+      if (!req.body || Object.keys(req.body).length !== 1 || typeof req.body.embedEnabled !== 'boolean') throw failure('Choose one boolean public or embedEnabled setting.');
       const config = await store.setEnabled(id, req.body.embedEnabled);
-      return res.json({ success: true, embedEnabled: config.embedEnabled });
+      return res.send({ success: true, embedEnabled: config.embedEnabled });
     }),
     privateLink: management(async (req, res, id) => {
       const data = req.method === 'GET' ? { privateLinkKey: (await store.get(id)).privateLinkKey }
         : await store.privateLink(id, req.body?.action);
-      return res.json({ success: true, data });
+      return res.send({ success: true, data });
     }),
     widget: handle(async (req, res) => {
       const property = await propertyFor(req.params.siteId);
       if (!(await store.get(property.id)).embedEnabled) throw failure('Embed widget is not enabled for this site.', 403);
       const { renderWidget } = require('./rybbitWidget');
-      res.set({ 'Content-Security-Policy': 'frame-ancestors *', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' });
+      res.headers({ 'Content-Security-Policy': 'frame-ancestors *', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' });
       return res.type('html').send(renderWidget(String(property.id), req.query));
     }),
     stats: handle(async (req, res) => {
@@ -155,13 +158,13 @@ function createEmbedHandlers(deps = {}) {
       }
       const topCountries = (countryReport?.rows || []).map(row => ({ country: dimension(row), users: metric(row) }))
         .filter(row => /^[A-Z]{2}$/.test(row.country)).sort((a, b) => b.users - a.users).slice(0, 5);
-      res.set('Cache-Control', 'public, max-age=60');
-      return res.json({ count: (total.rows || []).reduce((sum, row) => sum + metric(row), 0), series, topCountries });
+      res.header('Cache-Control', 'public, max-age=60');
+      return res.send({ count: (total.rows || []).reduce((sum, row) => sum + metric(row), 0), series, topCountries });
     }),
     dashboard: handle(async (req, res) => {
       const property = await propertyFor(req.params.siteId);
       if (!await store.validate(property.id, req.params.privateKey)) throw failure('Private dashboard link is invalid or has been revoked.', 404);
-      res.set({ 'Content-Security-Policy': 'frame-ancestors *', 'Referrer-Policy': 'no-referrer', 'X-Robots-Tag': 'noindex, nofollow' });
+      res.headers({ 'Content-Security-Policy': 'frame-ancestors *', 'Referrer-Policy': 'no-referrer', 'X-Robots-Tag': 'noindex, nofollow' });
       req.sharedProperty = property;
       return require('./workspace').workspaceView(req, res, error => { throw error; });
     }),

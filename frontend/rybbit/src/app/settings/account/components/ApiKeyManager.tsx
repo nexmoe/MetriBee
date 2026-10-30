@@ -27,8 +27,6 @@ import { Skeleton } from "../../../../components/ui/skeleton";
 import { Switch } from "../../../../components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../../../components/ui/tooltip";
-import { IS_CLOUD } from "../../../../lib/const";
-import { useStripeSubscription } from "../../../../lib/subscription/useStripeSubscription";
 import { LedgerRow, LedgerSection, LedgerTable } from "../../components/Ledger";
 import { ApiKeyScopePicker, getScopeLabel, type ScopeSelection } from "./ApiKeyScopePicker";
 
@@ -112,7 +110,6 @@ export function ApiKeyManager({ organizationId }: { organizationId?: string }) {
   const [scopes, setScopes] = useState<ScopeSelection>({});
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string | null } | null>(null);
 
-  const { data: subscription } = useStripeSubscription();
   // Both hooks are called unconditionally (rules of hooks); the unused one is
   // disabled via its enabled flag.
   const userKeysQuery = useListApiKeys(!organizationId);
@@ -125,9 +122,8 @@ export function ApiKeyManager({ organizationId }: { organizationId?: string }) {
     refetch,
   } = organizationId ? orgKeysQuery : userKeysQuery;
 
-  const planName = subscription?.planName || "free";
-  const isFreePlan = planName === "free" || planName.includes("basic");
-  const isPlanGated = IS_CLOUD && isFreePlan;
+  // Fixed organization billing does not impose a separate MCP/API-key entitlement.
+  const isPlanGated = false;
 
   const apiKeys = apiKeysData?.apiKeys;
   const createUserApiKey = useCreateApiKey();
@@ -200,13 +196,7 @@ export function ApiKeyManager({ organizationId }: { organizationId?: string }) {
   const showCloseWarning = confirmClose && !keyCopied;
 
   const description = organizationId
-    ? IS_CLOUD
-      ? t(
-          "These belong to the organization rather than a person, so they keep working when people leave. Only owners and admins can see or create them, and they share the organization's daily request budget."
-        )
-      : t(
-          "These belong to the organization rather than a person, so they keep working when people leave. Only owners and admins can see or create them."
-        )
+    ? t("These belong to the organization rather than a person, so they keep working when people leave. Only owners and admins can see or create them.")
     : t.rich(
         "Keys that act as you, with your role in each organization, and stop working if you leave it. For an integration that should outlive your membership, use an <link>organization key</link> (owners and admins only).",
         {

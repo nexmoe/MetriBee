@@ -188,7 +188,8 @@ export const parseUtcTimestamp = (timestamp: string | Date): DateTime => {
   if (timestamp instanceof Date) {
     return DateTime.fromJSDate(timestamp, { zone: "utc" }).setZone(getTimezone());
   }
-  return DateTime.fromSQL(timestamp, { zone: "utc" }).setZone(getTimezone());
+  const iso = DateTime.fromISO(timestamp, { zone: "utc" });
+  return (iso.isValid ? iso : DateTime.fromSQL(timestamp, { zone: "utc" })).setZone(getTimezone());
 };
 
 // Timezones with GMT offset and city name

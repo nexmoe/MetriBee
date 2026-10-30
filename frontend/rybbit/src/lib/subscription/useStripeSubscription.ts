@@ -14,6 +14,7 @@ export interface SubscriptionData {
   eventLimit: number;
   interval: string;
   cancelAtPeriodEnd: boolean;
+  hasActiveSubscription?: boolean;
   isTrial?: boolean;
   trialDaysRemaining?: number;
   message?: string; // For expired trial message
@@ -35,14 +36,14 @@ export function useStripeSubscription(organizationId?: string): UseQueryResult<S
       return undefined;
     }
 
-    return authedFetch<SubscriptionData>(`/stripe/subscription?organizationId=${orgId}`);
+    return authedFetch<SubscriptionData>(`/organizations/${encodeURIComponent(orgId)}/subscription`);
   };
 
   return useQuery<SubscriptionData | undefined>({
-    queryKey: ["stripe-subscription", orgId],
+    queryKey: ["organization-subscription", orgId, IS_CLOUD],
     queryFn: fetchSubscription,
     staleTime: 5 * 60 * 1000,
     retry: false,
-    enabled: !!orgId,
+    enabled: !!orgId && IS_CLOUD,
   });
 }

@@ -13,6 +13,7 @@ import { Favicon } from "../../../../components/Favicon";
 import { AppSidebar } from "../../../../components/AppSidebar";
 import { useEmbedablePage } from "../../utils";
 import { Suspense } from "react";
+import { getSharedRoute, isPublicDashboard } from "../../../../../../adapter/navigation";
 
 function MobileSidebarContent() {
   const t = useExtracted();
@@ -32,11 +33,11 @@ function MobileSidebarContent() {
         </SheetTrigger>
         <VisuallyHidden>
           <SheetHeader>
-            <SheetTitle>{t("Rybbit Sidebar")}</SheetTitle>
+            <SheetTitle>{t("MetriBee Sidebar")}</SheetTitle>
           </SheetHeader>
         </VisuallyHidden>
         <SheetContent side="left" className="p-0 w-[240px] flex gap-0" showClose={false}>
-          <AppSidebar />
+          {!isPublicDashboard() && !getSharedRoute() && <AppSidebar />}
           <Sidebar />
         </SheetContent>
       </Sheet>

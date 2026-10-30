@@ -38,7 +38,7 @@ async function invoke(
         result.status = code;
         return this;
       },
-      json(body) {
+      send(body) {
         result.body = body;
         return this;
       },

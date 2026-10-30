@@ -50,7 +50,7 @@ export function TransferSiteSection({ siteId }: { siteId: number }) {
     <SettingsSection
       title={t("Transfer to someone else")}
       description={t(
-        "The recipient gets an email and accepts the site into an organization they manage. It moves with all its data, except its Search Console connection."
+        "The recipient gets an email and accepts the property into an organization they manage. Its saved definitions and sharing settings move with it."
       )}
     >
       {isLoading ? (

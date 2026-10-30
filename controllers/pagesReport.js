@@ -154,20 +154,20 @@ function createPagesReportHandler(deps = {}) {
       if (typeof propertyId !== 'string' || !/^\d+$/.test(propertyId)) throw new Error('Invalid property ID.');
       if (view !== 'all' && view !== 'entry') throw new Error('Choose all or entry pages.');
       period = parsePeriod(req.query);
-    } catch (err) { return res.status(400).json({ ok: false, error: err.message }); }
+    } catch (err) { return res.status(400).send({ ok: false, error: err.message }); }
     try {
       const { properties } = await loadProperties();
-      if (!properties.some(p => String(p.id) === propertyId)) return res.status(404).json({ ok: false, error: 'Property not found.' });
-      res.set?.('Cache-Control', 'no-store');
-      return res.json(await load(propertyId, period, view, req.query.fresh === '1'));
-    } catch (err) { return res.status(502).json({ ok: false, error: err.message || 'GA4 report unavailable.' }); }
+      if (!properties.some(p => String(p.id) === propertyId)) return res.status(404).send({ ok: false, error: 'Property not found.' });
+      res.header?.('Cache-Control', 'no-store');
+      return res.send(await load(propertyId, period, view, req.query.fresh === '1'));
+    } catch (err) { return res.status(502).send({ ok: false, error: err.message || 'GA4 report unavailable.' }); }
   };
 }
 
 async function pagesView(req, res) {
   try {
     const { properties } = await require('./apiController').ensureProperties();
-    res.render('pages', { properties, head: { title: 'MetriBee · Pages', description: 'Page traffic, landing pages and period comparisons' } });
+    res.view('pages', { properties, head: { title: 'MetriBee · Pages', description: 'Page traffic, landing pages and period comparisons' } });
   } catch (err) { res.status(500).send('Could not load properties.'); }
 }
 
@@ -184,10 +184,10 @@ function createSectionReportHandler(deps = {}) {
       if (!/^\d+$/.test(propertyId) || typeof section !== 'string' || !/^\/[^\/?#\\]{1,200}\/$/.test(section)) throw new Error('Invalid property or directory.');
       if (view !== 'all' && view !== 'entry') throw new Error('Choose all or entry pages.');
       period = parsePeriod(req.query);
-    } catch (err) { return res.status(400).json({ ok: false, error: err.message }); }
+    } catch (err) { return res.status(400).send({ ok: false, error: err.message }); }
     try {
       const { properties } = await loadProperties();
-      if (!properties.some(p => String(p.id) === propertyId)) return res.status(404).json({ ok: false, error: 'Property not found.' });
+      if (!properties.some(p => String(p.id) === propertyId)) return res.status(404).send({ ok: false, error: 'Property not found.' });
       // A digest avoids both punctuation collisions and reportCache's filename length cap.
       const key = `pages-section-v1:${propertyId}:${period.key}:${view}:${createHash('sha256').update(section).digest('hex')}`;
       if (!inFlight.has(key)) {
@@ -229,8 +229,8 @@ function createSectionReportHandler(deps = {}) {
         inFlight.set(key, pending);
         pending.finally(() => { if (inFlight.get(key) === pending) inFlight.delete(key); }).catch(() => {});
       }
-      return res.json(await inFlight.get(key));
-    } catch (err) { return res.status(502).json({ ok: false, error: err.message }); }
+      return res.send(await inFlight.get(key));
+    } catch (err) { return res.status(502).send({ ok: false, error: err.message }); }
   };
 }
 

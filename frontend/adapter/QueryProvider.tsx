@@ -6,7 +6,7 @@ import {
   createQueryPersistence,
   queryCacheScope,
 } from "./queryClient";
-import { getAppPath, getSharedRoute, useLocation } from "./navigation";
+import { getAppPath, getSharedRoute, isPublicDashboard, useLocation } from "./navigation";
 
 function ScopedQueryProvider({
   children,
@@ -43,13 +43,14 @@ export function QueryProvider({ children }: { children: ReactNode }) {
   const shared = getSharedRoute();
   const embedded = new URLSearchParams(location.search).get("embed") === "true";
   const restricted =
-    !!shared || embedded || !!context.metricWidget || getAppPath() === "/setup";
+    !!shared || isPublicDashboard() || embedded || !!context.metricWidget || getAppPath() === "/setup";
   const scope = queryCacheScope(context, restricted);
   // A navigation across access contexts must not reuse the owner's query cache.
   const key =
     scope ||
     JSON.stringify([
       shared ? [shared.siteId, shared.privateKey] : null,
+      context.publicSiteId,
       embedded,
       context.metricWidget,
       getAppPath() === "/setup",

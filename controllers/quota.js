@@ -20,7 +20,7 @@ function createQuotaHandlers(deps = {}) {
   const gsc = deps.gsc || (() => require('./searchConsole').getSearchConsole());
   // Demo observations never read or overwrite the private shared ledger.
   const demoEntries = new Map();
-  let pending = null;
+  const pending = new Map();
 
   async function snapshot(connectedProperties) {
     const at = now();
@@ -158,23 +158,21 @@ function createQuotaHandlers(deps = {}) {
     async status(_req, res) {
       const loaded = await properties();
       return res
-        .set("Cache-Control", "no-store")
-        .json(await snapshot(loaded.properties));
+        .header("Cache-Control", "no-store")
+        .send(await snapshot(loaded.properties));
     },
     async refresh(_req, res) {
-      res.set("Cache-Control", "no-store");
+      res.header("Cache-Control", "no-store");
       try {
         // Share only a currently running lookup; a later click always queries Google again.
-        if (!pending)
-          pending = fetchLatest().finally(() => {
-            pending = null;
-          });
-        const result = await pending;
-        return res.status(result.refresh.refreshed ? 200 : 502).json(result);
+        const scope = require('../lib/requestContext').cacheScope();
+        if (!pending.has(scope)) pending.set(scope, fetchLatest().finally(() => pending.delete(scope)));
+        const result = await pending.get(scope);
+        return res.status(result.refresh.refreshed ? 200 : 502).send(result);
       } catch {
         return res
           .status(502)
-          .json({ error: "Could not fetch the latest quota from GA4." });
+          .send({ error: "Could not fetch the latest quota from GA4." });
       }
     },
   };

@@ -34,8 +34,9 @@ function fixture(run, ids = ["1", "2"]) {
       const result = { status: 200, headers: {} };
       const res = {
         status(code) { result.status = code; return this; },
-        set(name, value) { result.headers[name] = value; return this; },
-        json(body) { result.body = body; return this; },
+        headers(values) { for (const [key, value] of Object.entries(values)) this.header(key, value); return this; },
+        header(name, value) { result.headers[name] = value; return this; },
+        send(body) { result.body = body; return this; },
       };
       await mod.exports.realtimeAllApi({ query: {} }, res);
       return result;

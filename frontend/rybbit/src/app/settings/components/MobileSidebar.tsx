@@ -4,11 +4,13 @@ import { Button } from "../../../components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../../../components/ui/sheet";
 
 import { Menu } from "lucide-react";
+import { useExtracted } from "next-intl";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { AppSidebar } from "../../../components/AppSidebar";
 import { NavigationSidebar } from "../../../components/sidebar/NavigationSidebar";
 
 export function MobileSidebar() {
+  const t = useExtracted();
   return (
     <div className="md:hidden flex items-center gap-2">
       <Sheet>
@@ -19,10 +21,10 @@ export function MobileSidebar() {
         </SheetTrigger>
         <VisuallyHidden>
           <SheetHeader>
-            <SheetTitle>Rybbit Sidebar</SheetTitle>
+            <SheetTitle>{t("MetriBee Sidebar")}</SheetTitle>
           </SheetHeader>
         </VisuallyHidden>
-        <SheetContent side="left" className="p-0 w-[280px] max-w-[90vw] flex gap-0" showClose={false}>
+        <SheetContent side="left" className="p-0 w-[240px] flex gap-0" showClose={false}>
           <AppSidebar />
           <NavigationSidebar />
         </SheetContent>

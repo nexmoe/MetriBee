@@ -18,7 +18,7 @@ export function useDashboardCard(siteId: string | number | undefined, cardId: st
     path: "dashboards/run-card",
     unwrap: false,
     site: siteId,
-    useFilters: false,
+    useFilters: true,
     // The window is sent as camelCase JSON in the body (the server schema
     // matches); filters aren't used by card execution.
     body: ({ filters: _filters, ...window }) => ({ ...window, query: sql, bucket }),

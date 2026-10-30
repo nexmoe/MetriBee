@@ -1,8 +1,7 @@
 export const BACKEND_URL = "/api/rybbit";
-export const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
 
-export const IS_CLOUD = process.env.NEXT_PUBLIC_CLOUD === "true";
+export const IS_CLOUD = typeof window !== "undefined" && (window as any).__GA4_CONTEXT__?.cloud === true;
 export const DEPLOYMENT = process.env.NEXT_PUBLIC_DEPLOYMENT;
 export const LITE_DASHBOARD = process.env.NEXT_PUBLIC_LITE_DASHBOARD === "true";
 

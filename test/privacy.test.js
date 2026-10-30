@@ -7,12 +7,68 @@ const ts = require("typescript");
 function load(name) {
   const filename = path.resolve(__dirname, `../frontend/adapter/privacy/${name}.ts`);
   const compiled = new Module(filename, module);
+  const originalRequire = compiled.require.bind(compiled);
+  compiled.require = name => name === "./model" ? load("model") : originalRequire(name);
   compiled._compile(ts.transpileModule(fs.readFileSync(filename, "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText, filename);
   return compiled.exports;
 }
 const { privacyTerms, privacyMatcher, privacyShortcut } = load("model");
+
+describe("privacy DOM observer convergence", () => {
+  it("settles when a property name matches the masked browser title", () => {
+    const names = ["Element", "HTMLInputElement", "HTMLTextAreaElement", "MutationObserver"];
+    const previous = new Map(names.map(name => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
+    const pending = [];
+    let callback, observing = false, title = "Home · MetriBee";
+    class Element {
+      constructor() { this.nodeType = 1; this.childNodes = []; this.isConnected = true; }
+      closest() { return null; }
+      getAttribute() { return null; }
+      querySelectorAll() { return []; }
+      setAttribute() {}
+      removeAttribute() {}
+    }
+    const body = new Element();
+    const document = {
+      body, documentElement: body,
+      get title() { return title; },
+      set title(value) {
+        title = value;
+        // Browsers replace the title's text node even for an identical value.
+        if (observing) pending.push({ type: "childList", target: body, addedNodes: [] });
+      },
+      addEventListener() {}, removeEventListener() {},
+    };
+    const replacements = {
+      Element, HTMLInputElement: class extends Element {}, HTMLTextAreaElement: class extends Element {},
+      MutationObserver: class {
+        constructor(listener) { callback = listener; }
+        observe() { observing = true; }
+        disconnect() { observing = false; }
+      },
+    };
+    let mask;
+    try {
+      for (const name of names) Object.defineProperty(globalThis, name, { configurable: true, value: replacements[name] });
+      mask = load("dom").maskDocument(document, ["MetriBee"]);
+      expect(title).to.equal("MetriBee");
+      pending.push({ type: "childList", target: body, addedNodes: [] });
+      let rounds = 0;
+      while (pending.length && rounds++ < 10) callback(pending.splice(0));
+      expect(pending, "the observer must not enqueue its own title update forever").to.be.empty;
+      mask.stop(); mask = null;
+      expect(title).to.equal("Home · MetriBee");
+    } finally {
+      mask?.stop();
+      for (const name of names) {
+        const descriptor = previous.get(name);
+        if (descriptor) Object.defineProperty(globalThis, name, descriptor); else delete globalThis[name];
+      }
+    }
+  });
+});
 
 describe("global visual privacy", () => {
   it("collects property, account and connection identifiers without treating report values as names", () => {

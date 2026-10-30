@@ -25,13 +25,13 @@ exports.sitesSnapshot = async (_req, res, next) => {
     const { snapshot, adsense } =
       await require("./sitesController").loadSitesSnapshot();
     res
-      .set("Cache-Control", "no-store")
-      .json({
+      .header("Cache-Control", "no-store")
+      .send({
         ...summarize(snapshot, adsense),
         generatedAt: snapshot?.generatedAt || null,
         adsense,
       });
   } catch (err) {
-    next(err);
+    throw err;
   }
 };

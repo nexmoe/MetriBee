@@ -30,7 +30,9 @@ export function maskDocument(document: Document, terms: string[]) {
   };
   const pageTitle = () => {
     if (document.title !== hiddenTitle) originalTitle = document.title;
-    if (matches(document.title)) document.title = hiddenTitle;
+    // Assigning even the same title replaces its text node and queues another
+    // observer callback. A site named MetriBee must not make this self-trigger.
+    if (document.title !== hiddenTitle && matches(document.title)) document.title = hiddenTitle;
   };
   const observer = new MutationObserver(records => {
     records.forEach(record => {

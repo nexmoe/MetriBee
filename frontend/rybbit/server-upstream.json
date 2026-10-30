@@ -15,7 +15,72 @@
     "client/src/app/widget/[siteId]/route.ts": {
       "target": "controllers/rybbitWidget.ts",
       "upstreamSha256": "1fae629ee71ea8f8394300cb9162cf04ae06343b54d3c60d156592d26f6c95aa",
-      "sha256": "9e2f484d36cf54f1e9682df10dca00b9a1baec3701792d758b2cc9da4e9f0651"
+      "sha256": "35d4ae1af0f23c829b7da1190fbfa305c1fdd6133e7cbc31794200c199c68f93"
+    },
+    "shared/permissions.ts": {
+      "target": "lib/permissions.js",
+      "upstreamSha256": "7e8b0787503ecd83318f1082f0959b9294622921dd08adc5a5ee87c6dea3eaea",
+      "sha256": "97f6a42f7bbd9dc09126322a0317de20424b7c823f6e5acc0bf8f7211de50fe4"
+    },
+    "shared/scopes.ts": {
+      "target": "lib/scopes.js",
+      "upstreamSha256": "9aa596e2bcbcd8f68ad82e60ffcde96be18c19d56b5cce965d68adb8e2ccb85d",
+      "sha256": "4775de771110c192422cbadc6025b86ab675172f42b712f12744498976bc32e1"
+    },
+    "server/src/lib/oauth.ts": {
+      "target": "lib/oauth.mjs",
+      "upstreamSha256": "92d47b44958cfc4b993c91e32923e8409fa7541fd5aab9a681dc0059dbb0cad3",
+      "sha256": "5188f7f787b725d3b0384f2df91f2ec44fe6a121a1d8188983845787bad287fb"
+    },
+    "client/src/components/AppSidebar.tsx": {
+      "target": "frontend/rybbit/src/components/AccountSidebar.tsx",
+      "upstreamSha256": "c09c1922f54eb3d1ce0f8c43012bcbe0431b42ac43f727c2396cc458d30e2a7f",
+      "sha256": "fe21fc9e813afb634d11e2cc07b2bab9749dbd92edcbc3cedf77cc6be777ff13"
+    },
+    "server/src/services/pdfReports/templates/PdfReportTemplate.tsx": {
+      "target": "lib/reports/templates/PdfReportTemplate.js",
+      "upstreamSha256": "c0f901a699b780c2a47d33889102f1d627b6570def9b4261e1598a85231d1eee",
+      "sha256": "44a2865d5ed8b1108b2539b34aa63352ede4488cc9be3b66a8ebfec3b5dcd9cc"
+    },
+    "server/src/services/pdfReports/templates/components/MetricCard.tsx": {
+      "target": "lib/reports/templates/components/MetricCard.js",
+      "upstreamSha256": "4ec69e24280548c9938267c989b3f600e0c90ed3bffa02f756dcd1afc057e249",
+      "sha256": "86b9f6a21c81f10d0c5b77e45ae6d08d66c0e6ccdd8310f6d9ec866e16da2a36"
+    },
+    "server/src/services/pdfReports/templates/components/Page.tsx": {
+      "target": "lib/reports/templates/components/Page.js",
+      "upstreamSha256": "1a8b1d5a392a6f4d17322b9aa31d96590c2eaec82adfd14b7e525a9089483ef2",
+      "sha256": "1d50a2439b07d5469d413cb12e59635290934e70fff7317d8dd386cfc9ece002"
+    },
+    "server/src/services/pdfReports/templates/components/SessionsChart.tsx": {
+      "target": "lib/reports/templates/components/SessionsChart.js",
+      "upstreamSha256": "922f500e5223e62c557c1736e68c654ceb7c7552a686a9002a62f666180d882d",
+      "sha256": "635dca3f0b7a2ce42e6a8d2dd11b3a4342958d9045ed858eae2826d2463b8ea2"
+    },
+    "server/src/services/pdfReports/templates/components/TopListSection.tsx": {
+      "target": "lib/reports/templates/components/TopListSection.js",
+      "upstreamSha256": "29590c4ebed1ef990b9bb46a5807781dab5bcde40c4fcd8da75adfafbaed07aa",
+      "sha256": "967875ce9f79f948760971b1aef6da473e13a8405c570250717fa0730d906a1e"
+    },
+    "server/src/services/pdfReports/templates/components/index.ts": {
+      "target": "lib/reports/templates/components/index.js",
+      "upstreamSha256": "360004f8d6416f52c55c51aa6009fcbc2d1a443ed8a78c6fe4e81d2acab87dbe",
+      "sha256": "abd2a605ca09f1a3ffb9a832663ec22a401eecd9629eecec5ff4430d79bf55db"
+    },
+    "server/src/services/pdfReports/templates/components/utils.ts": {
+      "target": "lib/reports/templates/components/utils.js",
+      "upstreamSha256": "723c32760a460196c7f1f2919c932a39beb2a1e20e4f64d699bade9d01866643",
+      "sha256": "09100c7ad8865d20fa5eb9b9c5fdd7fc909052793bca0b3d164f12756e59f3a0"
+    },
+    "server/src/lib/email/templates/WeeklyReportEmail.tsx": {
+      "target": "lib/reports/templates/WeeklyReportEmail.js",
+      "upstreamSha256": "e813bbb1dd30d72d59b4c4866d4b0f3e95d2d624c2372dd7847e007b5889d488",
+      "sha256": "7dbd469188d6bdfa445df997554c455c78937c652bf84821586d8f6d4900af82"
+    },
+    "server/src/mcp/tools/organizations.ts": {
+      "target": "mcp-server/lib/accountTools.js",
+      "upstreamSha256": "f9513af141cedff5b2b186a67aa2f7be7e358da5639d9c569d411e3ba094ff60",
+      "sha256": "194197723f74b34834d73a90d5329849e049783523bd94389142120d6611f5ec"
     }
   }
 }

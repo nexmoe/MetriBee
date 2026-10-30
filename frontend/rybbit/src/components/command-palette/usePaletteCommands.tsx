@@ -21,6 +21,7 @@ import {
   Moon,
   MousePointerClick,
   Rewind,
+  Settings,
   Split,
   Sun,
   Target,
@@ -154,11 +155,11 @@ export function usePaletteCommands(entityCommands: PaletteCommand[]): {
           },
           { route: "api-playground", label: t("API Playground"), icon: <Code />, visible: isDesktop },
           { route: "query", label: t("Query"), icon: <Database />, keywords: t("SQL"), visible: canQuery },
-          { route: "dashboards", label: t("Dashboards"), icon: <LayoutGrid />, visible: canQuery },
+          { route: "dashboards", label: t("Dashboards"), icon: <LayoutGrid />, visible: true },
         ];
 
   const sectionCommands: PaletteCommand[] = sections
-    .filter(section => ["main", "pages", "globe", "events", "journeys", "retention", "funnels", "widgets"].includes(section.route))
+    .filter(section => ["main", "pages", "globe", "events", "journeys", "retention", "funnels", "widgets", "goals", "dashboards"].includes(section.route))
     .map(section => ({
       id: `site:${section.route}`,
       group: "site",
@@ -168,6 +169,20 @@ export function usePaletteCommands(entityCommands: PaletteCommand[]): {
       current: route === section.route,
       run: () => go(`/${siteId}/${section.route}`, true),
     }));
+
+  if (siteId !== null && site?.permissions.length) {
+    sectionCommands.push({
+      id: "site:settings",
+      group: "site",
+      label: t("Site Settings"),
+      icon: <Settings />,
+      run: () => {
+        const params = new URLSearchParams(window.location.search);
+        params.set("settings", "general");
+        router.push(`/${siteId}/main?${params}`);
+      },
+    });
+  }
 
   const siteCommands: PaletteCommand[] = (orgSites?.sites ?? [])
     .filter(orgSite => orgSite.siteId !== siteId)
@@ -329,7 +344,7 @@ export function useSiteEntityCommands(siteId: number): PaletteCommand[] {
   // The goals endpoint caps a page at 100.
   const { data: goals } = useGetGoals({ pageSize: 100 });
   const { data: funnels } = useGetFunnels(siteId);
-  const { data: dashboards } = useGetDashboards(IS_CLOUD || DEPLOYMENT ? siteId : undefined);
+  const { data: dashboards } = useGetDashboards(siteId);
 
   // Keep the time and filters, like the sidebar links do.
   const go = (path: string) => router.push(`${path}${window.location.search}`);

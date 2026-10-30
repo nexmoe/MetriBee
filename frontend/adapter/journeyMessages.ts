@@ -1,6 +1,8 @@
 // GA4 journey labels supplement the imported Rybbit message catalogs.
 export const journeyMessages: Record<string, Record<string, string>> = {
   zh: {
+    "GA4 exported events. Paths use the selected period; recent exports may still be processing.":
+      "GA4 导出事件：路径按所选周期计算，近期导出数据可能仍在处理中。",
     "Page transitions": "页面流向",
     "View page transitions": "查看页面流向",
     "Demo session events. Paths, exits and session lists use synthetic data for this property.":

@@ -1,4 +1,4 @@
-# ga4-mcp-server
+# MetriBee MCP
 
 Streamable HTTP MCP server exposing Google Analytics Admin + Data API tools.
 Uses the latest stable MCP TypeScript SDK v2 (`@modelcontextprotocol/server`
@@ -10,10 +10,10 @@ One `pnpm install` at the root covers it, and it reads credentials from the root
 Set `GA4_CLIENT_EMAIL` and `GA4_PRIVATE_KEY` in the root `.env` (see
 [SETUP.md](../SETUP.md), or open `/setup` in the dashboard). Check them with
 `pnpm setup:check`. Start the dashboard with `pnpm start`: MCP is available at
-`http://localhost:5483/mcp` on the same port, including in Docker. No second process is needed.
+`http://localhost:5483/api/mcp` on the same port, including in Docker. No second process is needed.
 
 For MCP without the dashboard, run `pnpm mcp`. Its URL defaults to
-`http://127.0.0.1:5484/mcp`; configure it with `MCP_HOST` and `MCP_PORT`.
+`http://127.0.0.1:5484/api/mcp`; configure it with `MCP_HOST` and `MCP_PORT`.
 `GET /healthz` checks the standalone process without calling Google.
 
 ## Registering with Claude Code
@@ -21,7 +21,7 @@ For MCP without the dashboard, run `pnpm mcp`. Its URL defaults to
 From the project where you want the tools:
 
 ```bash
-claude mcp add ga4 --transport http --scope project http://localhost:5483/mcp
+claude mcp add ga4 --transport http --scope project http://localhost:5483/api/mcp
 ```
 
 `--scope project` writes `.mcp.json` in that project. Use `--scope user` to
@@ -36,7 +36,7 @@ Equivalent `.mcp.json`:
   "mcpServers": {
     "ga4": {
       "type": "http",
-      "url": "http://localhost:5483/mcp"
+      "url": "http://localhost:5483/api/mcp"
     }
   }
 }
@@ -53,6 +53,25 @@ after a restart.
 The private key lives only in the root `.env` (gitignored). The MCP client
 config holds just the HTTP URL, never Google credentials.
 
+Create the first administrator in the dashboard before connecting. MCP requests
+require an OAuth token or an `Authorization: Bearer <API key>` header. Personal
+and organization keys can restrict scopes and inherit current property grants.
+Dashboard and standalone MCP share `DATABASE_PATH`; the standalone process uses
+the dashboard's `BASE_URL` for browser authorization. OAuth requires HTTPS or a
+loopback origin; API keys also work on private HTTP LAN deployments.
+
+## Personal connections and permissions
+
+Open **Settings → Account → Connect AI tools** to copy the configured MCP URL or connection commands for Claude Code, Codex and JSON clients. Sign in through the client’s OAuth prompt; no key is embedded in these examples. Non-TLS LAN deployments show personal-key header instructions instead.
+
+Everyone connects to the same `/api/mcp` URL using their own OAuth login or personal API key. The original `/mcp` URL remains compatible, including OAuth discovery and token audiences. Create personal keys under **Settings → Account**, and organization keys under **Settings → Organization**. Both key managers, their permission picker and the OAuth consent/login pages reuse the native Rybbit UI.
+
+Personal connections inherit current organization membership, direct site grants and team grants. The effective permission is the user's current role intersected with the credential's scopes; `write` implies `read` on that resource and never elevates a role. Membership, team, role, ban and key changes are checked on subsequent requests. Browser organization selection does not silently change a personal connection. Organization keys act as their organization, survive member departures and cannot access other organizations; do not share one as a substitute for individual connections.
+
+Start with `list_sites`: it returns organizations, roles, visible sites, effective site permissions and team grants from local SQLite, without Google calls. Its minimal discovery remains available for scoped keys. Other tools are filtered from `tools/list` by credential scopes; backend API checks still enforce roles, ownership and scopes on calls.
+
+The native organization tools are `list_members`, `add_member`, `update_member_site_access`, `list_teams`, `create_team`, `update_team` and `delete_team`. They proxy to the existing dashboard API in process. Writes require explicit user intent; team deletion requires confirmation. No separate MCP membership or permission database exists. The standalone process uses the same handlers in a private Fastify gateway and shares the dashboard SQLite file.
+
 ## HTTP behavior and reverse proxies
 
 The endpoint uses the v2 `createMcpHandler` with a fresh server for each request;
@@ -64,31 +83,29 @@ requests return 405; no persistent GET event stream is required.
 Host and Origin validation allow localhost by default. For a private proxy, set
 only `MCP_PUBLIC_URL=https://ga4.example.com/mcp` and restart the server. Its
 hostname is automatically allowed for both request Hosts and browser Origins;
-the setup connection prompt displays the same public URL. With Docker Compose,
+configure MCP clients with the same public URL. With Docker Compose,
 recreate the container with `docker compose up -d --force-recreate dashboard`
 to load changed environment values.
 
 Advanced deployments can use `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS` to add
 extra comma-separated hostnames without ports. They extend the localhost and
 public hostname defaults; other hosts and origins remain blocked. Requests
-without Origin are accepted. The endpoint has the same private-access requirements as the
-dashboard: use your existing authenticated proxy. Preserve request/response
+without Origin are accepted with bearer authentication. Cookie authentication
+also requires a trusted browser Origin. Preserve request/response
 streaming through the proxy (`X-Accel-Buffering: no` is sent).
 
 `MCP_PUBLIC_URL` must be an absolute HTTP or HTTPS URL without credentials. It
 does not change the listening address or path. The public hostname is read from
 configuration, never learned from a request's Host or forwarded headers.
 
-References: [HTTP serving](https://ts.sdk.modelcontextprotocol.io/v2/serving/http.html),
-[Express integration](https://ts.sdk.modelcontextprotocol.io/v2/serving/express.html).
+Reference: [HTTP serving](https://ts.sdk.modelcontextprotocol.io/v2/serving/http.html).
 
 ## Tools
 
 Start with `get_setup_status`, `get_capabilities` and `list_properties`. The
 catalog reads the current analytics recipe definitions, supported segments,
 filters and widget configuration, without exposing UI icon/style metadata.
-There are 42 tools: the original 11 remain compatible, with 31 focused tools
-for the current dashboard. All tools declare read/write, destructive and
+The original GA4 tools remain compatible, alongside focused dashboard tools and native organization/team tools. All tools declare read/write, destructive and
 idempotency hints. Successful object results have both text and
 `structuredContent`; logical failures set `isError`.
 
@@ -107,7 +124,7 @@ idempotency hints. Successful object results have both text and
 | `get_pages_report` | Page/landing-page metrics, directory grouping, search, sorting and pagination |
 | `get_events_report` | Custom-event names and trends, aggregates by event type and outbound links |
 | `get_event_activity` | Hourly aggregate activity for one event name; never individual event logs |
-| `get_journeys_report` | Referrer-to-page pairs, page/directory grouping and endpoint filters; never reconstructed session paths |
+| `get_journeys_report` | Default aggregate page transitions; `mode=sessions` uses optional GA4 BigQuery exports for real 2–10-step paths, summary, goals and exact-path sessions. Up to 31 days; explicit scan/daily budgets. Session lists require `sessions:read`. |
 | `get_retention_report` | Native first-visit cohorts, weighted retention and previous-period summaries; property time zone, no audience filters |
 | `get_site_status` | One property's homepage status, time buckets, comparison and fully covered saved AdSense values |
 | `list_saved_funnels` | Search/paginate local funnel definitions, without report calls |
@@ -329,3 +346,9 @@ bigger USD property by 10x when it doesn't).
 - `maps-backend`, `maps-embed-backend`, `places-backend`, `geocoding-backend`: used by the
   existing globe view's city lookups, not analytics-shaped, no MCP need
 - `telemetry.googleapis.com`: GCP-internal, auto-enabled, nothing to call
+
+### Native saved analysis
+
+`list_analysis_definitions`, `save_analysis_definition` and `delete_analysis_definition` manage native `segments`, `annotations`, `goals` and `dashboards` in SQLite. Supply one `propertyId`, `kind`, an optional numeric definition `id`, and the native UI `definition` body for writes. These tools enforce the same creator/organization/property permissions and never alter GA4.
+
+`get_goals_report` reads up to 16 selected `goalIds` (newest by default), with explicit truncation and session conversion rates. `run_dashboard_card` executes one GA4 JSON report definition with `dimensions`, `metrics`, optional `filters`, `limit`, `orderBy` and `direction`; see `get_capabilities.analysisObjects`. Both share native report caches and the 20-call analysis budget. PDF downloads and email delivery remain dashboard operations.

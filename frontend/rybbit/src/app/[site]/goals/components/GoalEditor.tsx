@@ -10,7 +10,6 @@ import { useAutocaptureValues } from "@/api/analytics/hooks/events/useAutocaptur
 import { useCreateGoal } from "@/api/analytics/hooks/goals/useCreateGoal";
 import { useUpdateGoal } from "@/api/analytics/hooks/goals/useUpdateGoal";
 import { useMetric } from "@/api/analytics/hooks/useGetMetric";
-import { EventTrackingNotice } from "@/components/EventTrackingNotice";
 import { SegmentedControl } from "@/components/interior/segmented-control";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +61,7 @@ export function GoalEditor({ siteId, mode, goal, onDone, className }: GoalEditor
 
   const goalName = goal ? goal.name || t("Goal #{goalId}", { goalId: String(goal.goalId) }) : "";
   const form = useForm<GoalFormValues>({
-    resolver: zodResolver(goalFormSchema),
+    resolver: zodResolver(goalFormSchema as any) as import("react-hook-form").Resolver<GoalFormValues>,
     defaultValues: goalFormDefaults(goal, mode, t("{name} (Copy)", { name: goalName })),
   });
   const [properties, setProperties] = useState<PropertyFilterDraft[]>(() => propertyDraftsOf(goal));
@@ -327,7 +326,7 @@ export function GoalEditor({ siteId, mode, goal, onDone, className }: GoalEditor
       )}
 
       {help && <p className={cn(HELP_TEXT, "xl:hidden")}>{help}</p>}
-      <EventTrackingNotice type={goalType} />
+      <p className={HELP_TEXT}>{t("Goals count sessions from existing GA4 events. Event properties must be registered GA4 custom dimensions; button_click and copy require your own GA4 events.")}</p>
       <GoalMatchPreview definition={goalDefinitionOf(values, properties)} />
     </form>
   );

@@ -15,6 +15,7 @@ import { cn, formatter } from "../../../../lib/utils";
 import { AddSite } from "../../../components/AddSite";
 import { useEmbedablePage } from "../../utils";
 import { DEMO_HOSTNAME } from "../../../../lib/const";
+import { getSharedRoute, isPublicDashboard } from "../../../../../../adapter/navigation";
 
 // Show the search field once the list is long enough to scan slowly.
 const SEARCH_THRESHOLD = 10;
@@ -195,15 +196,16 @@ function SiteSelectorWrapper() {
   const { data: site } = useGetSite(currentSite);
   const [open, setOpen] = useState(false);
   const embed = useEmbedablePage();
+  const readOnly = isPublicDashboard() || !!getSharedRoute();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         {site ? (
-          <button className="flex gap-2 items-center border border-neutral-200 dark:border-neutral-800 rounded-lg py-1.5 px-3 justify-start cursor-pointer hover:bg-neutral-150 dark:hover:bg-neutral-800/50 data-[state=open]:bg-neutral-150 dark:data-[state=open]:bg-neutral-800/50 transition-colors h-[36px] w-full">
+          <button disabled={readOnly} className="flex gap-2 items-center border border-neutral-200 dark:border-neutral-800 rounded-lg py-1.5 px-3 justify-start cursor-pointer hover:bg-neutral-150 dark:hover:bg-neutral-800/50 data-[state=open]:bg-neutral-150 dark:data-[state=open]:bg-neutral-800/50 transition-colors h-[36px] w-full">
             <Favicon domain={site.domain} className="w-5 h-5" />
             <div className="text-neutral-900 dark:text-white truncate text-sm flex-1 text-left">{site.name}</div>
-            {!embed && (
+            {!embed && !readOnly && (
               <ChevronDown
                 className={cn(
                   "w-4 h-4 text-neutral-600 dark:text-neutral-400 transition-transform duration-200",
@@ -220,9 +222,9 @@ function SiteSelectorWrapper() {
           </button>
         )}
       </PopoverTrigger>
-      <Suspense fallback={null}>
+      {!readOnly && <Suspense fallback={null}>
         <SiteSelectorContent onSiteSelect={() => setOpen(false)} />
-      </Suspense>
+      </Suspense>}
     </Popover>
   );
 }

@@ -326,7 +326,7 @@ function createFunnels(deps = {}) {
   }
 
   return async function handler(req, res) {
-    res.set('Cache-Control', 'no-store');
+    res.header('Cache-Control', 'no-store');
     try {
       const id = String(req.params?.propertyId || '');
       if (!/^\d+$/.test(id)) throw failure('Choose a numeric property ID.');
@@ -336,10 +336,10 @@ function createFunnels(deps = {}) {
       const action = req.params?.action || 'analyze';
       if (action === 'summary') {
         if (req.method !== 'GET') throw failure('Use GET for funnel summaries.', 405);
-        return res.json(await summarize(property, req.query));
+        return res.send(await summarize(property, req.query));
       }
       if (action === 'definitions') {
-        if (req.method === 'GET') return res.json({ data: await store.list(id) });
+        if (req.method === 'GET') return res.send({ data: await store.list(id) });
         if (req.method !== 'POST') throw failure('Use GET or POST for saved funnels.', 405);
         const name = req.body?.name;
         const reportId = req.body.reportId;
@@ -350,34 +350,34 @@ function createFunnels(deps = {}) {
         if (reportId != null && name === undefined && req.body.steps === undefined && description === undefined) throw failure('Choose a funnel field to update.');
         const steps = reportId != null && req.body.steps === undefined ? undefined : normalizeSteps(req.body.steps).map(({ filterExpression, ...step }) => step);
         const saved = await store.save(id, { name: name?.trim(), steps, description, reportId });
-        return res.json({ success: true, funnelId: saved.id });
+        return res.send({ success: true, funnelId: saved.id });
       }
       if (/^[1-9]\d*$/.test(action)) {
         const funnelId = Number(action);
         if (!Number.isSafeInteger(funnelId)) throw failure('Choose a numeric funnel ID.');
         if (req.method === 'DELETE') {
           await store.remove(id, funnelId);
-          return res.json({ success: true });
+          return res.send({ success: true });
         }
         if (req.method === 'GET') {
           const funnel = (await store.list(id)).find(item => item.id === funnelId);
           if (!funnel) throw failure('Funnel not found.', 404);
-          return res.json({ data: funnel });
+          return res.send({ data: funnel });
         }
         throw failure('Use GET or DELETE for a saved funnel.', 405);
       }
       if (req.method === 'GET' && action === 'events') {
         const range = reportWindow(req.query, property.timeZone || 'UTC', now());
         const rows = await events(id, range);
-        return res.json({ data: rows, source: 'ga4-event-users', ordered: false });
+        return res.send({ data: rows, source: 'ga4-event-users', ordered: false });
       }
       if (req.method !== 'POST' || action !== 'analyze') throw failure('This GA4 funnel endpoint only analyzes ordered steps.', 405);
       const steps = normalizeSteps(req.body?.steps);
       const result = await analyze(property, req.query, steps);
-      return res.json({ ...result, reportStatus: reportStatus([result]) });
+      return res.send({ ...result, reportStatus: reportStatus([result]) });
     } catch (error) {
       const status = error.status || (error.code === 7 ? 403 : error.code === 8 ? 429 : 502);
-      return res.status(status).json({ error: publicError(error) });
+      return res.status(status).send({ error: publicError(error) });
     }
   };
 }

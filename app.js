@@ -1,313 +1,450 @@
-// TypeScript support for controllers/*.ts in dev. Must run before any .ts file is required.
-// The Docker image compiles them to .js and ships without ts-node.
+// Fastify is the sole HTTP server. Controllers share GA4 caches and quota guards with MCP.
 try {
-	require('ts-node').register({ transpileOnly: true, files: true });
-} catch (err) {
-	if (err.code !== 'MODULE_NOT_FOUND') throw err;
+  require("ts-node").register({ transpileOnly: true, files: true });
+} catch (error) {
+  if (error.code !== "MODULE_NOT_FOUND") throw error;
 }
+const path = require("node:path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+const Fastify = require("fastify");
+const { getLocale, localeHref, stripLocale } = require("./lib/uiLocale");
+const { sitesHomeUrl } = require("./lib/homeViews");
+const { storage } = require("./lib/requestContext");
+const { createIdentityResolver } = require("./lib/identity");
+const { failure } = require("./lib/access");
+const { publicPageSite, publicApiSite } = require('./lib/publicDashboard');
+const setup = require("./lib/setupCheck");
+const { isConfigured, resetClients } = require("./controllers/ga4Service");
+const { version } = require("./package.json");
+const PUBLIC_ACCOUNT = new Set([
+  "/login",
+  "/signup",
+  "/invitation",
+  "/reset-password",
+  "/auth/consent",
+]);
+const ACCOUNT = /^\/(?:settings(?:\/|$)|admin(?:\/|$)|auth\/|transfer\/)/;
+const PAGES = new Set([
+  "/",
+  "/realtime",
+  "/analytics",
+  "/analytics/pages",
+  "/events",
+  "/journeys",
+  "/retention",
+  "/funnels",
+  "/goals",
+  "/dashboards",
+  "/widgets",
+  "/property-access",
+  "/globe",
+  "/quota",
+  "/analytics/reports",
+  "/setup",
+  "/settings",
+  "/settings/account",
+  "/settings/organization",
+  "/settings/teams",
+  "/settings/billing",
+  "/admin",
+]);
 
-const express = require('express');
-const exphbs = require('express-handlebars');
-const cors = require('cors');
-const path = require('path');
-const { getLocale, localeHref } = require('./lib/uiLocale');
-const { sitesHomeUrl } = require('./lib/homeViews');
-
-require('dotenv').config();
-const log = require('./lib/log');
-
-
-/* Express server */
-const app = express();
-
-// MCP owns its JSON parser and protocol responses, independently of dashboard setup/boot.
-const mcp = require('./mcp-server/lib/http').createMcpEndpoint();
-app.use('/mcp', mcp.app);
-
-/* Parsing Middlewares */
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// ── LiveReload middleware (dev only) ──
-if (process.env.NODE_ENV === 'development') {
+async function createApp({ authRuntime, billingOptions, warm = false, logger = false } = {}) {
+  const app = Fastify({
+    logger,
+    bodyLimit: 1024 * 1024,
+    trustProxy: process.env.TRUST_PROXY === "true",
+  });
+  const runtime =
+    authRuntime ||
+    (await (await import("./lib/auth.mjs")).createAuthentication());
+  app.decorate("authRuntime", runtime);
+  app.decorate("locals", { demo: require("./controllers/demoData").enabled() });
+  app.decorateRequest("path", {
+    getter() {
+      return this.url.split("?")[0];
+    },
+  });
+  app.decorateRequest("originalUrl", {
+    getter() {
+      return this.url;
+    },
+  });
+  app.decorateRequest("identity", null);
+  app.decorateRequest("sharedProperty", null);
+  app.decorateRequest("metricWidget", null);
+  const identify = createIdentityResolver(runtime);
+  const publicSettings = require('./lib/embedStore').createEmbedStore();
+  app.addHook("onRequest", (req, _reply, done) =>
+    storage.run({ access: runtime.access, identity: null }, done)
+  );
+  app.addHook("onRequest", async (req, reply) => {
+    let decodedPath;
     try {
-        const livereload = require('livereload');
-        const connectLivereload = require('connect-livereload');
-
-        // Watch frontend files: views (templates) and public (CSS/JS)
-        const lrServer = livereload.createServer({
-            exts: ['hbs', 'js', 'css', 'scss', 'json'],
-            delay: 300,
-        });
-        lrServer.watch([
-            path.join(__dirname, 'views'),
-            path.join(__dirname, 'public'),
-        ]);
-        lrServer.server.on('error', (err) => {
-            console.warn('[livereload] Server error:', err.message);
-        });
-
-        // Inject livereload script tag into all HTML responses
-        app.use(connectLivereload());
-
-        console.log('[livereload] Watching views/ and public/');
-    } catch (err) {
-        console.warn('[livereload] Not available, run: npm install --save-dev livereload connect-livereload');
-    }
-}
-
-// Static Files
-// Block retired development artifacts left behind by earlier builds.
-app.use((req, res, next) => {
-    let filename;
-    try {
-        filename = path.posix.normalize(decodeURIComponent(req.path)).replace(/\/+$/, '');
+      decodedPath = decodeURIComponent(req.path);
     } catch {
-        return next();
+      throw failure("Invalid URL encoding.", 400);
     }
-    filename = filename.toLowerCase();
-    const retired = filename === '/ui-source.tar.gz' || filename === '/css/main.scss'
-        || filename === '/bee-drafts' || filename.startsWith('/bee-drafts/');
-    if (!retired) return next();
-    res.set('Cache-Control', 'no-store').sendStatus(404);
-});
-app.use(express.static('public'));
-
-
-// logging middleware
-// there will be no logging for static file as they are served before setting up logging
-
-
-app.use(log.problems);
-
-if (process.env.NODE_ENV === 'development') {
-	app.locals.baseurl = 'http://localhost:5483';
+    const filename = path.posix
+      .normalize(decodedPath)
+      .toLowerCase()
+      .replace(/\/+$/, "");
+    const deploymentPath = stripLocale(decodedPath).replace(/\/+$/, "");
+    if (app.billing?.cloud === false && (
+      deploymentPath === "/settings/billing" || deploymentPath === "/subscribe" ||
+      /^\/api\/rybbit\/(?:billing(?:\/|$)|organizations\/[^/]+\/(?:billing|subscription)(?:\/|$))/.test(deploymentPath)
+    ))
+      return reply.header("Cache-Control", "no-store").code(404).send({ error: "Page not found" });
+    if (
+      filename === "/ui-source.tar.gz" ||
+      filename === "/css/main.scss" ||
+      filename === "/bee-drafts" ||
+      filename.startsWith("/bee-drafts/")
+    )
+      return reply.header("Cache-Control", "no-store").code(404).send();
+    if (
+      req.routeOptions.config.public ||
+      req.path.startsWith("/api/auth/") ||
+      req.path === "/healthz" ||
+      req.path === "/mcp"
+    )
+      return;
+    if (
+      req.method === "GET" &&
+      (req.path === "/api/rybbit/favicon" ||
+        /^\/api\/flag\/[a-z]{2}$/i.test(req.path))
+    )
+      return;
+    const pathname = stripLocale(req.path).replace(/\/+$/, "") || "/";
+    if (PUBLIC_ACCOUNT.has(pathname) || pathname.startsWith("/transfer/"))
+      return;
+    const sharedPage =
+      /^\/(\d+)\/([a-f0-9]{12})\/(main|pages|events|journeys|retention|funnels)$/.exec(
+        pathname
+      );
+    if (sharedPage) return;
+    if (/^\/widget\/\d+(?:\/[a-f0-9]{12})?$/.test(req.path)) return;
+    if (
+      /^\/api\/rybbit\/sites\/\d+\/(?:embed-stats|widgets\/[a-f0-9]{12}\/data)$/.test(
+        req.path
+      ) &&
+      req.method === "GET"
+    )
+      return;
+    if (req.headers["x-private-key"] || req.headers["x-private-site"]) {
+      const propertyId = /^\/api\/rybbit\/sites\/(\d+)(?:\/|$)/.exec(
+        req.path
+      )?.[1];
+      if (
+        !propertyId ||
+        req.headers["x-private-site"] !== propertyId ||
+        !(await require("./controllers/embeds").handlers.store.validate(
+          propertyId,
+          req.headers["x-private-key"]
+        ))
+      )
+        throw failure("Invalid private dashboard link.");
+      if (
+        req.method !== "GET" &&
+        !(req.method === "POST" && /\/funnels\/analyze$/.test(req.path))
+      )
+        throw failure("Shared dashboards are read-only.");
+      if (/\/(?:private-link-config|config|widgets)(?:\/|$)/.test(req.path))
+        throw failure("This endpoint requires an authenticated workspace.");
+      return;
+    }
+    req.identity = await identify(req);
+    const publicSiteId = req.method === 'GET' && publicPageSite(req.path, req.query) || publicApiSite(req.path, req.method);
+    // A public property also opens for signed-in visitors with no property grant.
+    // Bearer credentials retain their explicit scope and permission checks.
+    if (publicSiteId && !req.identity?.bearer &&
+      (!req.identity || !runtime.access.siteRole(req.identity, publicSiteId)) &&
+      await publicSettings.isPublic(publicSiteId)) {
+      req.identity = null;
+      storage.getStore().publicSiteId = publicSiteId;
+      reply.header('Cache-Control', 'no-store');
+      return;
+    }
+    if (!req.identity) {
+      if (req.path.startsWith("/api/") || req.method !== "GET")
+        return reply
+          .code(401)
+          .header("WWW-Authenticate", "Bearer")
+          .send({ error: "authentication_required" });
+      const exists = runtime.db.prepare("SELECT 1 FROM user LIMIT 1").get();
+      return reply.redirect(
+        localeHref(exists ? "/login" : "/signup", getLocale(req.path))
+      );
+    }
+    storage.getStore().identity = req.identity;
+    if (
+      !req.identity.bearer &&
+      !["GET", "HEAD", "OPTIONS"].includes(req.method)
+    ) {
+      const allowed = new Set(
+        runtime.auth.options.trustedOrigins || [runtime.baseURL]
+      );
+      if (!allowed.has(req.headers.origin))
+        throw failure(
+          "A trusted Origin is required for session-authenticated changes."
+        );
+    }
+    if (
+      req.identity.bearer &&
+      req.path.startsWith("/api/") &&
+      !/^\/api\/rybbit\/(?:organizations|user|sites)(?:\/|$)/.test(req.path)
+    ) {
+      const permission =
+        req.path === "/api/nav-index" ? "sites:read" : "analytics:read";
+      if (!runtime.access.scopeAllows(req.identity, permission))
+        throw failure("This credential does not grant this API permission.");
+    }
+    if (isConfigured() && req.path !== '/api/rybbit/organizations' &&
+      !req.path.includes('/billing') && !req.path.endsWith('/subscription') && !ACCOUNT.test(pathname))
+      await require("./controllers/apiController").ensureProperties();
+    const propertyId =
+      req.params.siteId ||
+      req.params.propertyId ||
+      /^\/api\/rybbit\/sites\/(\d+)/.exec(req.path)?.[1] ||
+      /^\/(\d+)(?:\/|$)/.exec(pathname)?.[1] ||
+      req.query.prop;
+    if (propertyId && !ACCOUNT.test(pathname)) {
+      const write = !["GET", "HEAD"].includes(req.method);
+      const analysisKind = /\/(segments|annotations|goals|dashboards)(?:\/|$)/.exec(req.path)?.[1];
+      const analysisRead = req.method === 'POST' && /\/(?:goals\/preview|dashboards\/run-card)$/.test(req.path);
+      const permission = /\/(?:journeys\/sessions|sessions\/bq-[^/]+)$/.test(req.path) ? 'sessions:read' : analysisKind ? `${analysisKind}:${write && !analysisRead ? 'write' : 'read'}` : /\/funnels(?:\/|$)/.test(req.path)
+        ? write && !/\/analyze$/.test(req.path)
+          ? "funnels:write"
+          : "funnels:read"
+        : /\/private-link-config(?:\/|$)/.test(req.path)
+        ? "sites:configure"
+        : /\/(?:widgets|config)(?:\/|$)/.test(req.path)
+        ? write
+          ? "sites:configure"
+          : "sites:read"
+        : /\/gsc\//.test(req.path)
+        ? "gsc:read"
+        : /^\/api\/rybbit\/sites\/\d+\/?$/.test(req.path)
+        ? "sites:read"
+        : "analytics:read";
+      runtime.access.requireSite(req.identity, propertyId, permission);
+    }
+    if (
+      (pathname === "/setup" ||
+        req.path.startsWith("/api/setup/") ||
+        req.path === "/api/refresh-cache") &&
+      (!req.identity.systemAdmin || req.identity.bearer)
+    )
+      throw failure("System administrator permission is required.");
+  });
+  await app.register(require("@fastify/formbody"));
+  await app.register(require("@fastify/rate-limit"), { global: false });
+  const handlebars = require("handlebars").create();
+  handlebars.registerHelper({
+    json_stringify: (value) => JSON.stringify(value).replace(/</g, "\\u003c"),
+    json_parse: JSON.parse,
+    currentYear: () => new Date().getFullYear(),
+  });
+  await app.register(require("@fastify/view"), {
+    engine: { handlebars },
+    root: path.join(__dirname, "views"),
+    viewExt: "hbs",
+  });
+  await app.register(async (assets) => {
+    assets.addHook("onRoute", (options) => {
+      options.config = { ...options.config, public: true };
+    });
+    await assets.register(require("@fastify/static"), {
+      root: path.join(__dirname, "public"),
+      wildcard: false,
+      globIgnore: ["ui/**"],
+      index: false,
+    });
+    // Vite replaces hashed files during watch builds; discover them per request.
+    await assets.register(require("@fastify/static"), {
+      root: path.join(__dirname, "public/ui"),
+      prefix: "/ui/",
+      decorateReply: false,
+      index: false,
+    });
+  });
+  const endpoint = require("./mcp-server/lib/http").createMcpEndpoint({
+    authRuntime: runtime,
+  });
+  await endpoint.register(app);
+  app.addHook("onClose", async () => endpoint.close());
+  await require("./routes/accounts").accountRoutes(app, runtime);
+  await require("./routes/billing").billingRoutes(app, runtime, billingOptions);
+  app.get("/healthz", { config: { public: true } }, async () => ({
+    ok: true,
+    version,
+  }));
+  app.get("/api/setup/status", async () => setup.checkSetup());
+  const doc = require("./lib/setupDoc").loadSetupDoc();
+  app.get("/api/setup/instructions", async () => {
+    const docker = !!process.env.IN_DOCKER;
+    return {
+      head: { title: "MetriBee · Setup" },
+      prompt: doc.prompt,
+      manual: doc.manual.map((html) => ({ html })),
+      gsc: doc.gsc,
+      oauth: doc.oauth,
+      psi: !!process.env.PSI_API_KEY,
+      gaAdminUrl: setup.GA4_ADMIN_URL,
+      docker,
+      dockerImage: "ghcr.io/nexmoe/metribee:latest",
+    };
+  });
+  let bootState = null,
+    pending = false;
+  app.get("/api/boot/status", async () => ({
+    ready: !pending,
+    steps: bootState?.progress || [],
+  }));
+  app.addHook("preHandler", async (req, reply) => {
+    if (
+      req.routeOptions.config.public ||
+      req.path === "/mcp" ||
+      req.path.startsWith("/api/auth/") ||
+      req.path.startsWith("/api/rybbit/admin/") ||
+      req.path.startsWith("/api/rybbit/user/") ||
+      req.path.includes("/organizations/")
+      || req.path === '/api/rybbit/organizations'
+    )
+      return;
+    const pathname = stripLocale(req.path).replace(/\/+$/, "") || "/";
+    if (
+      PUBLIC_ACCOUNT.has(pathname) ||
+      ACCOUNT.test(pathname) ||
+      pathname === "/setup" ||
+      req.path.startsWith("/api/setup/") ||
+      req.path === "/api/boot/status"
+    )
+      return;
+    if (!isConfigured()) {
+      setup.syncEnvFile();
+      if (!isConfigured())
+        return req.path.startsWith("/api/")
+          ? reply.code(503).send({ error: "not_configured" })
+          : reply.redirect(localeHref("/setup", getLocale(req.path)));
+    }
+    if (pending && bootState?.warm)
+      await require("./lib/boot").withTimeout(bootState.warm, 30000);
+  });
+  await require("./routes/apiRoutes")(app);
+  const page = async (req, reply) => {
+    const pathname = stripLocale(req.path).replace(/\/+$/, "") || "/";
+    if (/^\/en(?:\/|$)/.test(req.path))
+      return reply.redirect(
+        pathname === "/sites"
+          ? sitesHomeUrl(req.originalUrl)
+          : localeHref(req.originalUrl, "en"),
+        308
+      );
+    if (pathname === "/sites")
+      return reply.redirect(sitesHomeUrl(req.originalUrl), 308);
+    if (pathname === "/subscribe") return reply.redirect(localeHref('/settings/billing', getLocale(req.path)));
+    const share =
+      /^\/(\d+)\/([a-f0-9]{12})\/(main|pages|events|journeys|retention|funnels)$/.exec(
+        pathname
+      );
+    if (share) {
+      req.params.siteId = share[1];
+      req.params.privateKey = share[2];
+      return require("./controllers/embeds").handlers.dashboard(req, reply);
+    }
+    if (
+      PAGES.has(pathname) ||
+      PUBLIC_ACCOUNT.has(pathname) ||
+      pathname.startsWith("/transfer/") ||
+      /^\/dashboards\/[1-9]\d*$/.test(pathname)
+      || publicPageSite(req.path, req.query)
+    )
+      return require("./controllers/workspace").workspaceView(req, reply);
+    return reply.code(404).send({ error: "Page not found" });
+  };
+  app.get("/", page);
+  app.get("/*", page);
+  app.setErrorHandler((error, _req, reply) => {
+    const status = error.statusCode || error.status || 500;
+    if (status >= 500) app.log.error(error);
+    return reply.code(status).send({
+      error: status >= 500 ? "Internal server error" : error.message,
+      ...(error.reason ? { reason: error.reason } : {}),
+      ...(error.recipientEmailHint
+        ? { recipientEmailHint: error.recipientEmailHint }
+        : {}),
+    });
+  });
+  app.decorate("startBoot", () => {
+    const api = require("./controllers/apiController");
+    pending = true;
+    bootState = require("./lib/boot").runBoot(
+      [
+        {
+          name: "config",
+          run: () =>
+            isConfigured()
+              ? "GA4 configured"
+              : { msg: "GA4 credentials missing; open /setup", stop: true },
+        },
+        {
+          name: "properties",
+          run: async () => {
+            const result = await api.ensureProperties({
+              force:
+                app.locals.demo || process.argv.includes("--refresh-cache"),
+            });
+            runtime.access.syncProperties(result.properties);
+            return `${result.properties.length} properties, ${result.source}`;
+          },
+        },
+        { name: "warm", run: () => api.warmGlobeUsers() },
+        { name: "live", run: () => api.warmRealtime() },
+      ],
+      { gateAfter: 3 }
+    );
+    bootState.warm.finally(() => {
+      pending = false;
+    });
+    return bootState.done;
+  });
+  const weeklyReports = require('./lib/reports/weekly').createWeeklyReports({ runtime, logger: app.log });
+  let weeklyTimer;
+  if (warm) app.addHook('onReady', async () => {
+    weeklyTimer = setInterval(() => void weeklyReports.run().catch(error => app.log.error({ err: error }, 'Weekly reports failed')), 60000);
+    weeklyTimer.unref();
+  });
+  app.addHook('onClose', async () => clearInterval(weeklyTimer));
+  setup.onCredentialsChange(resetClients);
+  if (warm)
+    app.addHook("onReady", async () => {
+      void app.startBoot();
+    });
+  const cleanup = setInterval(
+    () =>
+      require("./controllers/reportCache")
+        .cacheCleanup()
+        .catch(() => {}),
+    6 * 60 * 60 * 1000
+  );
+  cleanup.unref();
+  app.addHook("onClose", async () => clearInterval(cleanup));
+  return app;
 }
-
-// Templating Engine
-
-// const hbs = exphbs.create({extname: 'hbs'});
-/*
-  If data stored in database is in object format than use json_stringify helper to format it.
-	data is sotred in object format when we pass data to the template and use it in the template.
-	ex: {{{json_stringify data}}}
-
-For stringified data stored in db use triple stash to auto parse it by handlebars.
-	data is stored is string format when data is not used in template logic.
-	ex: {{{data}}}
-*/
-
-app.engine('hbs', exphbs.engine({
-	extname: 'hbs',
-	helpers: {
-		json_stringify: function (context) {
-			// Escape < so a value holding </script> cannot close the inline script tag
-			return JSON.stringify(context).replace(/</g, '\\u003c');
-		},
-		json_parse: function (context) {
-			return JSON.parse(context);
-		},
-		currentYear: function () {
-			return new Date().getFullYear();
-		}
-	}
-}));
-app.set('view engine', 'hbs');
-
-// ── Setup gate ──
-// Credentials come from .env only (lib/credentials.js). Until GA4_CLIENT_EMAIL and GA4_PRIVATE_KEY
-// are set (or DEMO=1), pages redirect to /setup and /api/* answers 503 not_configured.
-const { isConfigured, resetClients } = require('./controllers/ga4Service');
-const setup = require('./lib/setupCheck');
-setup.onCredentialsChange(resetClients);
-// Boot runs after listen; when credentials arrive later through /setup, it runs once more.
-const { runBoot, bootGate } = require('./lib/boot');
-let bootState = null;
-let bootWarmPending = false;
-setup.onCredentialsChange(() => { if (bootState?.waiting && isConfigured()) startBoot(); });
-const SETUP_DOC = require('./lib/setupDoc').loadSetupDoc();
-const { version: APP_VERSION } = require('./package.json');
-const DOCKER_IMAGE = 'ghcr.io/nexmoe/metribee:latest';
-// Screenshot per manual step (public/img/setup/*.webp), by step index; redacted placeholder values only
-const STEP_SHOTS = { 0: ['s1-project', 'New Project form'], 1: ['s2-enable-api', 'Google Analytics Data API page with the Enable button'], 2: ['s3-service-account', 'Create service account form'], 3: ['s4-keys', 'Keys tab with the Add key menu open'], 6: ['s7-viewer', 'GA4 Add roles panel with Viewer selected'] };
-
-// Navbar: page title and active icon from the path (views/partials/navbar.hbs)
-const NAV_PAGES = { '/': 'Dashboard', '/globe': 'Globe', '/analytics': 'Analytics', '/journeys': 'Journeys', '/analytics/pages': 'Pages', '/retention': 'Retention', '/events': 'Events', '/sites': 'Sites', '/setup': 'Setup' };
-app.use((req, res, next) => {
-	const title = NAV_PAGES[req.path] || '';
-	res.locals.nav = { title, dash: title === 'Dashboard', globe: title === 'Globe', analyticsMain: title === 'Analytics', journeys: title === 'Journeys', pages: title === 'Pages', analytics: title === 'Journeys' || title === 'Pages' || title === 'Analytics' || title === 'Events' || title === 'Retention', retention: title === 'Retention', events: title === 'Events', sites: title === 'Sites' };
-	next();
-});
-
-app.get('/healthz', (req, res) => res.json({ ok: true, version: APP_VERSION }));
-
-app.get('/api/setup/status', async (req, res) => {
-	res.set('Cache-Control', 'no-store');
-	try {
-		res.json(await setup.checkSetup());
-	} catch (err) {
-		res.status(500).json({ error: err.message });
-	}
-});
-
-// English uses the unprefixed URL, including during initial setup.
-app.get(/^\/en(?:\/|$)/, (req, res) => res.redirect(308, /^\/en\/sites\/?$/.test(req.path) ? sitesHomeUrl(req.originalUrl) : localeHref(req.originalUrl, 'en')));
-app.get(['/setup', /^\/(?:de|fr|zh|es|pl|it|ko|pt|ja|cs|uk)\/setup\/?$/], require('./controllers/workspace').workspaceView);
-app.get('/api/setup/instructions', (req, res) => {
-	// Docker: the host folder is unknown and pnpm is not there, so show docker commands
-	const docker = !!process.env.IN_DOCKER;
-	const mcpUrl = process.env.MCP_PUBLIC_URL || `${req.protocol}://${req.get('host')}/mcp`;
-	const mcpCommand = "claude mcp add ga4 --transport http --scope project '" + mcpUrl.replace(/'/g, "'\\''") + "'";
-	const mcpPrompt = SETUP_DOC.mcp.replace('claude mcp add ga4 --transport http --scope project <MCP URL>', mcpCommand).split('<MCP URL>').join(mcpUrl);
-	res.json({
-		head: { title: 'MetriBee · Setup', description: 'Connect Google Analytics and use it with AI', image: '', url: '' },
-		prompt: SETUP_DOC.prompt,
-		manual: SETUP_DOC.manual.map((m, i) => ({
-			html: docker ? m.split('pnpm setup:check').join('docker compose up -d, then docker compose exec dashboard node scripts/setup-check.js') : m,
-			shot: STEP_SHOTS[i]?.[0], alt: STEP_SHOTS[i]?.[1],
-		})),
-		mcpPrompt,
-		mcp: {
-			url: mcpUrl,
-			transport: 'Streamable HTTP',
-			clientConfig: JSON.stringify({ mcpServers: { ga4: { type: 'http', url: mcpUrl } } }, null, 2),
-			claudeCommand: mcpCommand,
-			features: SETUP_DOC.mcpFeatures,
-			verify: SETUP_DOC.mcpVerify,
-		},
-		gsc: SETUP_DOC.gsc,
-		oauth: SETUP_DOC.oauth,
-		psi: !!process.env.PSI_API_KEY,
-		gaAdminUrl: setup.GA4_ADMIN_URL,
-		docker,
-		dockerImage: DOCKER_IMAGE,
-	});
-});
-
-app.use((req, res, next) => {
-	if (isConfigured()) return next();
-	setup.syncEnvFile(); // .env may have been written since startup
-	if (isConfigured()) return next();
-	if (req.path.startsWith('/api/') || req.method !== 'GET') return res.status(503).json({ error: 'not_configured' });
-	res.redirect(localeHref('/setup', getLocale(req.path)));
-});
-
-// First boot: pages show a live progress page, API requests wait (max 30 s) until the warm step ends.
-app.get('/api/boot/status', (req, res) => {
-	res.json({ ready: !bootWarmPending, steps: bootState?.progress || [] });
-});
-app.use(bootGate(() => (bootWarmPending ? bootState.warm : null), {
-	page: (req, res) => res.set('Cache-Control', 'no-store').render('booting', { layout: false, steps: bootState?.progress || [] }),
-}));
-
-/* Routes */
-const apiroutes = require("./routes/apiRoutes.js");
-
-/* using Routes
-https://expressjs.com/en/guide/routing.html
-	- Actual link of routes have prefix used below
-*/
-
-// for image creation api
-app.use("/", apiroutes);
-
-// Demo mode (DEMO=1): generated data, no Google credentials. Views show a "Demo data" badge.
-app.locals.demo = require('./controllers/demoData').enabled();
-
-/* Express Server Listening */
-const port = process.env.PORT || 5483;
-const host = process.env.HOST || '127.0.0.1';
-const httpServer = app.listen(port, host, () => {
-	const dev = process.env.NODE_ENV === 'development';
-	log.banner({
-		name: 'MetriBee',
-		version: APP_VERSION,
-		url: `http://localhost:${port}`,
-		mode: app.locals.demo ? { label: 'demo', style: 'yellow' } : dev ? { label: 'development', style: 'magenta' } : { label: 'production', style: 'green' },
-		links: [['Dashboard', '/'], ['Globe', '/globe'], ['Analytics', '/analytics'], ['Sites', '/sites'], ['Setup', '/setup'], ['MCP', '/mcp'], ['Health', '/healthz']],
-		notes: [
-			app.locals.demo && 'Demo mode: generated data, no GA4 calls',
-			!app.locals.demo && !isConfigured() && 'GA4 credentials missing: open /setup',
-		].filter(Boolean),
-	});
-
-	// Load the bundled country list into memory
-	const { warmCountriesCache } = require('./controllers/countriesCache');
-	warmCountriesCache();
-
-	// ── Clean up old report cache files (async, non-blocking) ──
-	const { cacheCleanup } = require('./controllers/reportCache');
-
-	// Immediate startup cleanup
-	cacheCleanup().then(cleaned => {
-		if (cleaned > 0) {
-			console.log(`[cache] Cleaned ${cleaned} stale report file(s)`);
-		}
-	}).catch(() => {});
-
-	// Periodic cleanup every 6 hours for long-running servers
-	setInterval(() => {
-		cacheCleanup().catch(() => {});
-	}, 6 * 60 * 60 * 1000);
-
-	startBoot();
-});
-httpServer.on('close', () => mcp.close().catch((err) => console.error('[mcp] Shutdown failed:', err.message)));
-
-// ── Boot sequence: one numbered line per step (lib/boot.js) ──
-// `node app.js --refresh-cache` (and demo mode) refetch the properties list instead of reading the cache.
-function startBoot() {
-	const api = require('./controllers/apiController');
-	const nf = (n) => Number(n).toLocaleString('en-US');
-	const state = { waiting: false };
-	const steps = [
-		{ name: 'config', run: () => {
-			if (app.locals.demo) return 'demo mode, generated data';
-			if (!isConfigured()) { state.waiting = true; return { msg: 'GA4 credentials missing, waiting for setup (open /setup)', stop: true }; }
-			return 'GA4 credentials from .env';
-		} },
-		{ name: 'properties', run: async () => {
-			const force = app.locals.demo || process.argv.includes('--refresh-cache');
-			const { properties, source } = await api.ensureProperties({ force });
-			return `${properties.length} properties, ${source}`;
-		} },
-		{ name: 'warm', run: async () => {
-			const globe = await api.warmGlobeUsers();
-			return globe === 'cached' ? 'globe users cached' : `globe users fetched, ${nf(globe)} active`;
-		} },
-		{ name: 'live', run: async () => {
-			const live = await api.warmRealtime();
-			return live === 'cached' ? 'live counts cached' : `${nf(live.activeUsers)} active users on ${live.sites} sites`;
-		} },
-		{ name: 'ready', run: () => `ready in ${((Date.now() - started) / 1000).toFixed(1)} s` },
-	];
-	const started = Date.now();
-	bootWarmPending = true;
-	const run = runBoot(steps, { gateAfter: 3 });
-	bootState = Object.assign(state, run);
-	run.warm.then(() => { bootWarmPending = false; });
-	run.done.then(() => { if (!state.waiting && !app.locals.demo) startQuotaLog(); });
+async function start() {
+  const app = await createApp({ warm: true, logger: true });
+  await app.listen({
+    port: Number(process.env.PORT || 5483),
+    host: process.env.HOST || "127.0.0.1",
+  });
+  for (const signal of ["SIGTERM", "SIGINT"])
+    process.once(signal, () => app.close().then(() => process.exit(0)));
+  return app;
 }
-
-// ── Quota line: shared ledger (lib/quotaLedger.js), after boot, then every 5 min when tokens were spent ──
-let quotaTimer = null;
-const quotaSeen = new Set();
-async function printQuota(always) {
-	const qc = require('./lib/quotaConsole');
-	const spent = qc.takeSpent();
-	if (!always && !Object.values(spent).some((v) => v > 0)) return;
-	const { properties } = await require('./controllers/apiController').ensureProperties();
-	const names = Object.fromEntries(properties.map((p) => [String(p.id), p.site || p.domain || String(p.id)]));
-	const entries = require('./lib/quotaLedger').list();
-	const lines = qc.quotaLines(entries, { names, spent });
-	if (!lines.length) console.log('[quota] no GA4 calls in the last hour');
-	lines.forEach((l) => console.log(`[quota] ${l}`));
-	qc.quotaWarnings(entries, quotaSeen, { names }).forEach((w) => console.warn(`[quota] ${w}`));
-}
-function startQuotaLog() {
-	printQuota(true).catch((err) => console.error('[quota] Line failed:', err.message));
-	if (quotaTimer) return;
-	quotaTimer = setInterval(() => printQuota(false).catch(() => {}), 5 * 60 * 1000);
-	quotaTimer.unref();
-}
+if (require.main === module)
+  start().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+module.exports = { createApp, start };

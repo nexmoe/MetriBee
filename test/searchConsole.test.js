@@ -99,7 +99,7 @@ describe('Search Console integration', () => {
       run: () => { throw new Error('GA4 must not run'); },
       gsc: { report: async (p, action, q) => { captured = { p, action, q }; return { source: 'gsc', data: [] }; } } });
     let result;
-    await gateway({ path: '/sites/123/gsc/data', method: 'GET', query: { ...dates, dimensions: 'page' } }, { json(value) { result = value; }, status() { return this; } });
+    await gateway({ path: '/sites/123/gsc/data', method: 'GET', query: { ...dates, dimensions: 'page' } }, { send(value) { result = value; }, status() { return this; } });
     expect(result.source).to.equal('gsc');
     expect(captured).to.include({ action: 'data' });
     expect(captured.q.dimensions).to.equal('page');

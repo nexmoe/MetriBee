@@ -50,6 +50,7 @@ const steps = z.array(step).min(2).max(10);
 const funnelId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 
 const NEW_TOOL_NAMES = [
+ "list_analysis_definitions", "save_analysis_definition", "delete_analysis_definition", "get_goals_report", "run_dashboard_card",
 	"get_capabilities",
 	"list_properties",
 	"get_search_console_connection",
@@ -82,11 +83,17 @@ const NEW_TOOL_NAMES = [
 	"refresh_property_quota",
 	"get_setup_status",
 ];
-const WRITE_TOOL_NAMES = ['request_indexing', 'save_funnel', 'delete_funnel', 'duplicate_funnel', 'import_funnels', 'save_widget', 'delete_widget'];
+const WRITE_TOOL_NAMES = [...require('./accountTools').ACCOUNT_WRITE_TOOL_NAMES, 'save_analysis_definition', 'delete_analysis_definition', 'request_indexing', 'save_funnel', 'delete_funnel', 'duplicate_funnel', 'import_funnels', 'save_widget', 'delete_widget'];
 
 function registerDashboardTools(server, { registerTool, asText, service = getDashboardService(), instructions }) {
 	const add = (name, description, shape) =>
 		registerTool(name, { description, inputSchema: z.object(shape).strict() }, async (args) => asText(await service.execute(name, args)));
+    const kind = z.enum(['segments', 'annotations', 'goals', 'dashboards']);
+    add('list_analysis_definitions', 'Read saved native segments, annotations, goals or dashboards for one property. Local SQLite only; id optionally fetches one definition.', { propertyId, kind, id: z.number().int().positive().optional() });
+    add('save_analysis_definition', 'Create or partially update a native analysis definition. Requires explicit user intent to save. Validated by the UI backend, with the same organization, ownership and scope permissions. Never writes to GA4.', { propertyId, kind, id: z.number().int().positive().optional(), definition: z.record(z.string(), z.unknown()) });
+    add('delete_analysis_definition', 'Delete one native saved segment, annotation, goal or dashboard. Requires explicit user intent to delete. Changes local SQLite only.', { propertyId, kind, id: z.number().int().positive() });
+    add('get_goals_report', 'Read the native goal summary and session conversion rates. One property; 20-call budget. At most 16 goals per call (newest by default), with explicit truncation. Overlapping goals use a distinct union for the total.', { ...period, ...audience, goalIds: z.array(z.number().int().positive()).max(16).optional() });
+    add('run_dashboard_card', 'Run one native GA4 dashboard card JSON query under the shared report cache and quota guard. No raw SQL. Dimensions and metrics use the names in get_capabilities; at most 1000 rows.', { ...period, ...audience, bucket: z.enum(['hour','day','week','month','year']).default('day'), query: z.record(z.string(), z.unknown()) });
 	registerTool(
 		"get_capabilities",
 		{
@@ -195,7 +202,7 @@ function registerDashboardTools(server, { registerTool, asText, service = getDas
 	);
 	add(
 		"get_journeys_report",
-		"Read the Journeys page for one property. Default mode=transitions reports GA4 same-site referrer pairs as pageviews. mode=sessions uses native 2–10-step Rybbit semantics with ordered events, summary and exits; pass path for its session list. Ordered events are currently available in DEMO=1 as explicitly synthetic data; live connections without an event source return an unavailable error. * matches one segment; ** matches multiple. Aggregate mode usually uses one core report on a shared-cache miss.",
+		"Read the Journeys page for one property. Default mode=transitions reports GA4 same-site referrer pairs as pageviews. mode=sessions uses native 2–10-step Rybbit semantics with ordered events, summary and exits; pass path for its session list (requires sessions:read). Optional GA4 BigQuery export supports live ordered data for configured properties, up to 31 days, with separate scan/daily budgets. DEMO=1 uses synthetic events. Unconfigured sources return unavailable. * matches one segment; ** matches multiple. Aggregate mode usually uses one core report on a shared-cache miss.",
 		{
 			...rollingPeriod,
 			...audience,
@@ -320,7 +327,7 @@ function registerDashboardTools(server, { registerTool, asText, service = getDas
 				configured: !!getCredentials(),
 					searchConsole: { configured: !!require('../../controllers/searchConsole').credentials(env), connectionTool: 'get_search_console_connection' },
 					pageSpeed: { configured: !!env.PSI_API_KEY },
-					journeys: { orderedEvents: require('../../controllers/demoData').enabled() ? 'synthetic_demo' : 'not_connected', replay: false },
+					journeys: { orderedEvents: require('../../controllers/demoData').enabled() ? 'synthetic_demo' : 'optional_bigquery_export', bigQuery: require('../../lib/bigquery').configurationStatus(env), replay: false },
 				demo: require("../../controllers/demoData").enabled(),
 				transport: "streamable-http",
 				supplementalOAuth: {

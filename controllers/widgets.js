@@ -185,13 +185,13 @@ function createWidgetHandlers(deps = {}) {
     };
   }
   const handle = (task) => async (req, res) => {
-    res.set("Cache-Control", "no-store");
+    res.header("Cache-Control", "no-store");
     try {
       return await task(req, res);
     } catch (error) {
       return res
         .status(error.status || 502)
-        .json({ error: error.message || "Widget unavailable." });
+        .send({ error: error.message || "Widget unavailable." });
     }
   };
   const management = (task) =>
@@ -215,7 +215,7 @@ function createWidgetHandlers(deps = {}) {
   return {
     analyze,
     list: management(async (req, res, property) =>
-      res.json({ data: await store.listWidgets(property.id) })
+      res.send({ data: await store.listWidgets(property.id) })
     ),
     save: management(async (req, res, property) => {
       const config = normalizeWidgetConfig(req.body?.config);
@@ -225,20 +225,20 @@ function createWidgetHandlers(deps = {}) {
         config,
         req.params.widgetId
       );
-      return res.json({ data });
+      return res.send({ data });
     }),
     remove: management(async (req, res, property) => {
       await store.removeWidget(property.id, req.params.widgetId);
-      return res.json({ success: true });
+      return res.send({ success: true });
     }),
     preview: management(async (req, res, property) =>
-      res.json({
+      res.send({
         data: await analyze(property, normalizeWidgetConfig(req.body?.config)),
       })
     ),
     data: handle(async (req, res) => {
       const { property, widget } = await publicWidget(req);
-      return res.json({
+      return res.send({
         data: await analyze(property, widget.config),
         config: widget.config,
       });
@@ -250,7 +250,7 @@ function createWidgetHandlers(deps = {}) {
         widgetId: widget.id,
         config: widget.config,
       };
-      res.set({
+      res.headers({
         "Content-Security-Policy": "frame-ancestors *",
         "Referrer-Policy": "no-referrer",
         "X-Robots-Tag": "noindex, nofollow",
@@ -261,7 +261,7 @@ function createWidgetHandlers(deps = {}) {
     }),
     previewPage: handle(async (req, res) => {
       req.metricWidget = { preview: true };
-      res.set({
+      res.headers({
         "Content-Security-Policy": "frame-ancestors 'self'",
         "X-Robots-Tag": "noindex, nofollow",
       });

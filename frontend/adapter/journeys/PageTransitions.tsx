@@ -29,7 +29,7 @@ const FILTERS = ["hostname", "country", "region", "city", "language", "browser",
 const LIMITS = [10, 15, 25, 50, 100, 200, 500];
 
 /** The existing GA4 aggregate capability, kept separate from ordered-session Journeys. */
-export function PageTransitions({ onBack }: { onBack: () => void }) {
+export function PageTransitions({ onBack }: { onBack?: () => void }) {
   const t = useExtracted();
   useSetPageTitle("Page transitions");
   const { data: site } = useGetSite();
@@ -70,7 +70,7 @@ export function PageTransitions({ onBack }: { onBack: () => void }) {
     <SubHeader availableFilters={[...FILTERS]} />
     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500 dark:text-neutral-400">
       <p className="flex items-start gap-2"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />{t("Two-page transitions reported by GA4 referrers")}</p>
-      <Button variant="outline" size="sm" onClick={onBack}><ArrowLeft />{t("Journeys")}</Button>
+      {onBack && <Button variant="outline" size="sm" onClick={onBack}><ArrowLeft />{t("Journeys")}</Button>}
     </div>
     <StatBand isLoading={summary.isLoading} cells={[
       { id: "views", label: t("Internal page views"), value: summary.data?.sessions.toLocaleString() ?? "–" },

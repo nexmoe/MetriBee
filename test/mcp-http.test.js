@@ -5,20 +5,23 @@ const { Client, StreamableHTTPClientTransport } = require("@modelcontextprotocol
 const { createMcpEndpoint, startStandalone } = require("../mcp-server/lib/http");
 const cache = require("../mcp-server/lib/cache");
 const { NEW_TOOL_NAMES } = require("../mcp-server/lib/tools");
+const { ACCOUNT_TOOL_NAMES, ACCOUNT_WRITE_TOOL_NAMES } = require('../mcp-server/lib/accountTools');
 
 const TOOLS = [
 	"get_account_summaries", "get_property_details", "list_google_ads_links", "run_report",
 	"run_funnel_report", "get_custom_dimensions_and_metrics", "run_realtime_report",
 	"run_pagespeed_insights", "request_indexing", "get_cache_status", "get_rate_limit_status",
 	...NEW_TOOL_NAMES,
+    ...ACCOUNT_TOOL_NAMES,
 ];
+let transportToken;
 const HEADERS = { "Content-Type": "application/json", Accept: "application/json, text/event-stream" };
 const payload = (result) => JSON.parse(result.content[0].text);
 
 // node:http preserves custom Host headers for proxy validation tests.
 function rawPost(url, headers) {
 	return new Promise((resolve, reject) => {
-		const req = require("node:http").request(url, { method: "POST", headers: { ...HEADERS, ...headers } }, (res) => {
+		const req = require("node:http").request(url, { method: "POST", headers: { ...HEADERS,Authorization:`Bearer ${transportToken}`, ...headers } }, (res) => {
 			res.resume();
 			res.on("end", () => resolve(res.statusCode));
 		});
@@ -29,11 +32,18 @@ function rawPost(url, headers) {
 
 describe("MCP Streamable HTTP", function () {
 	this.timeout(10000);
-	let mcp;
+	let mcp, authRuntime, database;
 	let clients;
 	let originals;
 	before(async () => {
-		mcp = await startStandalone({ env: { MCP_PORT: "0", MCP_ALLOWED_HOSTS: "ga4.example.com", MCP_ALLOWED_ORIGINS: "client.example.com" } });
+        database = require('../lib/database').openDatabase(':memory:');
+        authRuntime = await (await import('../lib/auth.mjs')).createAuthentication({db:database,env:{PORT:'5483'}});
+        const signed = await authRuntime.auth.api.signUpEmail({body:{email:'mcp@example.com',password:'mcp-password',name:'MCP'}});
+        const key = await authRuntime.auth.api.createApiKey({body:{userId:signed.user.id,name:'HTTP tests'}});transportToken=key.key;
+        const org=database.prepare('SELECT id FROM organization').get().id;
+        database.prepare('INSERT INTO property_access(propertyId,organizationId,name,domain) VALUES(?,?,?,?)').run('123',org,'Test','example.com');
+        database.prepare('INSERT INTO property_access(propertyId,organizationId,name,domain) VALUES(?,?,?,?)').run('123456789',org,'Defaults','defaults.example');
+		mcp = await startStandalone({ authRuntime, env: { MCP_PORT: "0", MCP_ALLOWED_HOSTS: "ga4.example.com", MCP_ALLOWED_ORIGINS: "client.example.com" } });
 	});
 	after(async () => { await mcp?.close(); });
 	beforeEach(() => {
@@ -52,12 +62,12 @@ describe("MCP Streamable HTTP", function () {
 	async function connect(mode = { pin: "2026-07-28" }) {
 		const client = new Client({ name: "ga4-http-test", version: "1.0.0" }, { versionNegotiation: { mode } });
 		clients.push(client);
-		const transport = new StreamableHTTPClientTransport(new URL(mcp.url));
+		const transport = new StreamableHTTPClientTransport(new URL(mcp.url),{requestInit:{headers:{Authorization:`Bearer ${transportToken}`}}});
 		await client.connect(transport);
 		return { client, transport };
 	}
 	function post(body, headers = {}) {
-		return fetch(mcp.url, { method: "POST", headers: { ...HEADERS, ...headers }, body: typeof body === "string" ? body : JSON.stringify(body) });
+		return fetch(mcp.url, { method: "POST", headers: { ...HEADERS,Authorization:`Bearer ${transportToken}`, ...headers }, body: typeof body === "string" ? body : JSON.stringify(body) });
 	}
 
 	for (const [mode, era, protocol] of [[{ pin: "2026-07-28" }, "modern", "2026-07-28"], ["legacy", "legacy", "2025-11-25"]]) {
@@ -65,7 +75,7 @@ describe("MCP Streamable HTTP", function () {
 			const { client, transport } = await connect(mode);
 			assert.equal(client.getProtocolEra(), era);
 			assert.equal(client.getNegotiatedProtocolVersion(), protocol);
-			assert.equal(client.getServerVersion().name, "ga4-mcp-server");
+			assert.equal(client.getServerVersion().name, "metribee");
 			assert.match(client.getInstructions(), /quota is shared/);
 			assert.equal(transport.sessionId, undefined);
 			const { tools } = await client.listTools();
@@ -104,7 +114,7 @@ describe("MCP Streamable HTTP", function () {
 	it("publishes read/write annotations, resources and a focused analysis prompt", async () => {
 		const { client } = await connect();
 		const { tools } = await client.listTools();
-		for (const tool of tools) assert.equal(tool.annotations.readOnlyHint, !["save_funnel", "delete_funnel", 'duplicate_funnel', 'import_funnels', "save_widget", "delete_widget", "request_indexing"].includes(tool.name), tool.name);
+		for (const tool of tools) assert.equal(tool.annotations.readOnlyHint, ![...ACCOUNT_WRITE_TOOL_NAMES, "save_analysis_definition", "delete_analysis_definition", "save_funnel", "delete_funnel", 'duplicate_funnel', 'import_funnels', "save_widget", "delete_widget", "request_indexing"].includes(tool.name), tool.name);
 		assert.equal(tools.find(tool => tool.name === "delete_funnel").annotations.destructiveHint, true);
 		const resources = await client.listResources();
 		assert.deepEqual(resources.resources.map(resource => resource.uri), ["ga4://capabilities", "ga4://query-guide"]);
@@ -191,7 +201,7 @@ describe("MCP Streamable HTTP", function () {
 		assert.equal(notification.status, 202);
 		assert.equal(await notification.text(), "");
 		for (const method of ["GET", "DELETE"]) {
-			const response = await fetch(mcp.url, { method, headers: HEADERS });
+			const response = await fetch(mcp.url, { method, headers: { ...HEADERS, Authorization:`Bearer ${transportToken}` } });
 			assert.equal(response.status, 405, method);
 			assert.ok((await response.json()).error);
 		}
@@ -220,7 +230,7 @@ describe("MCP Streamable HTTP", function () {
 
 	for (const extras of [{}, { MCP_ALLOWED_HOSTS: " extra.example, second.example ", MCP_ALLOWED_ORIGINS: "client.example" }]) {
 		it(`allows the public URL hostname with ${Object.keys(extras).length ? "additional allowlists" : "no other proxy configuration"}`, async () => {
-			const proxy = await startStandalone({ env: {
+			const proxy = await startStandalone({ authRuntime, env: {
 				MCP_PORT: "0", MCP_PUBLIC_URL: " https://MetriBee.102417.xyz:8443/mcp ", ...extras,
 			} });
 			try {
@@ -290,8 +300,9 @@ describe("MCP Streamable HTTP", function () {
 describe("MCP HTTP command", function () {
 	this.timeout(10000);
 	it("starts from another working directory and stops on SIGTERM", async () => {
+		const directory = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'metribee-mcp-cli-'));
 		const child = spawn(process.execPath, [require.resolve("../mcp-server/index")], {
-			cwd: require("node:os").tmpdir(), env: { ...process.env, MCP_HOST: "127.0.0.1", MCP_PORT: "0" }, stdio: ["ignore", "pipe", "pipe"],
+			cwd: require("node:os").tmpdir(), env: { ...process.env, DEMO: '1', DATABASE_PATH: require('node:path').join(directory, 'users.sqlite'), MCP_HOST: "127.0.0.1", MCP_PORT: "0" }, stdio: ["ignore", "pipe", "pipe"],
 		});
 		try {
 			const url = await new Promise((resolve, reject) => {
@@ -310,6 +321,7 @@ describe("MCP HTTP command", function () {
 			assert.deepEqual(await exited, [0, null]);
 		} finally {
 			if (child.exitCode === null) child.kill("SIGKILL");
+			require('node:fs').rmSync(directory, {recursive:true,force:true});
 		}
 	});
 });
