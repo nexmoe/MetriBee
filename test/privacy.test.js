@@ -14,7 +14,7 @@ function load(name) {
   }).outputText, filename);
   return compiled.exports;
 }
-const { privacyTerms, privacyMatcher, privacyShortcut } = load("model");
+const { privacyTerms, privacyMatcher, privacyShortcut, privacyAllowed } = load("model");
 
 describe("privacy DOM observer convergence", () => {
   it("settles when a property name matches the masked browser title", () => {
@@ -71,6 +71,14 @@ describe("privacy DOM observer convergence", () => {
 });
 
 describe("global visual privacy", () => {
+  it("leaves authentication and onboarding readable even with a saved privacy preference", () => {
+    for (const route of ["/login", "/signup", "/reset-password", "/invitation", "/auth/consent"]) {
+      expect(privacyAllowed(route), route).to.equal(false);
+    }
+    for (const route of ["/", "/analytics", "/realtime", "/settings/account"]) {
+      expect(privacyAllowed(route), route).to.equal(true);
+    }
+  });
   it("collects property, account and connection identifiers without treating report values as names", () => {
     const terms = privacyTerms([
       { value: [{ id: "987654321", name: "Example - GA4", domain: "https://www.example.org/path", accountName: "Private team" }], metadata: true },

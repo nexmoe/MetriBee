@@ -2,13 +2,11 @@ import { authClient } from "../../rybbit/src/lib/auth";
 import { authedFetch } from "../../rybbit/src/api/utils";
 import type { UserOrganization } from "../../rybbit/src/api/admin/endpoints/organizations";
 
-// The original signup page's workspace form stays intact. GA4 properties come
-// from the server connection: a domain entered during signup never grants
-// access to another organization's analytics.
+// GA4 properties are synchronized by the server. Signup only configures the
+// workspace; the bootstrap owner's existing property assignments stay intact.
 export async function completeSignupWorkspace(input: {
   name: string;
   slug: string;
-  domain: string;
 }) {
   const organizations = await authedFetch<UserOrganization[]>(
     "/user/organizations"
@@ -36,24 +34,10 @@ export async function completeSignupWorkspace(input: {
   }
   const update = await authClient.organization.update({
     organizationId,
-    data: { name: input.name, metadata: { onboardingDomain: input.domain } },
+    data: { name: input.name },
   });
   if (update.error) throw new Error(update.error.message);
   const active = await authClient.organization.setActive({ organizationId });
   if (active.error) throw new Error(active.error.message);
-  const available = await authedFetch<{
-    properties: { id: string; domain: string; organizationId: string }[];
-  }>("/properties/available");
-  const property = available.properties.find(
-    (item) =>
-      item.domain.toLowerCase().replace(/^www\./, "") ===
-      input.domain.toLowerCase().replace(/^www\./, "")
-  );
-  if (property && property.organizationId !== organizationId) {
-    await authedFetch(`/organizations/${organizationId}/sites`, undefined, {
-      method: "POST",
-      data: { propertyId: property.id },
-    });
-  }
-  return { organizationId, siteId: property?.id };
+  return { organizationId };
 }

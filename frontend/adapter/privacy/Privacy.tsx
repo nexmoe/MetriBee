@@ -4,8 +4,9 @@ import { Eye, EyeOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../rybbit/src/components/ui/tooltip";
 import { useExtracted } from "../extracted";
 import { privacySnapshot, setPrivacy, subscribePrivacy } from "./store";
-import { privacyShortcut, privacyTerms } from "./model";
+import { privacyAllowed, privacyShortcut, privacyTerms } from "./model";
 import { maskDocument } from "./dom";
+import { getAppPath, useLocation } from "../navigation";
 
 const isMetadataQuery = (key: readonly unknown[]) =>
   ["get-site", "get-sites-from-org", "setup-status"].includes(String(key[0])) ||
@@ -17,10 +18,12 @@ export function usePrivacy() {
 
 export function PrivacyProvider({ children }: { children: ReactNode }) {
   const [enabled] = usePrivacy();
+  useLocation();
+  const allowed = privacyAllowed(getAppPath());
   const client = useQueryClient();
   useLayoutEffect(() => {
-    document.documentElement.classList.toggle("privacy-blur", enabled);
-    if (!enabled) return;
+    document.documentElement.classList.toggle("privacy-blur", enabled && allowed);
+    if (!enabled || !allowed) return;
     const sources = () => privacyTerms([
       { value: (window as any).__GA4_CONTEXT__?.properties, metadata: true },
       ...client.getQueryCache().getAll().filter(query => isMetadataQuery(query.queryKey))
@@ -33,9 +36,10 @@ export function PrivacyProvider({ children }: { children: ReactNode }) {
       const next = sources(), key = next.join("\0");
       if (key !== fingerprint) { terms = next; fingerprint = key; mask.update(terms); }
     });
-    return () => { stop(); mask.stop(); };
-  }, [enabled, client]);
+    return () => { stop(); mask.stop(); document.documentElement.classList.remove("privacy-blur"); };
+  }, [enabled, allowed, client]);
   useEffect(() => {
+    if (!allowed) return;
     const key = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       if (!privacyShortcut(event, !!target?.closest("input,textarea,select,[contenteditable]:not([contenteditable=false]),[role=textbox],[role=combobox],[role=dialog]"))) return;
@@ -43,7 +47,7 @@ export function PrivacyProvider({ children }: { children: ReactNode }) {
     };
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
-  }, []);
+  }, [allowed]);
   return children;
 }
 

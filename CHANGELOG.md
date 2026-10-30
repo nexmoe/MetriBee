@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-30
+
+### Improvements
+
+- Finish signup by naming your workspace, without entering a domain or installing a tracking code. Sites continue to sync from connected GA4 properties.
+- Login, signup and account recovery stay readable when privacy mode was enabled previously.
+
 ## [2.3.0] - 2026-10-30
 
 ### What's New

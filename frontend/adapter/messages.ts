@@ -85,6 +85,7 @@ export const appMessages: Record<string, Record<string, string>> = {
     "Public dashboard link": "公开仪表盘链接",
     "Failed to update site configuration": "更新站点设置失败",
     "Get started with MetriBee": "开始使用 MetriBee",
+    "Sites are synced from your connected GA4 properties. No domain or tracking code is needed.": "站点从已连接的 GA4 资源同步，无需填写域名或安装统计代码。",
     "Property names and domains are managed in Google Analytics.": "资源名称和域名由 Google Analytics 管理。",
     "Database unavailable": "数据库暂不可用",
     "Database size": "数据库大小",

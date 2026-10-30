@@ -1,6 +1,11 @@
 const fields = new Set(["site", "siteName", "propertyName", "domain", "url", "accountName", "accountId", "propertyId", "siteId", "clientEmail", "gcpProject", "gcpProjectNumber"]);
 const generic = new Set(["ga4", "google analytics", "google analytics 4", "unknown", "(not set)"]);
 
+// Auth pages have no privacy toggle and must keep their forms readable.
+export function privacyAllowed(appPath: string) {
+  return !["/login", "/signup", "/reset-password", "/invitation", "/auth/consent"].includes(appPath);
+}
+
 export function privacyTerms(sources: { value: unknown; metadata?: boolean }[]) {
   const terms = new Set<string>();
   const add = (value: unknown) => {

@@ -5,19 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { useExtracted } from "next-intl";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { parseAsInteger, useQueryState } from "nuqs";
 import React, { Suspense, useState } from "react";
-import { addSite } from "../../api/admin/endpoints";
 import { RybbitLogo, RybbitTextLogo } from "../../components/RybbitLogo";
 
 import { useSetPageTitle } from "../../hooks/useSetPageTitle";
 import { authClient } from "../../lib/auth";
 import { useConfigs } from "../../lib/configs";
-import { BACKEND_URL, IS_CLOUD } from "../../lib/const";
-import { trackAdEvent } from "../../lib/trackAdEvent";
+import { IS_CLOUD } from "../../lib/const";
 import { userStore } from "../../lib/userStore";
-import { cn, isValidDomain, normalizeDomain } from "../../lib/utils";
+import { cn } from "../../lib/utils";
 import { AccountStep } from "./components/AccountStep";
 import { completeSignupWorkspace } from "../../../../adapter/accounts/onboarding";
 import { actualHref } from "../../../../adapter/navigation";
@@ -39,18 +36,16 @@ function SignupPageContent() {
   };
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
-  const router = useRouter();
 
   // Step 1: Account creation
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string>("");
 
-  // Setup: Organization + website
+  // Setup: Organization (GA4 properties are synchronized by the server)
   const [orgName, setOrgName] = useState("");
   const [orgSlug, setOrgSlug] = useState("");
   const [referralSource, setReferralSource] = useState("");
-  const [domain, setDomain] = useState("");
 
   const handleOrgNameChange = (value: string) => {
     setOrgName(value);
@@ -100,23 +95,14 @@ function SignupPageContent() {
     }
   };
 
-  // Step 2: Setup submission — create org + site, then advance (cloud) or redirect (self-hosted)
-  const [siteId, setSiteId] = useState<number | null>(null);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-
+  // Step 2: Configure the workspace, then open its synchronized GA4 properties.
   const handleSetupSubmit = async () => {
     setIsLoading(true);
     setError("");
 
     try {
-      if (!isValidDomain(domain)) {
-        setError(t("Invalid domain format. Must be a valid domain like example.com or sub.example.com"));
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await completeSignupWorkspace({name:orgName,slug:orgSlug,domain:normalizeDomain(domain)});
-      window.location.assign(actualHref(IS_CLOUD ? '/settings/billing' : response.siteId ? `/${response.siteId}` : '/'));
+      await completeSignupWorkspace({ name: orgName, slug: orgSlug });
+      window.location.assign(actualHref(IS_CLOUD ? '/settings/billing' : '/'));
     } catch (error) {
       setError(String(error));
     } finally {
@@ -126,7 +112,7 @@ function SignupPageContent() {
 
   const steps = [
     { step: 1, label: t("Account") },
-    { step: 2, label: t("Add site") },
+    { step: 2, label: t("Workspace") },
   ];
 
   const renderStepContent = () => {
@@ -148,8 +134,6 @@ function SignupPageContent() {
       case 2:
         return (
           <SetupStep
-            domain={domain}
-            setDomain={setDomain}
             orgName={orgName}
             orgSlug={orgSlug}
             handleOrgNameChange={handleOrgNameChange}

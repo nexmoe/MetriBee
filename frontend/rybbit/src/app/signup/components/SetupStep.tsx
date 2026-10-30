@@ -6,11 +6,8 @@ import { ArrowRight } from "lucide-react";
 import { useExtracted } from "next-intl";
 
 import { IS_CLOUD } from "../../../lib/const";
-import { isValidDomain } from "../../../lib/utils";
 
 interface SetupStepProps {
-  domain: string;
-  setDomain: (v: string) => void;
   orgName: string;
   orgSlug: string;
   handleOrgNameChange: (v: string) => void;
@@ -21,8 +18,6 @@ interface SetupStepProps {
 }
 
 export function SetupStep({
-  domain,
-  setDomain,
   orgName,
   orgSlug,
   handleOrgNameChange,
@@ -32,11 +27,14 @@ export function SetupStep({
   onSubmit,
 }: SetupStepProps) {
   const t = useExtracted();
-  const canSubmit = !!orgName && !!orgSlug && !!domain && isValidDomain(domain) && !(IS_CLOUD && !referralSource);
+  const canSubmit = !!orgName.trim() && !!orgSlug && !(IS_CLOUD && !referralSource);
 
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">{t("Set up your workspace")}</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        {t("Sites are synced from your connected GA4 properties. No domain or tracking code is needed.")}
+      </p>
       {/* A real form, so Enter submits like the account step. */}
       <form
         className="space-y-4"
@@ -45,20 +43,6 @@ export function SetupStep({
           if (canSubmit && !isLoading) onSubmit();
         }}
       >
-        <div className="space-y-2">
-          <Label htmlFor="domain">{t("Website Domain")}</Label>
-          <Input
-            id="domain"
-            type="text"
-            placeholder="example.com or sub.example.com"
-            value={domain}
-            onChange={e => setDomain(e.target.value.toLowerCase())}
-            required
-            className="h-10 transition-all bg-neutral-100 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700"
-          />
-          <p className="text-xs text-muted-foreground">{t("Enter the domain of the website you want to track")}</p>
-        </div>
-
         <div className="space-y-2">
           <Label htmlFor="orgName">{t("Organization Name")}</Label>
           <Input
@@ -100,7 +84,7 @@ export function SetupStep({
 
         <Button
           type="submit"
-          className="w-full transition-all duration-300 h-11 bg-emerald-600 hover:bg-emerald-500 text-white"
+          className="w-full transition-all duration-300 h-11"
           loading={isLoading}
           disabled={!canSubmit}
           variant="success"
